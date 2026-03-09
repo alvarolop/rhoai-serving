@@ -21,6 +21,11 @@ In this repository, we will showcase all the features of RHOAI Serving. Since Op
 2. Serving a Generative model using vLLM.
 3. Serving a Generative model using vLLM and distributed across multiple GPUs.
 4. Serving a Generative model using vLLM and llm-d for inference acceleration.
+5. Serving an Embeddings model using OpenVINO.
 
 > [!NOTE]
 > Independently of the purpose of the model, we will use the `kserve` operator to serve the model using the **Raw deployment** modesince it is the most flexible and powerful mode.
+
+## Serving a Predictive model using OpenVINO
+
+
