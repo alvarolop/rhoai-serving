@@ -1,0 +1,18 @@
+{{- if .Values.namespace.create }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ include "rhoai-serving.namespaceName" . }}
+  annotations:
+    openshift.io/display-name: {{ include "rhoai-serving.namespaceDisplayName" . | quote }}
+    {{- if .Values.namespace.description }}
+    openshift.io/description: {{ .Values.namespace.description | quote }}
+    {{- end }}
+  labels:
+    opendatahub.io/dashboard: 'true'
+    rhoai-serving/model: 'true'
+    {{- if .Values.namespace.kueueManaged }}
+    kueue.openshift.io/managed: 'true'
+    {{- end }}
+{{- end }}

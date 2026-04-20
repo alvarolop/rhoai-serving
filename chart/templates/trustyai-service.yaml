@@ -1,0 +1,28 @@
+{{- if .Values.trustyai.enabled }}
+---
+apiVersion: trustyai.opendatahub.io/v1
+kind: TrustyAIService
+metadata:
+  name: trustyai-service
+  namespace: {{ include "rhoai-serving.namespaceName" . }}
+spec:
+  storage:
+    format: "PVC"
+    folder: "/inputs"
+    size: "1Gi"
+  data:
+    filename: "data.csv"
+    format: "CSV"
+  metrics:
+    schedule: "5s"
+    batchSize: 5000
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kserve-logger-ca-bundle
+  namespace: {{ include "rhoai-serving.namespaceName" . }}
+  annotations:
+    service.beta.openshift.io/inject-cabundle: "true"
+data: {}
+{{- end }}

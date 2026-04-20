@@ -1,0 +1,18 @@
+# Granite 4.0 H Tiny FP8 - Single GPU generative model
+# Usage: helm template granite chart/ -f chart/values.yaml -f chart/values-granite-4-0-h-tiny.yaml
+#
+# Tool calling used to reference Granite 3.3 flags (--chat-template tool_chat_template_granite_3.3.jinja,
+# hermes parser). That filename is not shipped in vLLM 0.13.x / RHOAI inference images, which causes
+# startup failure. Use the model tokenizer template by default. To enable tools on a build that
+# includes Granite 4 templates and parser, add extraArgs such as:
+#   --enable-auto-tool-choice
+#   --tool-call-parser granite4
+#   --chat-template <path-or-bundled-name-from-your-vllm-version>
+
+name: granite-4-0-h-tiny
+namespace:
+  name: model-granite
+
+model:
+  uri: "oci://registry.redhat.io/rhai/modelcar-granite-4-0-h-tiny-fp8-dynamic:3.0"
+  name: "granite-4-0-h-tiny-fp8-dynamic"

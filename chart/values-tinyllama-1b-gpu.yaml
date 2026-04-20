@@ -1,0 +1,11 @@
+# TinyLlama 1B on GPU — recommended for LLMInferenceService + vLLM on RHOAI.
+# Uses profile generative defaults (GPU tolerations, hardware profile, 1× GPU).
+# For clusters without GPUs, see values-tinyllama-1b-cpu.yaml and the README warning about CPU vLLM.
+
+name: tinyllama-1b
+namespace:
+  name: model-tinyllama
+
+model:
+  uri: "oci://quay.io/rh-aiservices-bu/tinyllama:1.0"
+  name: "tinyllama-1b"

@@ -1,0 +1,21 @@
+# Qwen3.5-35B-A3B GPTQ-Int4 - Multi-GPU generative model (4x GPU)
+# MoE architecture: 35B total params, 3B activated. Int4-quantized (GPTQ).
+# Usage: helm template qwen35 chart/ -f chart/values.yaml -f chart/values-qwen3.5-35b-a3b-gptq-int4.yaml
+
+name: qwen3-5-35b-a3b-gptq-int4
+namespace:
+  name: model-qwen
+
+model:
+  uri: hf://Qwen/Qwen3.5-35B-A3B-GPTQ-Int4
+  name: Qwen/Qwen3.5-35B-A3B-GPTQ-Int4
+
+resources:
+  limits:
+    cpu: "8"
+    memory: 128Gi
+    nvidia.com/gpu: "4"
+  requests:
+    cpu: "4"
+    memory: 64Gi
+    nvidia.com/gpu: "4"

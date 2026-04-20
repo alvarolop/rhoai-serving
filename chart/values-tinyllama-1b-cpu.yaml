@@ -1,0 +1,34 @@
+# TinyLlama 1B - CPU-only generative model (no GPU required).
+#
+# Known issue on some RHOAI / vLLM images (e.g. vLLM 0.13.x): the V1 CPU worker calls
+# torch.ops._C_utils.init_cpu_threads_env(), which is missing from the bundled PyTorch build,
+# so the engine exits with AttributeError. See https://github.com/vllm-project/vllm/issues/33675
+# and prefer tinyllama-1b-gpu.yaml when you have a GPU worker until the platform ships a
+# matching vLLM + PyTorch fix.
+#
+# Usage: helm template tinyllama chart/ -f chart/values.yaml -f chart/values-tinyllama-1b-cpu.yaml --set serving.gpu=false ...
+
+name: tinyllama-1b
+namespace:
+  name: model-tinyllama
+
+model:
+  uri: "oci://quay.io/rh-aiservices-bu/tinyllama:1.0"
+  name: "tinyllama-1b"
+
+serving:
+  gpu: false
+
+extraEnv:
+  - name: VLLM_TARGET_DEVICE
+    value: "cpu"
+
+resources:
+  limits:
+    cpu: "2"
+    memory: 8Gi
+    nvidia.com/gpu: null
+  requests:
+    cpu: "1"
+    memory: 4Gi
+    nvidia.com/gpu: null

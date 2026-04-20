@@ -1,0 +1,55 @@
+{{ if .Values.auth.enabled }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: "{{ .Values.name }}-sa"
+  namespace: {{ include "rhoai-serving.namespaceName" . }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "{{ .Values.name }}-sa-token"
+  namespace: {{ include "rhoai-serving.namespaceName" . }}
+  labels:
+    opendatahub.io/dashboard: "true"
+  annotations:
+    kubernetes.io/service-account.name: "{{ .Values.name }}-sa"
+    openshift.io/display-name: {{ .Values.name }}-user
+type: kubernetes.io/service-account-token
+data: {}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    opendatahub.io/dashboard: "true"
+  name: "{{ .Values.name }}-view-role"
+  namespace: {{ include "rhoai-serving.namespaceName" . }}
+rules:
+  - apiGroups:
+    - serving.kserve.io
+    resources:
+    - llminferenceservices
+    - inferenceservices
+    verbs:
+    - get
+    resourceNames:
+    - {{ .Values.name }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    opendatahub.io/dashboard: "true"
+  name: "{{ .Values.name }}-view"
+  namespace: {{ include "rhoai-serving.namespaceName" . }}
+subjects:
+  - kind: ServiceAccount
+    name: "{{ .Values.name }}-sa"
+    namespace: {{ include "rhoai-serving.namespaceName" . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: "{{ .Values.name }}-view-role"
+{{ end }}

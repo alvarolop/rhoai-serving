@@ -1,0 +1,46 @@
+{{- if eq .Values.serving.type "predictive" }}
+---
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: {{ .Values.name }}
+  namespace: {{ include "rhoai-serving.namespaceName" . }}
+  annotations:
+    opendatahub.io/connections: {{ .Values.name }}
+    opendatahub.io/model-type: predictive
+    openshift.io/display-name: {{ .Values.name }}
+    security.opendatahub.io/enable-auth: '{{ .Values.auth.enabled }}'
+    serving.kserve.io/deploymentMode: RawDeployment
+  {{- if .Values.serving.gpu }}
+    opendatahub.io/hardware-profile-name: gpu-profile
+    opendatahub.io/hardware-profile-namespace: redhat-ods-applications
+  {{- else }}
+    opendatahub.io/hardware-profile-name: default-profile
+    opendatahub.io/hardware-profile-namespace: redhat-ods-applications
+  {{- end }}
+  labels:
+    opendatahub.io/dashboard: "true"
+    networking.kserve.io/visibility: exposed
+spec:
+  predictor:
+    automountServiceAccountToken: false
+    deploymentStrategy:
+      type: RollingUpdate
+    # imagePullSecrets:
+    #   - name: {{ .Values.name }}
+    minReplicas: {{ .Values.replicas }}
+    maxReplicas: {{ .Values.replicas }}
+    {{- if .Values.serving.gpu }}
+    tolerations:
+      - effect: NoSchedule
+        key: nvidia.com/gpu
+    {{- end }}
+    model:
+      modelFormat:
+        name: {{ .Values.runtime.modelFormat.name }}
+        version: "{{ .Values.runtime.modelFormat.version }}"
+      runtime: {{ .Values.name }}
+      storageUri: {{ .Values.model.uri }}
+      resources:
+        {{- toYaml .Values.resources | nindent 8 }}
+{{- end }}

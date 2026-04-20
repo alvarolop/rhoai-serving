@@ -1,0 +1,72 @@
+{{- if eq .Values.serving.type "predictive" }}
+---
+apiVersion: serving.kserve.io/v1alpha1
+kind: ServingRuntime
+metadata:
+  name: {{ .Values.name }}
+  namespace: {{ include "rhoai-serving.namespaceName" . }}
+  annotations:
+    opendatahub.io/connections: {{ .Values.name }}
+    opendatahub.io/apiProtocol: REST
+    opendatahub.io/runtime-version: {{ .Values.runtime.version }}
+    opendatahub.io/serving-runtime-scope: global
+    opendatahub.io/template-display-name: {{ .Values.runtime.displayName }}
+    opendatahub.io/template-name: kserve-ovms
+    openshift.io/display-name: {{ .Values.runtime.displayName }}
+  labels:
+    opendatahub.io/dashboard: "true"
+spec:
+  annotations:
+    prometheus.io/port: "8888"
+    prometheus.io/path: "/metrics"
+  supportedModelFormats:
+    - autoSelect: true
+      name: openvino_ir
+      version: opset13
+    - name: onnx
+      version: "1"
+    - autoSelect: true
+      name: tensorflow
+      version: "1"
+    - autoSelect: true
+      name: tensorflow
+      version: "2"
+    - autoSelect: true
+      name: paddle
+      version: "2"
+    - autoSelect: true
+      name: pytorch
+      version: "2"
+  protocolVersions:
+    - v2
+    - grpc-v2
+  multiModel: false
+  containers:
+    - name: kserve-container
+      image: {{ .Values.runtime.image }}
+      args:
+        - --model_name={{ "{{.Name}}" }}
+        - --port=8001
+        - --rest_port=8888
+        - --model_path=/mnt/models
+        - --file_system_poll_wait_seconds=0
+        - --metrics_enable
+        {{- range .Values.extraArgs }}
+        - {{ . }}
+        {{- end }}
+      {{- with .Values.extraEnv }}
+      env:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      ports:
+        - containerPort: 8888
+          protocol: TCP
+      volumeMounts:
+        - name: shm
+          mountPath: /dev/shm
+  volumes:
+    - name: shm
+      emptyDir:
+        medium: Memory
+        sizeLimit: 2Gi
+{{- end }}

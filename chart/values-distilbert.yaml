@@ -1,0 +1,36 @@
+# DistilBERT - Predictive model with OpenVINO runtime (CPU-only, ModelCar from Quay)
+# Usage: helm template distilbert chart/ -f chart/values.yaml -f chart/values-distilbert.yaml
+#
+# DistilBERT is a smaller, faster version of BERT for text classification and NLP tasks.
+# Model source: https://huggingface.co/docs/transformers/model_doc/distilbert
+
+name: distilbert
+namespace:
+  name: model-distilbert
+
+serving:
+  type: predictive
+  gpu: false
+
+model:
+  uri: "oci://quay.io/redhattraining/models/distilbert:2.25"
+  name: "distilbert"
+
+resources:
+  limits:
+    cpu: "2"
+    memory: 8Gi
+  requests:
+    cpu: "1"
+    memory: 1Gi
+
+runtime:
+  displayName: "OpenVINO Model Server"
+  image: registry.redhat.io/rhoai/odh-openvino-model-server-rhel9:v3.3
+  version: v2025.4
+  modelFormat:
+    name: onnx
+    version: "1"
+
+trustyai:
+  enabled: true

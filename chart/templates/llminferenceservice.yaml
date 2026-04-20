@@ -1,0 +1,70 @@
+{{- if eq .Values.serving.type "generative" }}
+---
+apiVersion: serving.kserve.io/v1alpha1
+kind: LLMInferenceService
+metadata:
+  name: {{ .Values.name }}
+  namespace: {{ include "rhoai-serving.namespaceName" . }}
+  annotations:
+    openshift.io/display-name: {{ .Values.name }}
+    opendatahub.io/connections: {{ .Values.name }}
+    opendatahub.io/genai-use-case: chat
+    security.opendatahub.io/enable-auth: '{{ .Values.auth.enabled }}'
+    opendatahub.io/model-type: generative
+    {{- if .Values.serving.gpu }}
+    opendatahub.io/hardware-profile-name: gpu-profile
+    opendatahub.io/hardware-profile-namespace: redhat-ods-applications
+    {{- end }}
+  labels:
+    opendatahub.io/dashboard: "true"
+    opendatahub.io/genai-asset: "true"
+
+spec:
+
+  # Model specification
+  model:
+    uri: {{ .Values.model.uri }}
+    name: {{ .Values.model.name }}
+    criticality: Critical
+
+  router:
+    gateway: {}
+    route: {}
+    scheduler: {}
+
+  # Multi-node workload with data parallelism
+  # parallelism:
+  #   tensor: 4
+  #   data: 8
+  #   dataLocal: 4
+
+  # Decode workload (main)
+  replicas: {{ .Values.replicas }}
+  template:
+    containers:
+      - name: main
+        {{- if or .Values.extraArgs .Values.extraEnv .Values.hfToken }}
+        env:
+          {{- if .Values.hfToken }}
+          - name: HF_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: hf-secret
+                key: HF_TOKEN
+          {{- end }}
+          {{- if .Values.extraArgs }}
+          - name: VLLM_ADDITIONAL_ARGS
+            value: {{ join " " .Values.extraArgs | quote }}
+          {{- end }}
+          {{- with .Values.extraEnv }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+    {{- if .Values.serving.gpu }}
+    tolerations:
+      - effect: NoSchedule
+        key: nvidia.com/gpu
+    {{- end }}
+{{- end }}

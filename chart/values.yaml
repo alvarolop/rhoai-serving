@@ -1,0 +1,110 @@
+# Default values for rhoai-serving
+# This is a YAML-formatted file.
+#
+# Usage (recommended):
+#   helm template <release> chart/ \
+#     -f chart/values.yaml \
+#     -f chart/values-<model>.yaml
+#
+# Two-layer approach:
+#   1. values.yaml        — Defaults for generative (vLLM) single-GPU serving; full schema reference
+#   2. values-<model>.yaml — Model identity (name, namespace.name, URI) and any overrides
+#
+# Predictive (OpenVINO) models: use a values file that sets serving.type: predictive and the
+# runtime block (see values-distilbert.yaml).
+
+# Resource identity
+name: model-server
+
+# Target namespace for all chart resources
+namespace:
+  # When false, the Namespace object is not created — use an existing namespace (.name must match).
+  create: true
+  name: model-serving
+  # OpenShift console: Namespace display name (defaults to .name if empty)
+  displayName: ""
+  # OpenShift console: longer description (optional; annotation omitted when empty)
+  description: ""
+  # Kueue (Red Hat build): queue enforcement for serving workloads requires this label on the namespace
+  # (see OpenShift AI docs — Managing workloads with Kueue). Set false only if you intentionally opt out.
+  kueueManaged: true
+
+# Serving configuration (expects Kueue: namespace.kueueManaged on created namespaces)
+#   type: "generative" => Creates LLMInferenceService (vLLM-based generative models)
+#         "predictive" => Creates ServingRuntime + InferenceService (OpenVINO, ONNX, etc.)
+#   gpu:  true  => Adds GPU tolerations and hardware profile annotations
+#         false => CPU-only deployment
+serving:
+  type: generative
+  gpu: true
+
+replicas: 1
+
+# Model source
+# Supported URI schemes:
+#   HuggingFace: hf://RedHatAI/Qwen3-8B-FP8-dynamic
+#   S3 bucket:   s3://<bucket-name>/<object-key>
+#   PVC:         pvc://<claim-name>/<pvc-path>
+#   OCI image:   oci://<registry>/<org>/<repo>:<tag>
+model:
+  uri: ""
+  name: ""
+
+# HuggingFace authentication token for gated/private models.
+# Required when using hf:// URIs with models that need authentication.
+# Pass at deploy time: --set hfToken=$(cat .hf_token)
+hfToken: ""
+
+# Authentication via Red Hat Connectivity Link (Kuadrant/Authorino)
+auth:
+  enabled: true
+
+# TrustyAI monitoring for bias and data drift detection.
+# Deploys a TrustyAIService CR (PVC-backed) and the required CA bundle
+# ConfigMap in the model's namespace for KServe RawDeployment integration.
+trustyai:
+  enabled: false
+
+# Resource requirements — generative single-GPU defaults (override per model for multi-GPU / CPU)
+resources:
+  limits:
+    cpu: "4"
+    memory: 32Gi
+    nvidia.com/gpu: "1"
+  requests:
+    cpu: "1"
+    memory: 8Gi
+    nvidia.com/gpu: "1"
+
+# Extra arguments for the model runtime.
+# - Generative (vLLM): joined into the VLLM_ADDITIONAL_ARGS env var.
+# - Predictive (OpenVINO): appended as container args.
+# Example (generative with tool use):
+#   extraArgs:
+#     - "--enable-auto-tool-choice"
+#     - "--tool-call-parser hermes"
+# Example (generative with tuning):
+#   extraArgs:
+#     - "--gpu-memory-utilization 0.95"
+#     - "--max-model-len 32768"
+#     - "--enable-prefix-caching"
+extraArgs: []
+
+# Extra environment variables for the model container.
+# Uses standard Kubernetes env var format.
+# Example:
+#   extraEnv:
+#     - name: VLLM_CONFIGURE_LOGGING
+#       value: "1"
+extraEnv: []
+
+
+
+# Predictive runtime configuration (only used when serving.type is "predictive")
+runtime:
+  displayName: "OpenVINO Model Server"
+  image: quay.io/opendatahub/openvino_model_server:stable
+  version: v2025.4
+  modelFormat:
+    name: openvino_ir
+    version: opset13
