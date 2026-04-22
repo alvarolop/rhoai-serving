@@ -11,16 +11,14 @@ metadata:
     openshift.io/display-name: {{ .Values.name }}
     security.opendatahub.io/enable-auth: '{{ .Values.auth.enabled }}'
     serving.kserve.io/deploymentMode: RawDeployment
-  {{- if .Values.serving.gpu }}
-    opendatahub.io/hardware-profile-name: gpu-profile
-    opendatahub.io/hardware-profile-namespace: redhat-ods-applications
-  {{- else }}
-    opendatahub.io/hardware-profile-name: default-profile
-    opendatahub.io/hardware-profile-namespace: redhat-ods-applications
-  {{- end }}
+    opendatahub.io/hardware-profile-name: {{ .Values.serving.hardwareProfile.name | quote }}
+    opendatahub.io/hardware-profile-namespace: {{ .Values.serving.hardwareProfile.namespace | quote }}
   labels:
     opendatahub.io/dashboard: "true"
     networking.kserve.io/visibility: exposed
+    {{- if .Values.kueue.localQueueName }}
+    kueue.x-k8s.io/queue-name: {{ .Values.kueue.localQueueName | quote }}
+    {{- end }}
 spec:
   predictor:
     automountServiceAccountToken: false
@@ -30,7 +28,7 @@ spec:
     #   - name: {{ .Values.name }}
     minReplicas: {{ .Values.replicas }}
     maxReplicas: {{ .Values.replicas }}
-    {{- if .Values.serving.gpu }}
+    {{- if and (eq (include "rhoai-serving.hasNvidiaGpu" . | trim) "true") .Values.serving.gpuPodTolerations }}
     tolerations:
       - effect: NoSchedule
         key: nvidia.com/gpu
@@ -42,5 +40,5 @@ spec:
       runtime: {{ .Values.name }}
       storageUri: {{ .Values.model.uri }}
       resources:
-        {{- toYaml .Values.resources | nindent 8 }}
+        {{- include "rhoai-serving.kserveModelResources" . | nindent 8 }}
 {{- end }}

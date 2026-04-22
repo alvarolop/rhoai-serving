@@ -10,7 +10,9 @@ namespace:
 
 serving:
   type: predictive
-  gpu: false
+  hardwareProfile:
+    name: default-profile
+    namespace: redhat-ods-applications
 
 model:
   uri: "oci://quay.io/redhattraining/models/distilbert:2.25"
@@ -20,9 +22,12 @@ resources:
   limits:
     cpu: "2"
     memory: 8Gi
+    # Override merged base defaults so CPU predictive does not inherit nvidia.com/gpu: "1"
+    nvidia.com/gpu: null
   requests:
     cpu: "1"
     memory: 1Gi
+    nvidia.com/gpu: null
 
 runtime:
   displayName: "OpenVINO Model Server"

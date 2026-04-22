@@ -11,13 +11,16 @@ metadata:
     opendatahub.io/genai-use-case: chat
     security.opendatahub.io/enable-auth: '{{ .Values.auth.enabled }}'
     opendatahub.io/model-type: generative
-    {{- if .Values.serving.gpu }}
-    opendatahub.io/hardware-profile-name: gpu-profile
-    opendatahub.io/hardware-profile-namespace: redhat-ods-applications
+    {{- if .Values.serving.hardwareProfile.name }}
+    opendatahub.io/hardware-profile-name: {{ .Values.serving.hardwareProfile.name | quote }}
+    opendatahub.io/hardware-profile-namespace: {{ .Values.serving.hardwareProfile.namespace | quote }}
     {{- end }}
   labels:
     opendatahub.io/dashboard: "true"
     opendatahub.io/genai-asset: "true"
+    {{- if .Values.kueue.localQueueName }}
+    kueue.x-k8s.io/queue-name: {{ .Values.kueue.localQueueName | quote }}
+    {{- end }}
 
 spec:
 
@@ -28,7 +31,13 @@ spec:
     criticality: Critical
 
   router:
+    {{- if .Values.routerGatewayRefs }}
+    gateway:
+      refs:
+        {{- toYaml .Values.routerGatewayRefs | nindent 8 }}
+    {{- else }}
     gateway: {}
+    {{- end }}
     route: {}
     scheduler: {}
 
@@ -43,6 +52,17 @@ spec:
   template:
     containers:
       - name: main
+        {{- if .Values.mainContainer.image }}
+        image: {{ .Values.mainContainer.image | quote }}
+        {{- end }}
+        {{- with .Values.mainContainer.command }}
+        command:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- with .Values.mainContainer.args }}
+        args:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
         {{- if or .Values.extraArgs .Values.extraEnv .Values.hfToken }}
         env:
           {{- if .Values.hfToken }}
@@ -61,8 +81,8 @@ spec:
           {{- end }}
         {{- end }}
         resources:
-          {{- toYaml .Values.resources | nindent 10 }}
-    {{- if .Values.serving.gpu }}
+          {{- include "rhoai-serving.kserveModelResources" . | nindent 10 }}
+    {{- if and (eq (include "rhoai-serving.hasNvidiaGpu" . | trim) "true") .Values.serving.gpuPodTolerations }}
     tolerations:
       - effect: NoSchedule
         key: nvidia.com/gpu

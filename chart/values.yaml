@@ -29,14 +29,28 @@ namespace:
   # (see OpenShift AI docs — Managing workloads with Kueue). Set false only if you intentionally opt out.
   kueueManaged: true
 
+# Kueue: LocalQueue name used as label kueue.x-k8s.io/queue-name on serving CRs (required by the
+# KServe LLMInferenceService admission webhook when Kueue validates). Must match a LocalQueue in
+# the model namespace (rhoai-gitops rhoai-environment-chart uses localQueueName: default).
+kueue:
+  localQueueName: default
+
 # Serving configuration (expects Kueue: namespace.kueueManaged on created namespaces)
 #   type: "generative" => Creates LLMInferenceService (vLLM-based generative models)
 #         "predictive" => Creates ServingRuntime + InferenceService (OpenVINO, ONNX, etc.)
-#   gpu:  true  => Adds GPU tolerations and hardware profile annotations
-#         false => CPU-only deployment
+#   gpuPodTolerations: when true (default) and resources request nvidia.com/gpu (non-zero), emit
+#     nvidia.com/gpu NoSchedule tolerations on generative / predictive pod templates. Kueue
+#     ResourceFlavors (e.g. gpu-flavor) often define the same toleration; duplicates are harmless.
+#     Set false after verifying flavor tolerations reach pods without this (docs/004-kueue-gpu-tolerations.md).
+#   hardwareProfile: OpenShift AI HardwareProfile reference (same shape as rhoai-environment-chart
+#     workbench annotations). Annotations are added to InferenceService when name is non-empty.
+#     For LLMInferenceService, annotations are omitted when name is empty (typical CPU generative).
 serving:
   type: generative
-  gpu: true
+  gpuPodTolerations: true
+  hardwareProfile:
+    name: gpu-profile
+    namespace: redhat-ods-applications
 
 replicas: 1
 
@@ -97,6 +111,19 @@ extraArgs: []
 #     - name: VLLM_CONFIGURE_LOGGING
 #       value: "1"
 extraEnv: []
+
+# Optional generative worker override (LLMInferenceService spec.template.containers[main]).
+# Used e.g. for CPU TinyLlama (custom vLLM image + entrypoint). When image is empty, the
+# OpenShift AI / KServe default worker image and args apply.
+mainContainer:
+  image: ""
+  command: []
+  args: []
+
+# Optional Gateway API refs for spec.router.gateway (non-empty => gateway.refs). Default empty
+# for normal llm-d + Route. MaaS overlay: chart/values-tinyllama-1b-maas.yaml (set refs to a real
+# Gateway, e.g. from oc get gateway.networking.k8s.io -A — do not assume maas-default-gateway).
+routerGatewayRefs: []
 
 
 

@@ -1,0 +1,71 @@
+# TinyLlama 1B - CPU + Model-as-a-Service style routing (Gateway API).
+#
+# Same CPU vLLM worker as values-tinyllama-1b-cpu.yaml, but uses spec.router.gateway.refs once you
+# point routerGatewayRefs at a real Gateway on this cluster.
+#
+# Prerequisite: the cluster must run KServe Models-as-a-Service (DSC kserve.modelsAsService:
+# Managed). In rhoai-gitops that is rhoai-installation-chart values modelsAsService.enabled: true
+# (installs GatewayClass and operator wiring). A Gateway.networking.k8s.io must still exist for
+# your refs; KServe reports RefsInvalid if the ref is wrong, e.g. "Gateway … does not exist".
+#
+# Discover gateways:
+#   oc get gateway.networking.k8s.io -A
+#
+# If you use rhoai-maas-gitops maas-platform, the chart creates gateway.name in gateway.namespace
+# only when gateway.enabled is true (defaults: maas-default-gateway / openshift-ingress). You must
+# also add this model namespace to maas-platform gateway.modelNamespaces (e.g. model-maas) so
+# HTTPRoute from model-maas is allowed; the stock example often lists maas-models only.
+#
+# Namespace model-maas is intentional: reuse it for future MaaS-style models on this cluster.
+#
+# Usage (after editing routerGatewayRefs below):
+#   helm template tinyllama-maas chart/ \
+#     -f chart/values.yaml \
+#     -f chart/values-tinyllama-1b-maas.yaml
+
+name: tinyllama-1b
+namespace:
+  name: model-maas
+
+model:
+  uri: "oci://quay.io/rh-aiservices-bu/tinyllama:1.0"
+  name: "tinyllama-1b"
+
+serving:
+  hardwareProfile:
+    name: ""
+    namespace: redhat-ods-applications
+
+mainContainer:
+  image: quay.io/rh-aiservices-bu/vllm-cpu-openai-ubi9:0.3
+  command:
+    - python
+    - -m
+    - vllm.entrypoints.openai.api_server
+  args:
+    - --model
+    - /mnt/models
+    - --port
+    - "8000"
+    - --max-model-len
+    - "2048"
+    - --served-model-name
+    - tinyllama-1b
+    - --ssl-certfile
+    - /var/run/kserve/tls/tls.crt
+    - --ssl-keyfile
+    - /var/run/kserve/tls/tls.key
+
+resources:
+  limits:
+    cpu: "8"
+    memory: 8Gi
+  requests:
+    cpu: "2"
+    memory: 4Gi
+
+# Required for MaaS routing: non-empty list. Example after maas-platform is installed:
+# routerGatewayRefs:
+#   - name: maas-default-gateway
+#     namespace: openshift-ingress
+routerGatewayRefs: []

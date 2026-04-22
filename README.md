@@ -2,6 +2,8 @@
 
 This repository showcases how to deploy Predictive and Generative AI models on OpenShift using RHOAI.
 
+**Architecture notes** (routes, llm-d, naming, CPU worker overrides): see [docs/README.md](docs/README.md).
+
 ## Prerequisites
 
 - OpenShift Container Platform 4.20+.
@@ -154,37 +156,39 @@ When the LLMInferenceService is ready:
 ./tests/test-generative.sh model-llama llama-3-1-70b
 ```
 
-<!--
-TinyLlama docs paused until vLLM CPU / PyTorch `init_cpu_threads_env` issue is fixed on the platform (see vLLM#33675). Config files remain: chart/values-tinyllama-1b-gpu.yaml, chart/values-tinyllama-1b-cpu.yaml.
+**TinyLlama 1B** is CPU-only in this chart (no TinyLlama GPU values overlay). Two overlays:
 
-**TinyLlama 1B** (single small GPU; reliable path with current RHOAI vLLM images):
+1. **`values-tinyllama-1b-cpu.yaml`** — default OpenShift AI path: **`router.gateway: {}`** so **llm-d** and a normal **Route** apply. Uses `mainContainer` (CPU vLLM image + OpenAI entrypoint) instead of the default CUDA worker.
 
 ```bash
 helm template tinyllama chart/ \
   -f chart/values.yaml \
-  -f chart/values-tinyllama-1b-gpu.yaml | oc apply -f -
+  -f chart/values-tinyllama-1b-cpu.yaml | oc apply -f -
 ```
 
-When the LLMInferenceService is ready:
+2. **`values-tinyllama-1b-maas.yaml`** — same CPU worker and **`model-maas`** namespace, but **`router.gateway.refs`** must point at a **Gateway** that actually exists on the cluster. **Models-as-a-Service** must be **Managed** on the cluster (`kserve.modelsAsService` on the `DataScienceCluster`); for example in **rhoai-gitops** set **`modelsAsService.enabled: true`** in **`rhoai-installation-chart/values.yaml`** so the GatewayClass and operator support are installed—if that component is **Removed**, MaaS-style refs will not work. The file ships with **`routerGatewayRefs: []`** until you set it (otherwise KServe reports `RefsInvalid` / `Gateway … does not exist` if you reference a missing object). List gateways with `oc get gateway.networking.k8s.io -A`, then edit the values file or override, for example:
 
 ```bash
+helm template tinyllama-maas chart/ \
+  -f chart/values.yaml \
+  -f chart/values-tinyllama-1b-maas.yaml \
+  --set-json 'routerGatewayRefs=[{"name":"<your-gateway>","namespace":"<ns>"}]' | oc apply -f -
+```
+
+If you use [rhoai-maas-gitops](https://github.com/davidseve/rhoai-maas-gitops) **`maas-platform`**, the default gateway name is often **`maas-default-gateway`** in **`openshift-ingress`**, but that object is only present when **`gateway.enabled`** is true. Also ensure **`model-maas`** is listed in **`gateway.modelNamespaces`** there (the stock example may only allow **`maas-models`**), or routes from this namespace will not attach.
+
+When the LLMInferenceService is ready, run the test script with the namespace that matches the overlay you deployed:
+
+```bash
+# After values-tinyllama-1b-cpu.yaml (namespace model-tinyllama)
 ./tests/test-generative.sh model-tinyllama tinyllama-1b
+
+# After values-tinyllama-1b-maas.yaml (namespace model-maas)
+./tests/test-generative.sh model-maas tinyllama-1b
 ```
 
 > [!WARNING]
-> **CPU-only TinyLlama** (`VLLM_TARGET_DEVICE=cpu`) can fail on some platform images with `AttributeError: ... init_cpu_threads_env`. That comes from the vLLM V1 CPU worker expecting a PyTorch op that is not present in the inference image’s PyTorch build ([vLLM#33675](https://github.com/vllm-project/vllm/issues/33675)). It is not something this Helm chart can patch; use the GPU values file above, upgrade OpenShift AI when a fixed vLLM/PyTorch pair is available, or track Red Hat support/release notes for CPU generative serving.
-
-To try **TinyLlama without GPU** anyway (after confirming your RHOAI version supports CPU vLLM):
-
-```bash
-helm template tinyllama chart/ \
-  -f chart/values.yaml \
-  -f chart/values-tinyllama-1b-cpu.yaml \
-  --set serving.gpu=false \
-  --set resources.limits.nvidia\\.com/gpu=null \
-  --set resources.requests.nvidia\\.com/gpu=null | oc apply -f -
-```
--->
+> Forcing **CPU** on the **platform default** vLLM image (for example only `VLLM_TARGET_DEVICE=cpu`) can still hit PyTorch / vLLM CPU worker mismatches on some builds ([vLLM#33675](https://github.com/vllm-project/vllm/issues/33675)). Prefer the TinyLlama CPU or MaaS values files above, or serve TinyLlama on GPU using another model overlay (for example Granite/Qwen) as a reference for GPU defaults.
 
 ### Predictive Models
 

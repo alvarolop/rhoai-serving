@@ -1,12 +1,10 @@
 # TinyLlama 1B - CPU-only generative model (no GPU required).
 #
-# Known issue on some RHOAI / vLLM images (e.g. vLLM 0.13.x): the V1 CPU worker calls
-# torch.ops._C_utils.init_cpu_threads_env(), which is missing from the bundled PyTorch build,
-# so the engine exits with AttributeError. See https://github.com/vllm-project/vllm/issues/33675
-# and prefer tinyllama-1b-gpu.yaml when you have a GPU worker until the platform ships a
-# matching vLLM + PyTorch fix.
+# Non–Model-as-a-Service: leaves spec.router.gateway empty so OpenShift AI wires llm-d and a
+# normal Route. Uses a CPU-oriented vLLM image (mainContainer) instead of the default CUDA worker.
 #
-# Usage: helm template tinyllama chart/ -f chart/values.yaml -f chart/values-tinyllama-1b-cpu.yaml --set serving.gpu=false ...
+# Usage:
+#   helm template tinyllama chart/ -f chart/values.yaml -f chart/values-tinyllama-1b-cpu.yaml
 
 name: tinyllama-1b
 namespace:
@@ -17,18 +15,34 @@ model:
   name: "tinyllama-1b"
 
 serving:
-  gpu: false
+  hardwareProfile:
+    name: ""
+    namespace: redhat-ods-applications
 
-extraEnv:
-  - name: VLLM_TARGET_DEVICE
-    value: "cpu"
+mainContainer:
+  image: quay.io/rh-aiservices-bu/vllm-cpu-openai-ubi9:0.3
+  command:
+    - python
+    - -m
+    - vllm.entrypoints.openai.api_server
+  args:
+    - --model
+    - /mnt/models
+    - --port
+    - "8000"
+    - --max-model-len
+    - "2048"
+    - --served-model-name
+    - tinyllama-1b
+    - --ssl-certfile
+    - /var/run/kserve/tls/tls.crt
+    - --ssl-keyfile
+    - /var/run/kserve/tls/tls.key
 
 resources:
   limits:
-    cpu: "2"
+    cpu: "8"
     memory: 8Gi
-    nvidia.com/gpu: null
   requests:
-    cpu: "1"
+    cpu: "2"
     memory: 4Gi
-    nvidia.com/gpu: null
