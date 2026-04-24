@@ -1,4 +1,6 @@
 {{- if eq .Values.serving.type "predictive" }}
+{{- $connProto := include "rhoai-serving.modelConnectionProtocol" . | trim -}}
+{{- $s3path := include "rhoai-serving.modelConnectionS3Path" . | trim -}}
 ---
 apiVersion: serving.kserve.io/v1beta1
 kind: InferenceService
@@ -7,6 +9,9 @@ metadata:
   namespace: {{ include "rhoai-serving.namespaceName" . }}
   annotations:
     opendatahub.io/connections: {{ .Values.name }}
+    {{- if and (eq $connProto "s3") $s3path }}
+    opendatahub.io/connection-path: {{ $s3path | quote }}
+    {{- end }}
     opendatahub.io/model-type: predictive
     openshift.io/display-name: {{ .Values.name }}
     security.opendatahub.io/enable-auth: '{{ .Values.auth.enabled }}'
@@ -32,13 +37,19 @@ spec:
     tolerations:
       - effect: NoSchedule
         key: nvidia.com/gpu
+        operator: Exists
     {{- end }}
     model:
       modelFormat:
         name: {{ .Values.runtime.modelFormat.name }}
         version: "{{ .Values.runtime.modelFormat.version }}"
       runtime: {{ .Values.name }}
-      storageUri: {{ .Values.model.uri }}
+      {{- $uri := .Values.model.uri | default "" | toString | trim -}}
+      {{- if ne $connProto "s3" }}
+      storageUri: {{ required "model.uri is required for predictive models using uri or oci connections" $uri | quote }}
+      {{- else if $uri }}
+      storageUri: {{ $uri | quote }}
+      {{- end }}
       resources:
         {{- include "rhoai-serving.kserveModelResources" . | nindent 8 }}
 {{- end }}

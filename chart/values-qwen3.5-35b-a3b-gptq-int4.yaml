@@ -7,8 +7,15 @@ namespace:
   name: model-qwen
 
 model:
-  uri: hf://Qwen/Qwen3.5-35B-A3B-GPTQ-Int4
-  name: Qwen/Qwen3.5-35B-A3B-GPTQ-Int4
+  uri: "hf://Qwen/Qwen3.5-35B-A3B-GPTQ-Int4"
+  name: "Qwen/Qwen3.5-35B-A3B-GPTQ-Int4"
+  connection:
+    protocol: uri
+
+serving:
+  hardwareProfile:
+    name: gpu-profile
+    namespace: redhat-ods-applications
 
 resources:
   limits:

@@ -1,4 +1,6 @@
 {{- if eq .Values.serving.type "generative" }}
+{{- $connProto := include "rhoai-serving.modelConnectionProtocol" . | trim -}}
+{{- $s3path := include "rhoai-serving.modelConnectionS3Path" . | trim -}}
 ---
 apiVersion: serving.kserve.io/v1alpha1
 kind: LLMInferenceService
@@ -8,9 +10,12 @@ metadata:
   annotations:
     openshift.io/display-name: {{ .Values.name }}
     opendatahub.io/connections: {{ .Values.name }}
-    opendatahub.io/genai-use-case: chat
+    {{- if and (eq $connProto "s3") $s3path }}
+    opendatahub.io/connection-path: {{ $s3path | quote }}
+    {{- end }}
+    opendatahub.io/genai-use-case: {{ .Values.dashboard.genaiUseCase | quote }}
     security.opendatahub.io/enable-auth: '{{ .Values.auth.enabled }}'
-    opendatahub.io/model-type: generative
+    opendatahub.io/model-type: {{ .Values.dashboard.modelType | quote }}
     {{- if .Values.serving.hardwareProfile.name }}
     opendatahub.io/hardware-profile-name: {{ .Values.serving.hardwareProfile.name | quote }}
     opendatahub.io/hardware-profile-namespace: {{ .Values.serving.hardwareProfile.namespace | quote }}
@@ -26,8 +31,13 @@ spec:
 
   # Model specification
   model:
-    uri: {{ .Values.model.uri }}
-    name: {{ .Values.model.name }}
+    {{- $uri := .Values.model.uri | default "" | toString | trim -}}
+    {{- if ne $connProto "s3" }}
+    uri: {{ required "model.uri is required for generative models using uri or oci connections" $uri | quote }}
+    {{- else if $uri }}
+    uri: {{ $uri | quote }}
+    {{- end }}
+    name: {{ .Values.model.name | required "model.name is required" | quote }}
     criticality: Critical
 
   router:
@@ -63,9 +73,9 @@ spec:
         args:
           {{- toYaml . | nindent 10 }}
         {{- end }}
-        {{- if or .Values.extraArgs .Values.extraEnv .Values.hfToken }}
+        {{- if or .Values.extraArgs .Values.extraEnv (eq (include "rhoai-serving.useHfToken" . | trim) "true") }}
         env:
-          {{- if .Values.hfToken }}
+          {{- if eq (include "rhoai-serving.useHfToken" . | trim) "true" }}
           - name: HF_TOKEN
             valueFrom:
               secretKeyRef:
@@ -84,7 +94,9 @@ spec:
           {{- include "rhoai-serving.kserveModelResources" . | nindent 10 }}
     {{- if and (eq (include "rhoai-serving.hasNvidiaGpu" . | trim) "true") .Values.serving.gpuPodTolerations }}
     tolerations:
+      # Match Kueue gpu-flavor (operator Exists) or unsuspend Pod updates can fail.
       - effect: NoSchedule
         key: nvidia.com/gpu
+        operator: Exists
     {{- end }}
 {{- end }}

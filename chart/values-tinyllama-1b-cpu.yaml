@@ -13,10 +13,12 @@ namespace:
 model:
   uri: "oci://quay.io/rh-aiservices-bu/tinyllama:1.0"
   name: "tinyllama-1b"
+  connection:
+    protocol: oci
 
 serving:
   hardwareProfile:
-    name: ""
+    name: cpu-profile
     namespace: redhat-ods-applications
 
 mainContainer:

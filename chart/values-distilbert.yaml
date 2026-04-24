@@ -11,12 +11,14 @@ namespace:
 serving:
   type: predictive
   hardwareProfile:
-    name: default-profile
+    name: cpu-profile
     namespace: redhat-ods-applications
 
 model:
   uri: "oci://quay.io/redhattraining/models/distilbert:2.25"
   name: "distilbert"
+  connection:
+    protocol: oci
 
 resources:
   limits:

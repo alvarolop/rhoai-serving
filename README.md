@@ -34,7 +34,7 @@ In this repository, we will showcase all the features of RHOAI Serving. Since Op
 
 After you deploy a model, run the matching script from the repository root (with `oc` logged in and `jq` installed) to confirm it responds:
 
-- **Generative** (LLMInferenceService): [`tests/test-generative.sh`](tests/test-generative.sh) — arguments are `<namespace>` then the **LLMInferenceService object name** (the chart `name` in the model values file, e.g. `qwen3-8b`), not the Helm release name (e.g. `qwen`). If you pass a wrong name but there is only one LLMInferenceService in that namespace, the script uses it and prints a note. The script reads `spec.model.name` for the OpenAI `model` field; optional third argument overrides that id.
+- **Generative** (LLMInferenceService): [`tests/test-generative.sh`](tests/test-generative.sh) — arguments are `<namespace>` then the **LLMInferenceService object name** (the chart `name` in the model values file, e.g. `qwen3-8b`), not Helm’s `.Release.Name` from `./deploy-mode.sh`. If you pass a wrong name but there is only one LLMInferenceService in that namespace, the script uses it and prints a note. The script reads `spec.model.name` for the OpenAI `model` field; optional third argument overrides that id.
 - **Predictive** (InferenceService): [`tests/test-predictive.sh`](tests/test-predictive.sh) — argument is the InferenceService name; the script uses namespace `model-<name>`.
 
 ## Architecture Components
@@ -55,17 +55,17 @@ The integrated KServe + llm-d + MLServer system comprises layered responsibiliti
 
 ## Helm Chart Usage
 
-The chart uses a **two-layer values** approach: defaults live in `values.yaml` (generative single-GPU vLLM), and each shipped model has a small file `values-<model>.yaml` next to it (same folder) with identity and overrides.
+The chart merges **`chart/values.yaml`** with one overlay **`chart/values-<model>.yaml`** (identity, URI, resources, and so on).
 
-Deploy by combining the base defaults and one model file:
+### Deploy (`deploy-mode.sh`)
+
+From the repository root, with `oc` pointing at your cluster:
 
 ```bash
-helm template <release> chart/ \
-  -f chart/values.yaml \
-  -f chart/values-<model>.yaml | oc apply -f -
+./deploy-mode.sh chart/values-<model>.yaml
 ```
 
-Predictive models (for example DistilBERT) bundle their OpenVINO settings in their own file; you still pass `values.yaml` first, then that file.
+This runs `helm template chart --generate-name -f chart/values.yaml -f <overlay> … | oc apply -f -`. Anything after the overlay path is passed straight to **`helm template`** (for example **`--set-json`** for MaaS gateways, or **`--set-file hfToken=.hf_token`** for gated **`hf://`** models).
 
 ### Namespace
 
@@ -84,127 +84,72 @@ This chart assumes **Kueue** (Red Hat build) is installed and that model serving
 
 To deploy into an **existing** namespace (no `Namespace` manifest), set `namespace.create: false` and point `namespace.name` at that namespace. Ensure that namespace already has `kueue.openshift.io/managed=true` (or add it) so serving stays under Kueue.
 
-### HuggingFace Token for Gated Models
+#### Kueue: pods `Pending` with `SchedulingGated` (`kueue.x-k8s.io/topology`)
 
-Some models hosted on HuggingFace (those using `hf://` URIs) require authentication to download. This applies to gated or private models like Granite, Llama, etc.
-
-1. Create a `.hf_token` file in the repository root with your HuggingFace token:
+If the **Workload** is **Admitted** but pods never leave **Pending** (gates **admission** + **topology**), Kueue **Topology Aware Scheduling** is waiting for a **topology assignment** that never arrives because the **ResourceFlavor** had no **`spec.topologyName`** linked to a **`Topology`** object. **rhoai-gitops** (`rhoai-installation-chart`) now ships a minimal **hostname-level** `Topology` and sets **`topologyName`** (+ required **`nodeLabels`**) on **`cpu-flavor`** and **`gpu-flavor`** when **`distributedWorkloads.topologyAwareScheduling`** is **true** (default). Sync that chart, then verify:
 
 ```bash
-echo "hf_your_token_here" > .hf_token
+oc get topology.kueue.x-k8s.io
+oc get resourceflavor.kueue.x-k8s.io gpu-flavor -o yaml | grep -E 'topologyName|nodeLabels' -A2
 ```
 
-> [!NOTE]
-> The `.hf_token` file is git-ignored. See `.hf_token.example` for the expected format.
+If your GPU nodes do not carry **`nvidia.com/gpu.deploy.device-plugin=true`**, change the **hardcoded** `nodeLabels` in **`rhoai-installation-chart/templates/05-distributed-workloads/resourceflavor-gpu-flavor.yaml`**. To opt out of TAS wiring entirely (not recommended if you hit the deadlock), set **`distributedWorkloads.topologyAwareScheduling: false`** in **`rhoai-installation-chart/values.yaml`**.
 
-2. Pass the token when deploying:
+Single-replica serving stays **`replicas: 1`** in **`chart/values.yaml`**; per-model files only override when you need more than one pod.
 
-```bash
-helm template granite chart/ \
-  -f chart/values.yaml \
-  -f chart/values-granite-4-0-h-tiny.yaml \
-  --set hfToken=$(cat .hf_token) | oc apply -f -
-```
+### Dashboard connection secret
 
-This creates a `hf-secret` Kubernetes Secret and injects `HF_TOKEN` into the model container via `secretKeyRef`, following [KServe's recommended approach](https://kserve.github.io/website/docs/model-serving/storage/providers/hf).
+The chart emits a **Secret** named **`name`**, matching **`opendatahub.io/connections`** on the serving CR. It follows the OpenShift AI **connections API** ([Using the connections API](https://docs.redhat.com/en/documentation/red_hat_openshift_ai_self-managed/3.2/html/working_on_projects/using-connections_projects)):
+
+| `model.connection.protocol` | When | Secret |
+|------------------------------|------|--------|
+| **`uri`** (or **`auto`** when **`model.uri`** does not start with **`oci://`** and legacy OCI fields below are not both set) | `hf://`, `http(s)://`, `pvc://`, or a single **`model.uri`** string the console treats as URI-shaped (including **`s3://…`** if you use that style) | **`type: Opaque`**, label **`opendatahub.io/dashboard`**, annotations **`opendatahub.io/connection-type-protocol: uri`**, **`opendatahub.io/connection-type-ref: uri-v1`**, **`data.URI`** = base64(**`model.uri`**). |
+| **`oci`** (or **`auto`** when **`model.uri`** starts with **`oci://`**, or legacy **`model.connection.oci.dockerconfigjson`** + **`host`** are both non-empty) | **`oci://`** ModelCar images | **`type: Opaque`**, label **`opendatahub.io/dashboard`**, annotations **`…-protocol: oci`**, **`…-ref: oci-v1`**, **`data.OCI_HOST`** = base64(**`model.uri`**). Optional **`data[".dockerconfigjson"]`** when **`model.connection.oci.dockerconfigjson`** is set (private registry). |
+| **`s3`** (explicit only; **`auto`** does not infer S3) | Models stored in S3-compatible storage | **`type: Opaque`**, labels **`opendatahub.io/dashboard`** + **`opendatahub.io/managed`**, annotations **`opendatahub.io/connection-type: s3`**, **`…-protocol: s3`**, **`…-ref: s3`**, **`data`** for **`AWS_S3_*`** / **`AWS_ACCESS_KEY_ID`** / **`AWS_SECRET_ACCESS_KEY`** (base64), optional **`AWS_DEFAULT_REGION`**. Set **`model.connection.s3.path`** for **`opendatahub.io/connection-path`** on the serving CR; **`model.uri`** may be omitted when the operator injects storage (see RHOAI *Using the connections API*). |
+
+Connection Secrets also set **`openshift.io/description`** and **`openshift.io/display-name`** to **`name`**, matching typical dashboard-created resources.
+
+### Hugging Face token
+
+Gated or private **`hf://`** checkpoints need a token. Put it in **`.hf_token`** (git-ignored; see **`.hf_token.example`**) or export **`HF_TOKEN`**. The chart creates **`hf-secret`** and mounts **`HF_TOKEN`** only when **`model.uri`** starts with **`hf://`** and **`hfToken`** is non-empty at render time ([KServe / Hugging Face storage](https://kserve.github.io/website/docs/model-serving/storage/providers/hf)). Public **`hf://`** models in this repo (for example Nomic) can deploy without a token.
 
 > [!TIP]
-> Models using `oci://` URIs (like Qwen3-8B from `registry.redhat.io`) do not need a HuggingFace token.
+> **`oci://`** ModelCars (Qwen3-8B, GPT-OSS 20B, Granite 4.0 H Tiny here) do not use Hugging Face download auth.
 
-### Generative Models
+### Generative models
 
-**Qwen3-8B-FP8-dynamic** (single GPU, OCI registry - no HF token needed):
+| Model | Deploy | Test when ready |
+|-------|--------|-----------------|
+| Qwen3-8B-FP8-dynamic (OCI, 1×GPU) | `./deploy-mode.sh chart/values-qwen3-8b-fp8-dynamic.yaml` | `./tests/test-generative.sh model-qwen qwen3-8b` |
+| GPT-OSS 20B (OCI, 1×GPU) | `./deploy-mode.sh chart/values-gpt-oss-20b.yaml` | `./tests/test-generative.sh model-gpt-oss gpt-oss-20b` |
+| Granite 4.0 H Tiny FP8 (OCI, 1×GPU) | `./deploy-mode.sh chart/values-granite-4-0-h-tiny.yaml` | `./tests/test-generative.sh model-granite granite-4-0-h-tiny` |
+| Llama 3.1 70B (4×GPU, gated **`hf://`**) | `./deploy-mode.sh chart/values-llama-3.1-70b.yaml --set-file hfToken=.hf_token` | `./tests/test-generative.sh model-llama llama-3-1-70b` |
 
-```bash
-helm template qwen chart/ \
-  -f chart/values.yaml \
-  -f chart/values-qwen3-8b-fp8-dynamic.yaml | oc apply -f -
-```
+**TinyLlama 1B** (CPU **`mainContainer`**, no TinyLlama GPU overlay in this chart): **`values-tinyllama-1b-cpu.yaml`** uses **`router.gateway: {}`** (llm-d + Route). **`values-tinyllama-1b-maas.yaml`** targets namespace **`model-maas`** and needs real **`routerGatewayRefs`** (Models-as-a-Service **Managed** on the cluster; in **rhoai-gitops** enable **`modelsAsService.enabled`** in **`rhoai-installation-chart/values.yaml`** when you use Gateway refs). Deploy CPU path: `./deploy-mode.sh chart/values-tinyllama-1b-cpu.yaml` → `./tests/test-generative.sh model-tinyllama tinyllama-1b`. MaaS path: use **`./deploy-mode.sh`** with **`--set-json 'routerGatewayRefs=[…]'`** as in the **Deploy** example above → **`./tests/test-generative.sh model-maas tinyllama-1b`**. List gateways with **`oc get gateway.networking.k8s.io -A`**.
 
-When the LLMInferenceService is ready:
-
-```bash
-./tests/test-generative.sh model-qwen qwen3-8b
-```
-
-**Granite 4.0 H Tiny FP8** (single GPU):
-
-```bash
-helm template granite chart/ \
-  -f chart/values.yaml \
-  -f chart/values-granite-4-0-h-tiny.yaml | oc apply -f -
-```
-
-When the LLMInferenceService is ready:
-
-```bash
-./tests/test-generative.sh model-granite granite-4-0-h-tiny
-```
-
-**Llama 3.1 70B** (4x GPU, HF token required):
-
-```bash
-helm template llama chart/ \
-  -f chart/values.yaml \
-  -f chart/values-llama-3.1-70b.yaml \
-  --set hfToken=$(cat .hf_token) | oc apply -f -
-```
-
-When the LLMInferenceService is ready:
-
-```bash
-./tests/test-generative.sh model-llama llama-3-1-70b
-```
-
-**TinyLlama 1B** is CPU-only in this chart (no TinyLlama GPU values overlay). Two overlays:
-
-1. **`values-tinyllama-1b-cpu.yaml`** — default OpenShift AI path: **`router.gateway: {}`** so **llm-d** and a normal **Route** apply. Uses `mainContainer` (CPU vLLM image + OpenAI entrypoint) instead of the default CUDA worker.
-
-```bash
-helm template tinyllama chart/ \
-  -f chart/values.yaml \
-  -f chart/values-tinyllama-1b-cpu.yaml | oc apply -f -
-```
-
-2. **`values-tinyllama-1b-maas.yaml`** — same CPU worker and **`model-maas`** namespace, but **`router.gateway.refs`** must point at a **Gateway** that actually exists on the cluster. **Models-as-a-Service** must be **Managed** on the cluster (`kserve.modelsAsService` on the `DataScienceCluster`); for example in **rhoai-gitops** set **`modelsAsService.enabled: true`** in **`rhoai-installation-chart/values.yaml`** so the GatewayClass and operator support are installed—if that component is **Removed**, MaaS-style refs will not work. The file ships with **`routerGatewayRefs: []`** until you set it (otherwise KServe reports `RefsInvalid` / `Gateway … does not exist` if you reference a missing object). List gateways with `oc get gateway.networking.k8s.io -A`, then edit the values file or override, for example:
-
-```bash
-helm template tinyllama-maas chart/ \
-  -f chart/values.yaml \
-  -f chart/values-tinyllama-1b-maas.yaml \
-  --set-json 'routerGatewayRefs=[{"name":"<your-gateway>","namespace":"<ns>"}]' | oc apply -f -
-```
-
-If you use [rhoai-maas-gitops](https://github.com/davidseve/rhoai-maas-gitops) **`maas-platform`**, the default gateway name is often **`maas-default-gateway`** in **`openshift-ingress`**, but that object is only present when **`gateway.enabled`** is true. Also ensure **`model-maas`** is listed in **`gateway.modelNamespaces`** there (the stock example may only allow **`maas-models`**), or routes from this namespace will not attach.
-
-When the LLMInferenceService is ready, run the test script with the namespace that matches the overlay you deployed:
-
-```bash
-# After values-tinyllama-1b-cpu.yaml (namespace model-tinyllama)
-./tests/test-generative.sh model-tinyllama tinyllama-1b
-
-# After values-tinyllama-1b-maas.yaml (namespace model-maas)
-./tests/test-generative.sh model-maas tinyllama-1b
-```
+If you use [rhoai-maas-gitops](https://github.com/davidseve/rhoai-maas-gitops) **`maas-platform`**, the default gateway name is often **`maas-default-gateway`** in **`openshift-ingress`** when **`gateway.enabled`** is true; ensure **`model-maas`** appears in **`gateway.modelNamespaces`** or routes will not attach.
 
 > [!WARNING]
-> Forcing **CPU** on the **platform default** vLLM image (for example only `VLLM_TARGET_DEVICE=cpu`) can still hit PyTorch / vLLM CPU worker mismatches on some builds ([vLLM#33675](https://github.com/vllm-project/vllm/issues/33675)). Prefer the TinyLlama CPU or MaaS values files above, or serve TinyLlama on GPU using another model overlay (for example Granite/Qwen) as a reference for GPU defaults.
+> Forcing **CPU** on the **platform default** vLLM image (for example only **`VLLM_TARGET_DEVICE=cpu`**) can still hit PyTorch / vLLM CPU worker mismatches on some builds ([vLLM#33675](https://github.com/vllm-project/vllm/issues/33675)). Prefer the TinyLlama CPU or MaaS overlays, or use another GPU overlay as a template for TinyLlama on GPU.
 
-### Predictive Models
+### Predictive models
 
-**DistilBERT** (CPU-only, OpenVINO, with TrustyAI monitoring):
+**DistilBERT** (CPU OpenVINO, TrustyAI monitoring): `./deploy-mode.sh chart/values-distilbert.yaml` → `./tests/test-predictive.sh distilbert`
 
-```bash
-helm template distilbert chart/ \
-  -f chart/values.yaml \
-  -f chart/values-distilbert.yaml | oc apply -f -
-```
+### Embedding models (Hugging Face + vLLM)
 
-When the InferenceService route is ready:
+**`LLMInferenceService`** with **`hf://`** URIs and **`--task embedding`**. **Nomic** uses an explicit CPU vLLM **`mainContainer`**; **BGE-M3** uses the platform GPU worker and **`extraArgs`**. vLLM: [pooling / embedding models](https://docs.vllm.ai/en/latest/models/pooling_models/embed/); cards: [nomic-embed-text-v1](https://huggingface.co/nomic-ai/nomic-embed-text-v1), [bge-m3](https://huggingface.co/BAAI/bge-m3).
 
-```bash
-./tests/test-predictive.sh distilbert
-```
+| Model | Deploy |
+|-------|--------|
+| Nomic Embed v1 | `./deploy-mode.sh chart/values-nomic-embed-text-v1.yaml` |
+| BGE-M3 (1×GPU in file; tune resources if needed) | `./deploy-mode.sh chart/values-bge-m3.yaml` |
+
+Call **`/v1/embeddings`** with **`spec.model.name`** (for example **`nomic-ai/nomic-embed-text-v1`**). Nomic’s card suggests **task instruction prefixes** for RAG (**`search_document:`** / **`search_query:`**); the chart does not enforce them. For Nomic on GPU, edit the overlay like **`chart/values-bge-m3.yaml`** (clear **`mainContainer`**, **`gpu-profile`**, embedding flags in **`extraArgs`**, GPU **`resources`**).
+
+### Guardrails — LlamaGuard (Hugging Face + vLLM)
+
+**LlamaGuard 7B** ([`meta-llama/LlamaGuard-7b`](https://huggingface.co/meta-llama/LlamaGuard-7b)): gated; accept Meta’s terms, then **`./deploy-mode.sh chart/values-llamaguard-7b.yaml --set-file hfToken=.hf_token`**. The overlay sets **`dashboard.genaiUseCase: moderation`**; if your OpenShift AI build rejects it, use **`chat`** in **`chart/values-llamaguard-7b.yaml`**. Call **`/v1/chat/completions`** on **`status.url`**. See for example [NeMo Guardrails — Llama Guard with vLLM](https://docs.nvidia.com/nemo/guardrails/latest/user-guides/advanced/llama-guard-deployment.html). **Llama Guard 4** options are commented in the same values file.
 
 ### Extra Runtime Arguments
 

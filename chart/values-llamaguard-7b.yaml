@@ -1,0 +1,59 @@
+# Meta LlamaGuard 7B — safety / guardrails model (completion-style "safe" or "unsafe" + categories).
+# Model card: https://huggingface.co/meta-llama/LlamaGuard-7b
+#
+# The Hub repo is gated: accept Meta's license on Hugging Face, then deploy with a token:
+#   helm template llamaguard chart/ \
+#     -f chart/values.yaml \
+#     -f chart/values-llamaguard-7b.yaml \
+#     --set hfToken=$(cat .hf_token) | oc apply -f -
+#
+# vLLM serves it like other Llama-class models (default generate / chat-completions). Wire the
+# exposed URL into NeMo Guardrails, TrustyAI, or your own policy layer (see NVIDIA guide:
+# https://docs.nvidia.com/nemo/guardrails/latest/user-guides/advanced/llama-guard-deployment.html ).
+#
+# Newer / larger option on Hugging Face (often ungated Red Hat packaging; adjust GPU + memory):
+#   hf://RedHatAI/Llama-Guard-4-12B-quantized.w8a8
+# See https://huggingface.co/RedHatAI/Llama-Guard-4-12B
+#
+# Kueue: if pods were Pending with SchedulingGated (topology), sync **rhoai-gitops**
+# rhoai-installation-chart (Topology + ResourceFlavor topologyName). See README "Kueue" subsection.
+
+name: llamaguard-7b
+namespace:
+  name: model-llamaguard
+
+dashboard:
+  # If the console rejects this value, set to "chat" (still a generative vLLM workload).
+  genaiUseCase: moderation
+  modelType: generative
+
+model:
+  uri: "hf://meta-llama/LlamaGuard-7b"
+  name: "meta-llama/LlamaGuard-7b"
+  connection:
+    protocol: uri
+
+serving:
+  hardwareProfile:
+    name: gpu-profile
+    namespace: redhat-ods-applications
+
+# Single replica (chart default); set >1 only if you intentionally run multiple decoder pods.
+replicas: 1
+
+resources:
+  limits:
+    cpu: "8"
+    memory: 32Gi
+    nvidia.com/gpu: "1"
+  requests:
+    cpu: "2"
+    memory: 16Gi
+    nvidia.com/gpu: "1"
+
+extraArgs:
+  - "--max-model-len"
+  - "8192"
+
+trustyai:
+  enabled: false

@@ -16,3 +16,20 @@ namespace:
 model:
   uri: "oci://registry.redhat.io/rhai/modelcar-granite-4-0-h-tiny-fp8-dynamic:3.0"
   name: "granite-4-0-h-tiny-fp8-dynamic"
+  connection:
+    protocol: oci
+
+serving:
+  hardwareProfile:
+    name: gpu-profile
+    namespace: redhat-ods-applications
+
+resources:
+  limits:
+    cpu: "4"
+    memory: 32Gi
+    nvidia.com/gpu: "1"
+  requests:
+    cpu: "1"
+    memory: 8Gi
+    nvidia.com/gpu: "1"

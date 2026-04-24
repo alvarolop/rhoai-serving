@@ -8,5 +8,6 @@ Short, opinionated notes for this repository’s Helm chart: what the chart **do
 | [002 — Namespace and resource identity](002-namespace-and-resource-identity.md) | How `name`, `namespace.name`, and secrets line up |
 | [003 — CPU generative `mainContainer` override](003-cpu-generative-maincontainer.md) | When and why the chart overrides the vLLM worker image |
 | [004 — Kueue GPU tolerations vs chart](004-kueue-gpu-tolerations.md) | Whether to duplicate `nvidia.com/gpu` tolerations when Kueue `ResourceFlavor` already defines them |
+| [005 — Kueue topology / TAS and `SchedulingGated`](005-kueue-topology-tas.md) | Why pods can stay `Pending` with topology gates, version context, and **rhoai-gitops** `Topology` + `ResourceFlavor` changes |
 
 Exact hostnames and path rules can change between OpenShift AI releases; treat product docs as authoritative for your version.

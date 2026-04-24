@@ -65,7 +65,7 @@ The core of this repository is the **rhoai-serving** Helm chart, designed with a
 ### Two-Layer Values Architecture
 
 1. **`chart/values.yaml`** - Defaults for **generative** (vLLM) single-GPU serving and full schema reference (all keys documented)
-2. **`chart/values-<model>.yaml`** - Model identity (`name`, `namespace.name`, model URI) and overrides (resources, `extraArgs`, TrustyAI, etc.). The base `values.yaml` documents `namespace.create`, `namespace.displayName`, `namespace.description`, and `namespace.kueueManaged` (default `true`: sets `kueue.openshift.io/managed=true` on created namespaces for Red Hat Kueue).
+2. **`chart/values-<model>.yaml`** - Model identity (`name`, `namespace.name`, model URI) and overrides (resources, `model.connection` for the dashboard **Secret** — **`uri`**, **`oci`**, or **`s3`** per RHOAI connections API — `extraArgs`, TrustyAI, etc.). The base `values.yaml` documents `namespace.create`, `namespace.displayName`, `namespace.description`, and `namespace.kueueManaged` (default `true`: sets `kueue.openshift.io/managed=true` on created namespaces for Red Hat Kueue).
 
 Predictive examples (OpenVINO) include `serving.type: predictive`, CPU resources, and `runtime` in the same model file (see `values-distilbert.yaml`).
 

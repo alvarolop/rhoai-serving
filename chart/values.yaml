@@ -1,14 +1,15 @@
 # Default values for rhoai-serving
 # This is a YAML-formatted file.
 #
-# Usage (recommended):
-#   helm template <release> chart/ \
-#     -f chart/values.yaml \
-#     -f chart/values-<model>.yaml
+# Usage (recommended): from repo root,
+#   ./deploy-mode.sh chart/values-<model>.yaml
 #
 # Two-layer approach:
-#   1. values.yaml        — Defaults for generative (vLLM) single-GPU serving; full schema reference
-#   2. values-<model>.yaml — Model identity (name, namespace.name, URI) and any overrides
+#   1. values.yaml        — Shared defaults and schema reference (not model-specific; e.g. resources: {})
+#   2. values-<model>.yaml — Model identity (name, namespace, URI, resources, hardwareProfile, …)
+#
+# Hugging Face embeddings (vLLM --task embedding): values-nomic-embed-text-v1.yaml, values-bge-m3.yaml
+# Guardrails (LlamaGuard): values-llamaguard-7b.yaml (gated HF; hfToken required)
 #
 # Predictive (OpenVINO) models: use a values file that sets serving.type: predictive and the
 # runtime block (see values-distilbert.yaml).
@@ -38,13 +39,15 @@ kueue:
 # Serving configuration (expects Kueue: namespace.kueueManaged on created namespaces)
 #   type: "generative" => Creates LLMInferenceService (vLLM-based generative models)
 #         "predictive" => Creates ServingRuntime + InferenceService (OpenVINO, ONNX, etc.)
-#   gpuPodTolerations: when true (default) and resources request nvidia.com/gpu (non-zero), emit
+#   gpuPodTolerations: when true (default) and .Values.resources request nvidia.com/gpu (non-zero), emit
 #     nvidia.com/gpu NoSchedule tolerations on generative / predictive pod templates. Kueue
 #     ResourceFlavors (e.g. gpu-flavor) often define the same toleration; duplicates are harmless.
 #     Set false after verifying flavor tolerations reach pods without this (docs/004-kueue-gpu-tolerations.md).
-#   hardwareProfile: OpenShift AI HardwareProfile reference (same shape as rhoai-environment-chart
-#     workbench annotations). Annotations are added to InferenceService when name is non-empty.
-#     For LLMInferenceService, annotations are omitted when name is empty (typical CPU generative).
+#   hardwareProfile: OpenShift AI HardwareProfile CR (rhoai-gitops: cpu-profile and gpu-profile in
+#     redhat-ods-applications). CPU-only models: name cpu-profile (chart treats this as no GPU request
+#     in rendered resources even if Helm merge left nvidia.com/gpu from another layer); GPU models: gpu-profile.
+#     Set both explicitly in each values-<model>.yaml. InferenceService always annotates the profile;
+#     LLMInferenceService annotates when name is non-empty.
 serving:
   type: generative
   gpuPodTolerations: true
@@ -54,24 +57,55 @@ serving:
 
 replicas: 1
 
-# Model source
+# Model source (KServe / OpenShift AI storage URI on the serving CR — unchanged).
 # Supported URI schemes:
 #   HuggingFace: hf://RedHatAI/Qwen3-8B-FP8-dynamic
 #   S3 bucket:   s3://<bucket-name>/<object-key>
 #   PVC:         pvc://<claim-name>/<pvc-path>
 #   OCI image:   oci://<registry>/<org>/<repo>:<tag>
+#
+# Dashboard connection Secret (metadata.name == .name, linked via opendatahub.io/connections on
+# LLMInferenceService / InferenceService / ServingRuntime). Matches RHOAI connections API:
+#   - uri → Opaque, data.URI (base64), opendatahub.io/connection-type-ref uri-v1.
+#   - oci → Opaque, data.OCI_HOST = base64(model.uri), connection-type-ref oci-v1; optional data .dockerconfigjson.
+#   - s3  → Opaque, data AWS_* keys (base64), label opendatahub.io/managed, connection-type-ref s3; use connection-path on the serving CR
+#     via model.connection.s3.path when the model lives under a prefix in the bucket.
+# Use opendatahub.io/connection-type-protocol (not the deprecated connection-type-ref).
 model:
   uri: ""
   name: ""
+  connection:
+    # auto | uri | oci | s3 — auto picks oci when model.uri starts with oci:// (or legacy: oci dockerconfigjson+host both set).
+    protocol: auto
+    oci:
+      # Optional: include data[".dockerconfigjson"] when non-empty (private OCI registry). Public ModelCars
+      # omit this key; OCI_HOST always mirrors model.uri (same as dashboard “OCI” connections).
+      dockerconfigjson: ""
+      # Legacy only: with dockerconfigjson, both host and dockerconfigjson non-empty still forces oci in auto.
+      host: ""
+    s3:
+      # Required when protocol is s3 (see chart/templates/secret-connection.yaml).
+      endpoint: ""
+      bucket: ""
+      accessKeyId: ""
+      secretAccessKey: ""
+      region: ""
+      # Object prefix inside the bucket (opendatahub.io/connection-path); no leading slash required.
+      path: ""
 
-# HuggingFace authentication token for gated/private models.
-# Required when using hf:// URIs with models that need authentication.
-# Pass at deploy time: --set hfToken=$(cat .hf_token)
+# Hugging Face token for gated/private Hub weights. The chart creates hf-secret and mounts
+# HF_TOKEN only when model.uri starts with hf:// and this value is non-empty (see templates).
+# Pass at deploy time, e.g. ./deploy-mode.sh chart/values-….yaml --set-file hfToken=.hf_token
 hfToken: ""
 
 # Authentication via Red Hat Connectivity Link (Kuadrant/Authorino)
 auth:
   enabled: true
+
+# OpenShift AI dashboard annotations on LLMInferenceService (generative path only).
+dashboard:
+  genaiUseCase: chat
+  modelType: generative
 
 # TrustyAI monitoring for bias and data drift detection.
 # Deploys a TrustyAIService CR (PVC-backed) and the required CA bundle
@@ -79,16 +113,9 @@ auth:
 trustyai:
   enabled: false
 
-# Resource requirements — generative single-GPU defaults (override per model for multi-GPU / CPU)
-resources:
-  limits:
-    cpu: "4"
-    memory: 32Gi
-    nvidia.com/gpu: "1"
-  requests:
-    cpu: "1"
-    memory: 8Gi
-    nvidia.com/gpu: "1"
+# Container resources (limits/requests). Leave unset here; set resources in each values-<model>.yaml
+# (Helm deep-merges; CPU/GPU and memory differ per model).
+resources: {}
 
 # Extra arguments for the model runtime.
 # - Generative (vLLM): joined into the VLLM_ADDITIONAL_ARGS env var.

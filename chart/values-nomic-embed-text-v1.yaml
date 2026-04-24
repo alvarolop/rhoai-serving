@@ -1,0 +1,68 @@
+# Nomic Embed v1 — Hugging Face text embedding model (8192 context), served with vLLM --task embedding.
+# Model card: https://huggingface.co/nomic-ai/nomic-embed-text-v1
+# vLLM pooling support: https://docs.vllm.ai/en/latest/models/pooling_models/embed/
+#
+# CPU path uses the same explicit vLLM CPU entrypoint as TinyLlama (see README warning on CPU workers).
+# For GPU: remove mainContainer, set serving.hardwareProfile.name to gpu-profile, move embedding
+# flags into extraArgs, and set resources (limits/requests including nvidia.com/gpu) in this file.
+#
+# Usage:
+#   helm template nomic chart/ \
+#     -f chart/values.yaml \
+#     -f chart/values-nomic-embed-text-v1.yaml | oc apply -f -
+
+name: nomic-embed-text-v1
+namespace:
+  name: model-nomic-embed
+
+dashboard:
+  genaiUseCase: embedding
+  modelType: generative
+
+model:
+  uri: "hf://nomic-ai/nomic-embed-text-v1"
+  name: "nomic-ai/nomic-embed-text-v1"
+  connection:
+    protocol: uri
+
+serving:
+  hardwareProfile:
+    name: cpu-profile
+    namespace: redhat-ods-applications
+
+mainContainer:
+  image: quay.io/rh-aiservices-bu/vllm-cpu-openai-ubi9:0.3
+  command:
+    - python
+    - -m
+    - vllm.entrypoints.openai.api_server
+  args:
+    - --model
+    - /mnt/models
+    - --task
+    - embedding
+    - --port
+    - "8000"
+    - --max-model-len
+    - "8192"
+    - --served-model-name
+    - nomic-ai/nomic-embed-text-v1
+    - --ssl-certfile
+    - /var/run/kserve/tls/tls.crt
+    - --ssl-keyfile
+    - /var/run/kserve/tls/tls.key
+
+# CPU-only resources (Helm merges maps: omit GPU keys; hasNvidiaGpu follows hardwareProfile + keys).
+# hasNvidiaGpu is false when hardwareProfile is cpu-profile, so rendered CR omits GPU.
+resources:
+  limits:
+    cpu: "4"
+    memory: 8Gi
+  requests:
+    cpu: "2"
+    memory: 4Gi
+
+extraArgs: []
+
+trustyai:
+  enabled: false

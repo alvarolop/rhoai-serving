@@ -1,0 +1,47 @@
+# BGE-M3 — Hugging Face multilingual embedding model on **GPU** (default OpenShift AI vLLM worker).
+# Model card: https://huggingface.co/BAAI/bge-m3
+# vLLM pooling support: https://docs.vllm.ai/en/latest/models/pooling_models/embed/
+#
+# Embedding flags are passed via extraArgs -> VLLM_ADDITIONAL_ARGS (no mainContainer override).
+# Tune resources if you OOM or want a different GPU slice.
+#
+# Usage:
+#   helm template bge-m3 chart/ \
+#     -f chart/values.yaml \
+#     -f chart/values-bge-m3.yaml | oc apply -f -
+
+name: bge-m3
+namespace:
+  name: model-bge-m3
+
+dashboard:
+  genaiUseCase: embedding
+  modelType: generative
+
+model:
+  uri: "hf://BAAI/bge-m3"
+  name: "BAAI/bge-m3"
+  connection:
+    protocol: uri
+
+serving:
+  hardwareProfile:
+    name: gpu-profile
+    namespace: redhat-ods-applications
+
+resources:
+  limits:
+    cpu: "6"
+    memory: 24Gi
+    nvidia.com/gpu: "1"
+  requests:
+    cpu: "2"
+    memory: 8Gi
+    nvidia.com/gpu: "1"
+
+extraArgs:
+  - "--max-model-len"
+  - "8192"
+
+trustyai:
+  enabled: false

@@ -1,5 +1,5 @@
 # GPT-OSS 20B - OCI-based generative model (ModelCar from registry.redhat.io)
-# Usage: helm template gpt-oss chart/ -f chart/values.yaml -f chart/values-gpt-oss-20b.yaml
+# Usage: helm template chart/ --generate-name -f chart/values.yaml -f chart/values-gpt-oss-20b.yaml
 #
 # No imagePullSecrets needed: registry.redhat.io is covered by the OpenShift global pull secret.
 
@@ -10,6 +10,13 @@ namespace:
 model:
   uri: "oci://registry.redhat.io/rhelai1/modelcar-gpt-oss-20b:1.5"
   name: "gpt-oss-20b"
+  connection:
+    protocol: oci
+
+serving:
+  hardwareProfile:
+    name: gpu-profile
+    namespace: redhat-ods-applications
 
 resources:
   limits:
