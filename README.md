@@ -138,14 +138,14 @@ If you use [rhoai-maas-gitops](https://github.com/davidseve/rhoai-maas-gitops) *
 
 ### Embedding models (Hugging Face + vLLM)
 
-**`LLMInferenceService`** with **`hf://`** URIs and **`--task embedding`**. **Nomic** uses an explicit CPU vLLM **`mainContainer`**; **BGE-M3** uses the platform GPU worker and **`extraArgs`**. vLLM: [pooling / embedding models](https://docs.vllm.ai/en/latest/models/pooling_models/embed/); cards: [nomic-embed-text-v1](https://huggingface.co/nomic-ai/nomic-embed-text-v1), [bge-m3](https://huggingface.co/BAAI/bge-m3).
+**`LLMInferenceService`** with **`hf://`** URIs and **`--task embedding`**. **Nomic** and **BGE-M3** are **GPU-only** in this repo: **platform vLLM worker**, **`gpu-profile`**, **`extraArgs`** (no **`mainContainer`**). **Nomic** adds **`--trust-remote-code`** for its Hub **`config.json`**. vLLM: [pooling / embedding models](https://docs.vllm.ai/en/latest/models/pooling_models/embed/); cards: [nomic-embed-text-v1](https://huggingface.co/nomic-ai/nomic-embed-text-v1), [bge-m3](https://huggingface.co/BAAI/bge-m3).
 
 | Model | Deploy |
 |-------|--------|
-| Nomic Embed v1 | `./deploy-mode.sh chart/values-nomic-embed-text-v1.yaml` |
-| BGE-M3 (1×GPU in file; tune resources if needed) | `./deploy-mode.sh chart/values-bge-m3.yaml` |
+| Nomic Embed v1 (GPU) | `./deploy-mode.sh chart/values-nomic-embed-text-v1.yaml` |
+| BGE-M3 (GPU; tune resources if needed) | `./deploy-mode.sh chart/values-bge-m3.yaml` |
 
-Call **`/v1/embeddings`** with **`spec.model.name`** (for example **`nomic-ai/nomic-embed-text-v1`**). Nomic’s card suggests **task instruction prefixes** for RAG (**`search_document:`** / **`search_query:`**); the chart does not enforce them. For Nomic on GPU, edit the overlay like **`chart/values-bge-m3.yaml`** (clear **`mainContainer`**, **`gpu-profile`**, embedding flags in **`extraArgs`**, GPU **`resources`**).
+Call **`/v1/embeddings`** with **`spec.model.name`** (for example **`nomic-ai/nomic-embed-text-v1`**). Nomic’s card suggests **task instruction prefixes** for RAG (**`search_document:`** / **`search_query:`**); the chart does not enforce them. Copy **`values-nomic-embed-text-v1.yaml`** or **`values-bge-m3.yaml`** if you want another embedding namespace with different **`resources`**.
 
 ### Guardrails — LlamaGuard (Hugging Face + vLLM)
 

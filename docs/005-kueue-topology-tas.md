@@ -64,11 +64,11 @@ If your cluster **does not** taint GPU nodes, **CPU** pods could **in principle*
 
 ---
 
-## CPU embedding (e.g. Nomic) vs GPU (e.g. LlamaGuard): what actually differs on the cluster
+## CPU-only serving (e.g. TinyLlama CPU) vs GPU (e.g. LlamaGuard): what actually differs on the cluster
 
 These are **different Kueue paths**, not “the same topology bug twice.”
 
-| Aspect | CPU-only path (intended Nomic overlay) | GPU path (LlamaGuard) |
+| Aspect | CPU-only path (e.g. **`values-tinyllama-1b-cpu.yaml`**) | GPU path (e.g. LlamaGuard) |
 |--------|----------------------------------------|-------------------------|
 | **`HardwareProfile`** | **`cpu-profile`** | **`gpu-profile`** |
 | **Pod requests** | **No** non-zero **`nvidia.com/gpu`** | **`nvidia.com/gpu: "1"`** (typical) |
@@ -78,7 +78,7 @@ These are **different Kueue paths**, not “the same topology bug twice.”
 **Important — “CPU model” must not request a GPU on the live `Pod`:**  
 Helm **deep-merges** `-f` values files: **`resources`** is defined per model file (base **`chart/values.yaml`** uses **`resources: {}`**). If any merged layer still leaves **`nvidia.com/gpu`** under **`resources`**, a CPU-only overlay that only sets **`cpu`** / **`memory`** does **not** remove sibling keys from another layer, so **`.Values.resources` can still contain a GPU key after merge** even when the last file never mentions GPU.
 
-**Chart behavior:** **`rhoai-serving.hasNvidiaGpu`** (see **`chart/templates/_helpers.tpl`**) returns **`false`** when **`serving.hardwareProfile.name`** is **`cpu-profile`** (the name used in **rhoai-gitops** for CPU **`HardwareProfile`**). Then **`kserveModelResources`** **omits** **`nvidia.com/gpu`** from the rendered **`LLMInferenceService`** / **`InferenceService`** spec regardless of merged values. CPU overlays (Nomic, TinyLlama CPU, etc.) should keep **`cpu-profile`** so the served pod does not compete for **`gpu-flavor`**.
+**Chart behavior:** **`rhoai-serving.hasNvidiaGpu`** (see **`chart/templates/_helpers.tpl`**) returns **`false`** when **`serving.hardwareProfile.name`** is **`cpu-profile`** (the name used in **rhoai-gitops** for CPU **`HardwareProfile`**). Then **`kserveModelResources`** **omits** **`nvidia.com/gpu`** from the rendered **`LLMInferenceService`** / **`InferenceService`** spec regardless of merged values. CPU overlays (TinyLlama CPU, etc.) should keep **`cpu-profile`** so the served pod does not compete for **`gpu-flavor`**. **Nomic** and **BGE-M3** overlays are **GPU-only** (**`gpu-profile`**).
 
 If you use a **custom** CPU profile name, either rename it in gitops to match or duplicate the “strip GPU” behavior in your overlay (e.g. explicit **`nvidia.com/gpu: "0"`** in **`resources`** so **`hasNvidiaGpu`** stays false without relying on the **`cpu-profile`** shortcut).
 
@@ -91,20 +91,20 @@ That means: under TAS + **`gpu-flavor`** **nodeLabels**, Kueue only sees **fit**
 **Verify on the cluster:**
 
 ```bash
-oc get pod -n model-nomic-embed -l app.kubernetes.io/component=llminferenceservice-workload -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{.spec.containers[0].resources}{"\n---\n"}{end}'
+oc get pod -n model-tinyllama -l app.kubernetes.io/component=llminferenceservice-workload -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{.spec.containers[0].resources}{"\n---\n"}{end}'
 oc get pod -n model-llamaguard   -l app.kubernetes.io/component=llminferenceservice-workload -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{.spec.containers[0].resources}{"\n---\n"}{end}'
 oc get workload.kueue.x-k8s.io -n model-llamaguard -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{range .status.conditions[*]}{.type}={.status} {.message}{"\n"}{end}{"---\n"}{end}'
 ```
 
-- After upgrading the chart, **`helm upgrade`** with **`-f chart/values.yaml -f …/values-nomic-embed-text-v1.yaml`** (or equivalent): the main container **`resources`** in the **`LLMInferenceService`** YAML should **omit** **`nvidia.com/gpu`**. If an **old** pod spec still shows **`nvidia.com/gpu`**, roll the deployment or re-apply the CR so the controller reconciles from the new template.
-- After gates clear, a **CPU image on a node with a GPU request** (Nomic-style) can still **`CrashLoopBackOff`** for **application** reasons (e.g. vLLM config / `trust_remote_code`) — that is **past** Kueue; use **`oc logs`** on **`main`**.
+- After upgrading the chart, **`helm template`** / **`helm upgrade`** with **`-f chart/values.yaml -f …/values-tinyllama-1b-cpu.yaml`** (or equivalent **CPU** overlay): the main container **`resources`** in the **`LLMInferenceService`** YAML should **omit** **`nvidia.com/gpu`**. If an **old** pod spec still shows **`nvidia.com/gpu`**, roll the deployment or re-apply the CR so the controller reconciles from the new template.
+- After gates clear, a **CPU-only vLLM image** can still **`CrashLoopBackOff`** for **application** reasons (model architecture vs vLLM version, **`trust_remote_code`**, etc.) — that is **past** Kueue; use **`oc logs`** on **`main`**.
 
 ---
 
 ## End-to-end checklist (gitops + chart)
 
 1. **Gitops (`rhoai-installation-chart`):** **`Topology` `rhoai-hostname`** + **`ResourceFlavor`** **`topologyName: rhoai-hostname`** + **`nodeLabels`** on **CPU** and **GPU** flavors (**[changes table](#changes-made-rhoai-gitops)** above).
-2. **Chart (`rhoai-serving`):** (a) GPU toleration **`operator: Exists`** when GPU is requested; (b) **`cpu-profile`** forces **`hasNvidiaGpu`** false so merged defaults do not emit GPU requests on CPU models (**§ CPU embedding** above).
+2. **Chart (`rhoai-serving`):** (a) GPU toleration **`operator: Exists`** when GPU is requested; (b) **`cpu-profile`** forces **`hasNvidiaGpu`** false so merged defaults do not emit GPU requests on CPU models (**CPU-only serving** subsection above).
 3. **Cluster:** **`oc get nodes --show-labels`** — GPU flavor **`nodeLabels`** must match your GPU Operator.
 4. **Queues:** Namespace **`kueue-managed`**, **`LocalQueue` `default`**, **`ClusterQueue`** naming matches **`values.yaml`** / **[004](004-kueue-gpu-tolerations.md)**.
 5. **Debug:** **`openshift-kueue-operator`** (or install namespace) **`kueue-controller-manager`** pod with **`replica-role=leader`** logs for **`Unsuspending job`** / **`tas-topology-ungater`**; **`Workload.status.conditions`** for topology / quota messages.

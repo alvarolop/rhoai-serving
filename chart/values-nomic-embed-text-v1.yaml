@@ -1,10 +1,9 @@
-# Nomic Embed v1 — Hugging Face text embedding model (8192 context), served with vLLM --task embedding.
+# Nomic Embed v1 — **GPU-only** Hugging Face embedding (8192 context); platform OpenShift AI vLLM worker.
 # Model card: https://huggingface.co/nomic-ai/nomic-embed-text-v1
-# vLLM pooling support: https://docs.vllm.ai/en/latest/models/pooling_models/embed/
+# vLLM pooling: https://docs.vllm.ai/en/latest/models/pooling_models/embed/
 #
-# CPU path uses the same explicit vLLM CPU entrypoint as TinyLlama (see README warning on CPU workers).
-# For GPU: remove mainContainer, set serving.hardwareProfile.name to gpu-profile, move embedding
-# flags into extraArgs, and set resources (limits/requests including nvidia.com/gpu) in this file.
+# `--trust-remote-code` is required for this Hub repo. Init may warn about chmod under `/mnt/models/.cache`;
+# if download completes, that is harmless.
 #
 # Usage:
 #   helm template nomic chart/ \
@@ -27,42 +26,26 @@ model:
 
 serving:
   hardwareProfile:
-    name: cpu-profile
+    name: gpu-profile
     namespace: redhat-ods-applications
 
-mainContainer:
-  image: quay.io/rh-aiservices-bu/vllm-cpu-openai-ubi9:0.3
-  command:
-    - python
-    - -m
-    - vllm.entrypoints.openai.api_server
-  args:
-    - --model
-    - /mnt/models
-    - --task
-    - embedding
-    - --port
-    - "8000"
-    - --max-model-len
-    - "8192"
-    - --served-model-name
-    - nomic-ai/nomic-embed-text-v1
-    - --ssl-certfile
-    - /var/run/kserve/tls/tls.crt
-    - --ssl-keyfile
-    - /var/run/kserve/tls/tls.key
-
-# CPU-only resources (Helm merges maps: omit GPU keys; hasNvidiaGpu follows hardwareProfile + keys).
-# hasNvidiaGpu is false when hardwareProfile is cpu-profile, so rendered CR omits GPU.
+# Tune if you OOM; Nomic weights are small vs BGE-M3 but keep a comfortable GPU memory headroom.
 resources:
   limits:
-    cpu: "4"
-    memory: 8Gi
+    cpu: "6"
+    memory: 16Gi
+    nvidia.com/gpu: "1"
   requests:
     cpu: "2"
-    memory: 4Gi
+    memory: 8Gi
+    nvidia.com/gpu: "1"
 
-extraArgs: []
+extraArgs:
+  - "--task"
+  - "embedding"
+  - "--trust-remote-code"
+  - "--max-model-len"
+  - "8192"
 
 trustyai:
   enabled: false

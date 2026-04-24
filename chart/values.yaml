@@ -8,7 +8,7 @@
 #   1. values.yaml        — Shared defaults and schema reference (not model-specific; e.g. resources: {})
 #   2. values-<model>.yaml — Model identity (name, namespace, URI, resources, hardwareProfile, …)
 #
-# Hugging Face embeddings (vLLM --task embedding): values-nomic-embed-text-v1.yaml, values-bge-m3.yaml
+# Hugging Face embeddings (vLLM --task embedding, GPU): values-nomic-embed-text-v1.yaml, values-bge-m3.yaml
 # Guardrails (LlamaGuard): values-llamaguard-7b.yaml (gated HF; hfToken required)
 #
 # Predictive (OpenVINO) models: use a values file that sets serving.type: predictive and the

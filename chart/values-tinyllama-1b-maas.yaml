@@ -1,5 +1,7 @@
 # TinyLlama 1B - CPU + Model-as-a-Service style routing (Gateway API).
 #
+# Same vLLM ~0.7 CPU image as values-tinyllama-1b-cpu.yaml — no access-log endpoint filter flags.
+#
 # Same CPU vLLM worker as values-tinyllama-1b-cpu.yaml, but uses spec.router.gateway.refs once you
 # point routerGatewayRefs at a real Gateway on this cluster.
 #
