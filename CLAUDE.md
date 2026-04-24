@@ -107,13 +107,26 @@ The chart supports multiple methods for loading models:
 - **PVC (Persistent Volume Claims)** - Use models stored on persistent volumes
 - **HuggingFace** - Pull models directly from HuggingFace Hub (use `hfToken` for gated models)
 
+### Packaging guidance (ModelCar + MinIO)
+
+Optional “prepare artifacts for the chart” helpers sit in two **root** directories next to **`chart/`** (not inside it).
+
+- **`packaging-modelcar/Dockerfile`** (+ **`download_model.py`**) — Two-stage build (UBI 9 Python → UBI Micro) that downloads a **default small** Hugging Face model (**`TinyLlama/TinyLlama-1.1B-Chat-v1.0`**) into **`/models`**, matching OpenShift AI ModelCar guidance ([Red Hat Developer — ModelCar](https://developers.redhat.com/articles/2025/01/30/build-and-deploy-modelcar-container-openshift-ai)). Override with **`--build-arg MODEL_REPO=…`**. Push the image, then point **`model.uri`** at **`oci://…`** in a values file.
+- **`packaging-s3/upload-model-to-minio.sh`** — Creates an S3 bucket (if missing) on a **MinIO-compatible** endpoint and **`aws s3 sync`** uploads either **`--source <dir>`** or a **`--hf-repo`** snapshot. Defaults align with **`rhoai-gitops`** MinIO (`http://127.0.0.1:9000` after **`oc port-forward`**, credentials **`minio`/`minio123`**). Pair with **`chart/values-example-minio-s3-tinyllama.yaml`** for **`protocol: s3`** wiring.
+
 ## Repository Structure
 
 ```
+packaging-modelcar/
+  Dockerfile                           # Example ModelCar build (default TinyLlama weights → /models)
+  download_model.py                    # HF snapshot_download helper for the Dockerfile
+packaging-s3/
+  upload-model-to-minio.sh             # Bucket + sync to in-cluster MinIO (S3 API)
 chart/
   Chart.yaml
   values.yaml                          # Generative defaults and schema
   values-<model>.yaml                  # Per-model overrides (next to values.yaml)
+  values-example-minio-s3-tinyllama.yaml  # Example S3/MinIO + CPU vLLM overlay
   templates/
     inferenceservice.yaml              # Predictive: InferenceService
     llminferenceservice.yaml           # Generative: LLMInferenceService
