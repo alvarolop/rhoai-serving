@@ -22,6 +22,7 @@ def main() -> int:
         local_dir=dest,
         allow_patterns=allow_patterns,
         token=token,
+        local_dir_use_symlinks=False,  # Critical: avoid symlinks in ModelCar images (see docs/009)
     )
     print(f"Downloaded {repo!r} -> {dest}", file=sys.stderr)
     return 0
