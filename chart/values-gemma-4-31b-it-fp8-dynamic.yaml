@@ -1,0 +1,112 @@
+# Gemma 4 31B instruction-tuned, FP8-Dynamic quantization (compressed-tensors)
+# Hugging Face repo id: RedHatAI/gemma-4-31B-it-FP8-Dynamic
+#
+# Usage:
+#   helm template gemma4-fp8 chart/ -f chart/values.yaml -f chart/values-gemma-4-31b-it-fp8-dynamic.yaml
+#   ./deploy-model.sh chart/values-gemma-4-31b-it-fp8-dynamic.yaml
+#
+# FP8-Dynamic vs NVFP4:
+# - FP8-Dynamic: Scaling factors recalculated dynamically during inference
+#   - Better quality (less degradation vs original model)
+#   - Native support on H100 (Hopper) Tensor Cores
+#   - Recommended for H100 with NVLink
+# - NVFP4: Designed for Blackwell (B200/GB200), uses emulation on H100
+#
+# Model details:
+# - 31B parameters (actual ~33B with MoE experts)
+# - FP8 quantization with dynamic scaling
+# - Optimized for NVIDIA H100 GPUs (native FP8 support)
+# - Larger context window support vs NVFP4 (H100 has more VRAM)
+#
+# Compatibility:
+# - vLLM: Requires v0.13.0+ for Gemma 4 architecture support
+# - GPU: Optimized for H100 (80GB VRAM), can run on A100 with reduced context
+# - Context: --max-model-len up to 32768 recommended for H100
+
+name: gemma-4-31b-it-fp8-dynamic
+namespace:
+  name: model-gemma4-fp8
+
+model:
+  uri: "oci://quay.io/alopezme/modelcar-gemma-4-31b-fp8:latest"
+  name: "RedHatAI/gemma-4-31B-it-FP8-Dynamic"
+  connection:
+    protocol: oci
+    oci:
+      # Optional: add dockerconfigjson if using private registry
+      dockerconfigjson: ""
+
+serving:
+  hardwareProfile:
+    name: gpu-profile
+    namespace: redhat-ods-applications
+
+# Use OpenShift AI default vLLM image (supports FP8 natively)
+# Or specify a version if needed: vllm/vllm-openai:v0.13.0+
+mainContainer:
+  # image: ""  # Uses default OpenShift AI vLLM image
+  # Passed as VLLM_ADDITIONAL_ARGS to KServe wrapper script
+  # Configuration tuned for H100 80GB to avoid OOM during CUDA graph capture
+  extraArgs:
+    - "--max-model-len"
+    - "16384"  # Conservative for H100 80GB; increase to 32768 if VRAM allows
+    - "--gpu-memory-utilization"
+    - "0.85"  # Reduced from 0.90 to leave headroom for CUDA graphs
+    - "--max-num-batched-tokens"
+    - "8192"
+    - "--max-num-seqs"
+    - "256"  # Limit concurrent sequences to reduce CUDA graph memory
+    - "--disable-log-stats"  # Reduce logging overhead
+    - "--disable-uvicorn-access-log"
+    # CUDA graph memory controls (uncomment progressively if OOM):
+    # Step 1: Limit CUDA graph batch sizes
+    # - "--max-cudagraph-capture-size"
+    # - "256"  # Default: 512. Try 256 → 128 if still OOM
+    # Step 2: Further reduce memory utilization
+    # - "--gpu-memory-utilization"
+    # - "0.80"  # Override above value if needed
+    # Step 3: Reduce concurrency further
+    # - "--max-num-seqs"
+    # - "128"  # Override above value if needed
+
+resources:
+  limits:
+    cpu: "8"
+    memory: 64Gi
+    nvidia.com/gpu: "1"  # Single H100 recommended
+  requests:
+    cpu: "2"
+    memory: 16Gi
+    nvidia.com/gpu: "1"
+
+# Troubleshooting OOM during CUDA graph capture on H100:
+#
+# Symptom: "torch.OutOfMemoryError" during "Capturing CUDA graphs" phase
+#
+# Solutions (apply progressively, keeps CUDA graphs active):
+# 1. Add --max-cudagraph-capture-size 256 (limits largest batch, default: 512)
+# 2. Reduce --gpu-memory-utilization to 0.80 or 0.75
+# 3. Reduce --max-num-seqs to 128 or 64
+# 4. Combine: --max-cudagraph-capture-size 128 + --gpu-memory-utilization 0.80
+#
+# Note: All options maintain CUDA graphs (avoids ~15% perf loss from --enforce-eager)
+# Balance: Lower values = less memory but reduced throughput/concurrency
+
+# Optional when your vLLM build supports Gemma 4 OpenAI tool/reasoning parsers:
+# mainContainer:
+#   extraArgs:
+#     - "--max-model-len"
+#     - "16384"
+#     - "--gpu-memory-utilization"
+#     - "0.90"
+#     - "--max-num-batched-tokens"
+#     - "8192"
+#     - "--enable-auto-tool-choice"
+#     - "--tool-call-parser"
+#     - "gemma4"
+#     - "--reasoning-parser"
+#     - "gemma4"
+#     - "--disable-uvicorn-access-log"
+
+trustyai:
+  enabled: false
