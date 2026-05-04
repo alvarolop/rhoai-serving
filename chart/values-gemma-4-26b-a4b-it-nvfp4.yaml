@@ -40,6 +40,15 @@ serving:
 # RHOAI vLLM 0.13 may not have this fix yet
 mainContainer:
   image: vllm/vllm-openai:v0.20.0
+  # Passed as VLLM_ADDITIONAL_ARGS to KServe wrapper script
+  extraArgs:
+    - "--max-model-len"
+    - "8192"
+    - "--gpu-memory-utilization"
+    - "0.90"
+    - "--max-num-batched-tokens"
+    - "4096"
+    - "--disable-uvicorn-access-log"  # Reduce log verbosity (KServe router already logs requests)
 
 resources:
   limits:
@@ -50,16 +59,6 @@ resources:
     cpu: "2"
     memory: 16Gi
     nvidia.com/gpu: "1"
-
-# Passed as VLLM_ADDITIONAL_ARGS on the platform vLLM worker.
-extraArgs:
-  - "--max-model-len"
-  - "8192"
-  - "--gpu-memory-utilization"
-  - "0.90"
-  - "--max-num-batched-tokens"
-  - "4096"
-  - "--disable-uvicorn-access-log"  # Reduce log verbosity (KServe router already logs requests)
 
 # Optional when your vLLM build supports Gemma 4 OpenAI tool/reasoning parsers (see recipes.vllm.ai):
 # extraArgs:

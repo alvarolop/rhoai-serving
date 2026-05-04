@@ -84,7 +84,8 @@ model:
       # Legacy only: with dockerconfigjson, both host and dockerconfigjson non-empty still forces oci in auto.
       host: ""
     s3:
-      # Required when protocol is s3 (see chart/templates/secret-connection.yaml).
+      # Option 1: Manual S3 configuration (MinIO, AWS S3, etc.)
+      # Required when protocol is s3 and objectBucketClaim is empty.
       endpoint: ""
       bucket: ""
       accessKeyId: ""
@@ -92,6 +93,18 @@ model:
       region: ""
       # Object prefix inside the bucket (opendatahub.io/connection-path); no leading slash required.
       path: ""
+
+      # Option 2: Use OpenShift Data Foundation ObjectBucketClaim
+      # When set, the chart reads S3 credentials from the OBC-generated Secret/ConfigMap.
+      # ODF automatically creates:
+      #   - Secret: <obc-name> with AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+      #   - ConfigMap: <obc-name> with BUCKET_HOST, BUCKET_NAME, BUCKET_PORT, BUCKET_REGION
+      # Example workflow:
+      #   1. Create ObjectBucketClaim: oc apply -f obc.yaml (creates Secret + ConfigMap)
+      #   2. Set objectBucketClaim: "my-model-bucket" (name of the OBC)
+      #   3. Chart automatically reads credentials from the generated Secret/ConfigMap
+      # Leave empty to use manual configuration above.
+      objectBucketClaim: ""
 
 # Hugging Face token for gated/private Hub weights. The chart creates hf-secret and mounts
 # HF_TOKEN only when model.uri starts with hf:// and this value is non-empty (see templates).
@@ -117,35 +130,37 @@ trustyai:
 # (Helm deep-merges; CPU/GPU and memory differ per model).
 resources: {}
 
-# Extra arguments for the model runtime.
-# - Generative (vLLM): joined into the VLLM_ADDITIONAL_ARGS env var.
-# - Predictive (OpenVINO): appended as container args.
-# Example (generative with tool use):
-#   extraArgs:
-#     - "--enable-auto-tool-choice"
-#     - "--tool-call-parser hermes"
-# Example (generative with tuning):
-#   extraArgs:
-#     - "--gpu-memory-utilization 0.95"
-#     - "--max-model-len 32768"
-#     - "--enable-prefix-caching"
-extraArgs: []
-
-# Extra environment variables for the model container.
-# Uses standard Kubernetes env var format.
-# Example:
-#   extraEnv:
-#     - name: VLLM_CONFIGURE_LOGGING
-#       value: "1"
-extraEnv: []
-
-# Optional generative worker override (LLMInferenceService spec.template.containers[main]).
-# Used e.g. for CPU TinyLlama (custom vLLM image + entrypoint). When image is empty, the
-# OpenShift AI / KServe default worker image and args apply.
+# Main container configuration (LLMInferenceService spec.template.containers[main]).
+# When image is empty, OpenShift AI / KServe default worker image applies.
 mainContainer:
   image: ""
   command: []
   args: []
+  # Extra arguments for the model runtime.
+  # - Generative (vLLM): joined into VLLM_ADDITIONAL_ARGS env var (required by KServe wrapper).
+  # - Predictive (OpenVINO): appended as container args.
+  # Example (generative with tool use):
+  #   extraArgs:
+  #     - "--enable-auto-tool-choice"
+  #     - "--tool-call-parser"
+  #     - "hermes"
+  # Example (generative with tuning):
+  #   extraArgs:
+  #     - "--gpu-memory-utilization"
+  #     - "0.95"
+  #     - "--max-model-len"
+  #     - "32768"
+  #     - "--enable-prefix-caching"
+  extraArgs: []
+  # Extra environment variables for the main container.
+  # Uses standard Kubernetes env var format.
+  # Example:
+  #   env:
+  #     - name: VLLM_CONFIGURE_LOGGING
+  #       value: "1"
+  #     - name: HF_HUB_OFFLINE
+  #       value: "0"
+  env: []
 
 # Optional Gateway API refs for spec.router.gateway (non-empty => gateway.refs). Default empty
 # for normal llm-d + Route. MaaS overlay: chart/values-tinyllama-1b-maas.yaml (set refs to a real

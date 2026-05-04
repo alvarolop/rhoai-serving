@@ -73,7 +73,7 @@ spec:
         args:
           {{- toYaml . | nindent 10 }}
         {{- end }}
-        {{- if or .Values.extraArgs .Values.extraEnv (eq (include "rhoai-serving.useHfToken" . | trim) "true") }}
+        {{- if or .Values.mainContainer.extraArgs .Values.mainContainer.env (eq (include "rhoai-serving.useHfToken" . | trim) "true") }}
         env:
           {{- if eq (include "rhoai-serving.useHfToken" . | trim) "true" }}
           - name: HF_TOKEN
@@ -82,11 +82,13 @@ spec:
                 name: hf-secret
                 key: HF_TOKEN
           {{- end }}
-          {{- if .Values.extraArgs }}
+          {{- if .Values.mainContainer.extraArgs }}
+          # KServe wrapper script reads VLLM_ADDITIONAL_ARGS and passes to vLLM
+          # (vLLM v0.20+ may warn about unknown env var, but KServe requires this)
           - name: VLLM_ADDITIONAL_ARGS
-            value: {{ join " " .Values.extraArgs | quote }}
+            value: {{ join " " .Values.mainContainer.extraArgs | quote }}
           {{- end }}
-          {{- with .Values.extraEnv }}
+          {{- with .Values.mainContainer.env }}
           {{- toYaml . | nindent 10 }}
           {{- end }}
         {{- end }}
