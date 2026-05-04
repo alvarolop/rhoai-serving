@@ -1,5 +1,9 @@
 # ModelCar Symlink Problem with Hugging Face Blob Storage
 
+> **Note (2026-04-30):** This issue is **resolved in modern versions** of `huggingface_hub` (v0.24.0+).  
+> The library no longer uses symlinks by default when downloading to `local_dir`, making the `local_dir_use_symlinks=False` parameter unnecessary (now deprecated).  
+> This document is kept for historical reference and troubleshooting older versions.
+
 ## Overview
 
 When building ModelCar container images from Hugging Face models, you may encounter a critical issue where the resulting container image contains **symbolic links without their target files**, leading to broken models that cannot be loaded at runtime.
