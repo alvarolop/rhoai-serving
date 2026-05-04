@@ -16,7 +16,7 @@
 
 ARG MODEL_REPO=TinyLlama/TinyLlama-1.1B-Chat-v1.0
 
-FROM registry.access.redhat.com/ubi9/python-311:latest AS downloader
+FROM registry.access.redhat.com/ubi9/python-312:latest AS downloader
 ARG MODEL_REPO
 ARG HF_TOKEN=""
 
