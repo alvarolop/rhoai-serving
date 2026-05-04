@@ -1,0 +1,67 @@
+# Example: Model from S3 using OpenShift Data Foundation ObjectBucketClaim
+#
+# Prerequisites:
+# 1. Create ObjectBucketClaim in the model namespace:
+#
+#    apiVersion: objectbucket.io/v1alpha1
+#    kind: ObjectBucketClaim
+#    metadata:
+#      name: my-model-bucket
+#      namespace: model-example-obc
+#    spec:
+#      generateBucketName: my-model-bucket
+#      storageClassName: openshift-storage.noobaa.io
+#
+# 2. ODF automatically creates:
+#    - Secret: my-model-bucket (contains AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
+#    - ConfigMap: my-model-bucket (contains BUCKET_HOST, BUCKET_PORT, BUCKET_NAME, BUCKET_REGION)
+#
+# 3. Upload model to the bucket (via aws CLI or similar)
+#
+# 4. Deploy model using this values file
+#
+# Usage:
+#   helm template example-obc chart/ -f chart/values.yaml -f chart/values-example-odf-obc-s3.yaml
+
+name: example-obc-model
+namespace:
+  name: model-example-obc
+
+model:
+  # S3 path to model within the bucket
+  # Format: s3://<bucket-name>/<path-to-model>
+  # The bucket name will be read from the OBC ConfigMap
+  uri: "s3://my-model-bucket/models/tinyllama"
+  name: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+  connection:
+    protocol: s3
+    s3:
+      # Point to the ObjectBucketClaim name
+      # The chart will assume the OBC Secret/ConfigMap exists with this name
+      objectBucketClaim: "my-model-bucket"
+      # All other s3 fields (endpoint, bucket, accessKeyId, etc.) are ignored
+      # when objectBucketClaim is set - values come from OBC
+
+      # Optional: path prefix within the bucket (if model is under a subdirectory)
+      path: "models/tinyllama"
+
+serving:
+  hardwareProfile:
+    name: cpu-profile
+    namespace: redhat-ods-applications
+
+resources:
+  limits:
+    cpu: "4"
+    memory: 8Gi
+  requests:
+    cpu: "2"
+    memory: 4Gi
+
+mainContainer:
+  extraArgs:
+    - "--max-model-len"
+    - "2048"
+
+trustyai:
+  enabled: false
