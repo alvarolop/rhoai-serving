@@ -31,6 +31,8 @@ serving:
 
 mainContainer:
   extraArgs:
+    - "--max-model-len"
+    - "8192"
     - "--disable-uvicorn-access-log"
 
 resources:
@@ -42,10 +44,6 @@ resources:
     cpu: "2"
     memory: 8Gi
     nvidia.com/gpu: "1"
-
-extraArgs:
-  - "--max-model-len"
-  - "8192"
 
 trustyai:
   enabled: false

@@ -16,14 +16,13 @@ echo "hf_yourTokenHere" > .hf_token
 ```bash
 # Build ModelCar image
 podman build --platform linux/amd64 \
-  -f packaging-modelcar/Dockerfile \
-  packaging-modelcar \
-  --build-arg MODEL_REPO=RedHatAI/gemma-4-31B-it-FP8-Dynamic \
+  -f packaging-modelcar/Dockerfile packaging-modelcar \
+  --build-arg MODEL_REPO=RedHatAI/gemma-4-26B-A4B-it-FP8-Dynamic \
   --build-arg HF_TOKEN=$(cat .hf_token) \
-  -t quay.io/alopezme/modelcar-gemma-4-31b-fp8:latest
+  -t quay.io/alopezme/modelcar-gemma-4-26b-a4b-fp8:latest
 
 # Push to registry
-podman push quay.io/alopezme/modelcar-gemma-4-31b-fp8:latest
+podman push quay.io/alopezme/modelcar-gemma-4-26b-a4b-fp8:latest
 ```
 
 ### Common Examples
