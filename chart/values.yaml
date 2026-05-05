@@ -161,6 +161,35 @@ mainContainer:
   #     - name: HF_HUB_OFFLINE
   #       value: "0"
   env: []
+  # Health check probes for the main container.
+  # By default, LLMInferenceService sets liveness and readiness probes.
+  # For large models that take >2min to load, add a startupProbe to prevent premature restarts.
+  # Example (large model with slow startup):
+  #   startupProbe:
+  #     httpGet:
+  #       path: /health
+  #       port: 8000
+  #       scheme: HTTPS
+  #     initialDelaySeconds: 30
+  #     periodSeconds: 10
+  #     failureThreshold: 30  # 30 × 10s = 5min max startup time
+  #   livenessProbe:
+  #     httpGet:
+  #       path: /health
+  #       port: 8000
+  #       scheme: HTTPS
+  #     periodSeconds: 30
+  #     failureThreshold: 2
+  #   readinessProbe:
+  #     httpGet:
+  #       path: /health
+  #       port: 8000
+  #       scheme: HTTPS
+  #     periodSeconds: 10
+  #     failureThreshold: 3
+  startupProbe: {}
+  livenessProbe: {}
+  readinessProbe: {}
 
 # Optional Gateway API refs for spec.router.gateway (non-empty => gateway.refs). Default empty
 # for normal llm-d + Route. MaaS overlay: chart/values-tinyllama-1b-maas.yaml (set refs to a real

@@ -92,6 +92,18 @@ spec:
           {{- toYaml . | nindent 10 }}
           {{- end }}
         {{- end }}
+        {{- with .Values.mainContainer.startupProbe }}
+        startupProbe:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- with .Values.mainContainer.livenessProbe }}
+        livenessProbe:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- with .Values.mainContainer.readinessProbe }}
+        readinessProbe:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
         resources:
           {{- include "rhoai-serving.kserveModelResources" . | nindent 10 }}
     {{- if and (eq (include "rhoai-serving.hasNvidiaGpu" . | trim) "true") .Values.serving.gpuPodTolerations }}
