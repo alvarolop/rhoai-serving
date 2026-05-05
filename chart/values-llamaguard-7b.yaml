@@ -41,6 +41,12 @@ serving:
 # Single replica (chart default); set >1 only if you intentionally run multiple decoder pods.
 replicas: 1
 
+mainContainer:
+  extraArgs:
+    - "--max-model-len"
+    - "8192"
+    - "--disable-uvicorn-access-log"
+
 resources:
   limits:
     cpu: "8"
@@ -50,10 +56,6 @@ resources:
     cpu: "2"
     memory: 16Gi
     nvidia.com/gpu: "1"
-
-extraArgs:
-  - "--max-model-len"
-  - "8192"
 
 trustyai:
   enabled: false

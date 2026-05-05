@@ -24,6 +24,10 @@ serving:
     name: gpu-profile
     namespace: redhat-ods-applications
 
+mainContainer:
+  extraArgs:
+    - "--disable-uvicorn-access-log"
+
 resources:
   limits:
     cpu: "4"
