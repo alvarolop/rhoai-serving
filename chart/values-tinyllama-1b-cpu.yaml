@@ -40,6 +40,7 @@ mainContainer:
     - /var/run/kserve/tls/tls.crt
     - --ssl-keyfile
     - /var/run/kserve/tls/tls.key
+    - --disable-uvicorn-access-log
 
 resources:
   limits:

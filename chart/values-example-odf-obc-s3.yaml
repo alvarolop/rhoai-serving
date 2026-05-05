@@ -62,6 +62,7 @@ mainContainer:
   extraArgs:
     - "--max-model-len"
     - "2048"
+    - "--disable-uvicorn-access-log"
 
 trustyai:
   enabled: false
