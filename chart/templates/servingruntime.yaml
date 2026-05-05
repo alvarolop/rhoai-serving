@@ -54,10 +54,10 @@ spec:
         - --model_path=/mnt/models
         - --file_system_poll_wait_seconds=0
         - --metrics_enable
-        {{- range .Values.extraArgs }}
+        {{- range .Values.mainContainer.extraArgs }}
         - {{ . }}
         {{- end }}
-      {{- with .Values.extraEnv }}
+      {{- with .Values.mainContainer.env }}
       env:
         {{- toYaml . | nindent 8 }}
       {{- end }}
