@@ -69,24 +69,11 @@ spec:
         command:
           {{- toYaml . | nindent 10 }}
         {{- end }}
-        {{- if .Values.mainContainer.command }}
-        {{- /* When command is set (old-style vLLM), generate args directly */ -}}
+        {{- with .Values.mainContainer.args }}
         args:
-          - --model
-          - /mnt/models
-          - --port
-          - "8000"
-          - --served-model-name
-          - {{ .Values.name }}
-          - --ssl-certfile
-          - /var/run/kserve/tls/tls.crt
-          - --ssl-keyfile
-          - /var/run/kserve/tls/tls.key
-          {{- range .Values.mainContainer.extraArgs }}
-          - {{ . }}
-          {{- end }}
+          {{- toYaml . | nindent 10 }}
         {{- end }}
-        {{- if or (and (not .Values.mainContainer.command) .Values.mainContainer.extraArgs) .Values.mainContainer.env (eq (include "rhoai-serving.useHfToken" . | trim) "true") }}
+        {{- if or .Values.mainContainer.extraArgs .Values.mainContainer.env (eq (include "rhoai-serving.useHfToken" . | trim) "true") }}
         env:
           {{- if eq (include "rhoai-serving.useHfToken" . | trim) "true" }}
           - name: HF_TOKEN
@@ -95,7 +82,7 @@ spec:
                 name: hf-secret
                 key: HF_TOKEN
           {{- end }}
-          {{- if and (not .Values.mainContainer.command) .Values.mainContainer.extraArgs }}
+          {{- if .Values.mainContainer.extraArgs }}
           # KServe wrapper script reads VLLM_ADDITIONAL_ARGS and passes to vLLM
           # (vLLM v0.20+ may warn about unknown env var, but KServe requires this)
           - name: VLLM_ADDITIONAL_ARGS

@@ -46,10 +46,20 @@ mainContainer:
     - python
     - -m
     - vllm.entrypoints.openai.api_server
-  extraArgs:
-    - "--max-model-len"
+  args:
+    - --model
+    - /mnt/models
+    - --port
+    - "8000"
+    - --max-model-len
     - "2048"
-    - "--disable-uvicorn-access-log"
+    - --served-model-name
+    - tinyllama-1b
+    - --ssl-certfile
+    - /var/run/kserve/tls/tls.crt
+    - --ssl-keyfile
+    - /var/run/kserve/tls/tls.key
+    - --disable-uvicorn-access-log
 
 resources:
   limits:
