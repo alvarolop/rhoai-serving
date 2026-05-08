@@ -4,6 +4,26 @@ Comprehensive testing strategies for KServe model serving on OpenShift AI.
 
 ---
 
+## Directory Structure
+
+```
+testing/
+├── README.md                      # This file
+├── CONTAINER.md                   # Containerized k6 testing guide
+│
+├── 01-functional/                 # Functional validation tests
+│   ├── test-distilbert.sh        # Predictive (InferenceService)
+│   └── test-generative.sh        # Generative (LLMInferenceService)
+│
+├── 02-load-predictive/            # Performance tests for predictive models
+│   ├── k6-scripts/               # k6 JavaScript test scripts
+│   ├── manifests/                # OpenShift Job manifests
+│   └── run-k6-*.sh               # Test execution scripts
+│
+└── 03-load-generative/            # Performance tests for generative models (future)
+    └── (GuideLLM scripts - planned)
+```
+
 ## Table of Contents
 
 1. [Functional Testing](#1-functional-testing) - Verify models respond correctly
@@ -21,7 +41,7 @@ Comprehensive testing strategies for KServe model serving on OpenShift AI.
 Test predictive models using KServe v2 inference protocol (e.g., DistilBERT, OpenVINO models):
 
 ```bash
-cd testing
+cd testing/01-functional
 ./test-distilbert.sh
 ```
 
@@ -56,7 +76,7 @@ MODEL=my-model NAMESPACE=my-namespace ./test-distilbert.sh
 Test generative models using OpenAI-compatible API (e.g., vLLM-based LLMs):
 
 ```bash
-cd testing
+cd testing/01-functional
 ./test-generative.sh <namespace> <llmis-name>
 
 # Example: Test Qwen3-8B
@@ -175,7 +195,7 @@ MODEL=my-model NAMESPACE=my-namespace ./run-k6-job-hpa.sh
 
 **Run HPA test (containerized - recommended):**
 ```bash
-cd testing
+cd testing/02-load-predictive
 
 # Option 1: Run with podman/docker
 ./run-k6-container-hpa.sh
@@ -228,7 +248,7 @@ RATE=50/1s DURATION=180s ./test-vegeta.sh
 
 **Run KEDA test (containerized - recommended):**
 ```bash
-cd testing
+cd testing/02-load-predictive
 
 # Option 1: Run with podman/docker
 ./run-k6-container-keda.sh
@@ -409,8 +429,8 @@ testing/test-guidellm-wva.sh \
 | **Performance - Generative** | GuideLLM | vLLM models | Tokens/s, TTFT, latency |
 
 **Quick Start:**
-1. Functional test (predictive): `./test-distilbert.sh`
-2. Functional test (generative): `./test-generative.sh <namespace> <llmis-name>`
-3. Performance test (HPA): `./run-k6-container-hpa.sh`
-4. Performance test (KEDA): Deploy with `mode: keda`, then `./run-k6-container-keda.sh`
-5. Performance test (generative): (Coming soon with GuideLLM)
+1. Functional test (predictive): `cd 01-functional && ./test-distilbert.sh`
+2. Functional test (generative): `cd 01-functional && ./test-generative.sh <namespace> <llmis-name>`
+3. Performance test (HPA): `cd 02-load-predictive && ./run-k6-container-hpa.sh`
+4. Performance test (KEDA): `cd 02-load-predictive && ./run-k6-container-keda.sh`
+5. Performance test (generative): `cd 03-load-generative` (Coming soon with GuideLLM)
