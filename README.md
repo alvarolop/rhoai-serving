@@ -97,6 +97,19 @@ If your GPU nodes do not carry **`nvidia.com/gpu.deploy.device-plugin=true`**, c
 
 Single-replica serving stays **`replicas: 1`** in **`chart/values.yaml`**; per-model files only override when you need more than one pod.
 
+### Chart Documentation (helm-docs)
+
+The Helm chart uses [helm-docs](https://github.com/norwoodj/helm-docs) to auto-generate documentation from `values.yaml` comments. See [`chart/HELM_DOCS.md`](chart/HELM_DOCS.md) for installation and usage instructions.
+
+To regenerate `chart/README.md` after modifying `values.yaml`:
+
+```bash
+cd chart/
+make docs
+```
+
+This parses special comment syntax (`# --` for field descriptions) and generates a comprehensive README with an auto-generated values table.
+
 ### Dashboard connection secret
 
 The chart emits a **Secret** named **`name`**, matching **`opendatahub.io/connections`** on the serving CR. It follows the OpenShift AI **connections API** ([Using the connections API](https://docs.redhat.com/en/documentation/red_hat_openshift_ai_self-managed/3.2/html/working_on_projects/using-connections_projects)):

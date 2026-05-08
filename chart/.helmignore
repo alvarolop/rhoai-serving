@@ -21,3 +21,6 @@
 .idea/
 *.tmproj
 .vscode/
+# helm-docs
+README.md.gotmpl
+Makefile

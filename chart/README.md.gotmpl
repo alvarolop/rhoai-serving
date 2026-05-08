@@ -1,0 +1,219 @@
+{{ template "chart.header" . }}
+
+{{ template "chart.deprecationWarning" . }}
+
+{{ template "chart.badgesSection" . }}
+
+{{ template "chart.description" . }}
+
+{{ template "chart.homepageLine" . }}
+
+## Overview
+
+This Helm chart provides production-ready deployments for **Predictive** and **Generative AI** models on OpenShift using Red Hat OpenShift AI (RHOAI). The chart uses KServe in **Raw deployment mode** for maximum flexibility.
+
+### Supported Scenarios
+
+- **Predictive model serving** - Using OpenVINO runtime (`serving.type: predictive`)
+- **Generative model serving** - Using vLLM runtime for single GPU deployments (`serving.type: generative`)
+- **Embeddings model serving** - Using vLLM with pooling support
+- **Autoscaling** - HPA/KEDA-based dynamic scaling with inference-aware metrics
+
+### Two-Layer Values Architecture
+
+1. **`values.yaml`** - Shared defaults and schema reference (generative models, GPU by default)
+2. **`values-<model>.yaml`** - Model-specific overrides (name, namespace, URI, resources, connection settings)
+
+**Usage:**
+```bash
+helm template <release> chart/ \
+  -f chart/values.yaml \
+  -f chart/values-<model>.yaml
+```
+
+### Example Values Files
+
+- **Generative (GPU)**: `values-qwen3-8b-fp8-dynamic.yaml`, `values-gpt-oss-20b.yaml`
+- **Embeddings (GPU)**: `values-bge-m3.yaml`, `values-nomic-embed-text-v2-moe-gpu.yaml`
+- **Predictive (CPU)**: `values-distilbert.yaml` (includes KEDA autoscaling configuration example)
+- **Guardrails**: `values-llamaguard-7b.yaml` (gated HuggingFace; requires `hfToken`)
+
+{{ template "chart.maintainersSection" . }}
+
+{{ template "chart.sourcesSection" . }}
+
+{{ template "chart.requirementsSection" . }}
+
+## Prerequisites
+
+Required cluster components (can be installed via [rhoai-gitops](https://github.com/redhat-na-ssa/rhoai-gitops)):
+
+- OpenShift Container Platform 4.20+
+- OpenShift AI (RHOAI) with dependencies:
+  - OpenShift Pipelines
+  - Kueue (Red Hat build)
+  - Node Feature Discovery
+  - NVIDIA GPU Operator (for GPU models)
+  - Authorino (for authentication)
+
+## Model Source Options
+
+The chart supports multiple methods for loading models:
+
+- **OCI Registry (ModelCar)** - Pull models from OCI-compliant registries (`oci://registry.redhat.io/...`)
+- **S3-compatible storage** - Load from S3 buckets (AWS S3, MinIO, Ceph) via `s3://` URI
+- **PVC (Persistent Volume Claims)** - Use models on persistent volumes via `pvc://` URI
+- **HuggingFace Hub** - Pull directly from HF Hub via `hf://` URI (use `hfToken` for gated models)
+
+### S3 Configuration
+
+**Option 1: Manual S3 credentials** - Set `model.connection.s3.endpoint`, `bucket`, `accessKeyId`, `secretAccessKey`
+
+**Option 2: OpenShift Data Foundation ObjectBucketClaim** - Set `model.connection.s3.objectBucketClaim` to auto-read ODF-generated credentials
+
+See `values-example-minio-s3-tinyllama.yaml` and `values-example-odf-obc-s3.yaml` for examples.
+
+## Scaling
+
+### Configuration Structure
+
+All models use a unified `scaling` configuration with three modes:
+
+```yaml
+scaling:
+  mode: fixed  # "fixed", "keda" (predictive only), or "wva" (generative only, not yet available)
+  replicas: 1  # Used when mode: fixed
+```
+
+### Generative Models (LLMInferenceService)
+
+**Fixed scaling** (default and currently only supported option):
+```yaml
+scaling:
+  mode: fixed
+  replicas: 1
+```
+
+**WVA autoscaling** (coming soon): Will use `mode: wva` for inference-aware autoscaling with Workload Variant Autoscaler.
+
+### Predictive Models (InferenceService)
+
+**Option 1: Fixed scaling** (default):
+```yaml
+scaling:
+  mode: fixed
+  replicas: 1
+```
+
+**Option 2: KEDA autoscaling** (requires KEDA operator):
+```yaml
+scaling:
+  mode: keda
+  keda:
+    minReplicas: 1
+    maxReplicas: 5
+    pollingInterval: 5
+    prometheus:
+      serverAddress: https://thanos-querier.openshift-monitoring.svc.cluster.local:9092
+      threshold: "2"
+      authModes: "bearer"
+```
+
+When `mode: keda`, the chart:
+- Sets `serving.kserve.io/autoscalerClass: external` to disable default KServe HPA
+- Creates a `ScaledObject` that monitors `ovms_current_requests` metric (OpenVINO current requests)
+- Scales between min/max replicas when concurrent requests exceed threshold
+- Uses Thanos Querier for Prometheus metrics access with bearer token auth
+
+See `values-distilbert.yaml` for configuration examples (KEDA block is commented by default).
+
+## Health Probes
+
+For large models with slow startup times (>2min), configure health probes to prevent premature restarts:
+
+```yaml
+mainContainer:
+  startupProbe:
+    httpGet:
+      path: /health
+      port: 8000
+      scheme: HTTPS
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    failureThreshold: 30  # 5min max startup
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+      scheme: HTTPS
+    periodSeconds: 30
+    failureThreshold: 2
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+      scheme: HTTPS
+    periodSeconds: 10
+    failureThreshold: 3
+```
+
+See `values-gpt-oss-20b.yaml` for an example.
+
+## TrustyAI Monitoring
+
+Enable TrustyAI for bias and data drift detection:
+
+```yaml
+trustyai:
+  enabled: true
+```
+
+Deploys a TrustyAIService CR and required CA bundle ConfigMap. See `values-distilbert.yaml` for a predictive model example.
+
+{{ template "chart.valuesSection" . }}
+
+## Examples
+
+### Deploy Qwen3-8B (OCI ModelCar, Static Scaling)
+
+```bash
+helm template qwen chart/ \
+  -f chart/values.yaml \
+  -f chart/values-qwen3-8b-fp8-dynamic.yaml | oc apply -f -
+```
+
+### Deploy BGE-M3 Embeddings (HuggingFace, GPU)
+
+```bash
+helm template bge-m3 chart/ \
+  -f chart/values.yaml \
+  -f chart/values-bge-m3.yaml | oc apply -f -
+```
+
+### Deploy LlamaGuard-7B (Gated HF Model)
+
+```bash
+helm template llamaguard chart/ \
+  -f chart/values.yaml \
+  -f chart/values-llamaguard-7b.yaml \
+  --set hfToken=$(cat .hf_token) | oc apply -f -
+```
+
+### Deploy Predictive Model (OpenVINO, CPU)
+
+```bash
+# Fixed scaling (default)
+helm template distilbert chart/ \
+  -f chart/values.yaml \
+  -f chart/values-distilbert.yaml | oc apply -f -
+
+# KEDA autoscaling (uncomment keda block in values-distilbert.yaml and set mode: keda)
+helm template distilbert chart/ \
+  -f chart/values.yaml \
+  -f chart/values-distilbert.yaml | oc apply -f -
+```
+
+{{ template "chart.homepageLine" . }}
+
+----------------------------------------------
+Autogenerated from chart metadata using [helm-docs v1.14.2](https://github.com/norwoodj/helm-docs/releases/v1.14.2)
