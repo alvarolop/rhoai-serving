@@ -46,8 +46,11 @@ echo -e "\n[3/3] Running k6 test in container..."
 echo "Monitor HPA: watch -n 2 'oc get hpa,pods -n ${NAMESPACE}'"
 echo ""
 
+# Get script directory to find k6-scripts
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 ${CONTAINER_ENGINE} run --rm \
-  -v $(pwd)/k6-scripts:/scripts:ro,z \
+  -v ${SCRIPT_DIR}/k6-scripts:/scripts:ro,z \
   -e MODEL="${MODEL}" \
   -e ROUTE_URL="${ROUTE_URL}" \
   -e TOKEN="${TOKEN}" \
