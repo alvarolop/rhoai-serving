@@ -41,8 +41,7 @@ testing/
 Test predictive models using KServe v2 inference protocol (e.g., DistilBERT, OpenVINO models):
 
 ```bash
-cd testing/01-functional
-./test-distilbert.sh
+./testing/01-functional/test-distilbert.sh
 ```
 
 **What it does:**
@@ -76,11 +75,10 @@ MODEL=my-model NAMESPACE=my-namespace ./test-distilbert.sh
 Test generative models using OpenAI-compatible API (e.g., vLLM-based LLMs):
 
 ```bash
-cd testing/01-functional
-./test-generative.sh <namespace> <llmis-name>
+./testing/01-functional/test-generative.sh <namespace> <llmis-name>
 
 # Example: Test Qwen3-8B
-./test-generative.sh model-qwen3 qwen3-8b
+./testing/01-functional/test-generative.sh model-qwen3 qwen3-8b
 ```
 
 **What it does:**
@@ -195,22 +193,20 @@ MODEL=my-model NAMESPACE=my-namespace ./run-k6-job-hpa.sh
 
 **Run HPA test (containerized - recommended):**
 ```bash
-cd testing/02-load-predictive
-
 # Option 1: Run with podman/docker
-./run-k6-container-hpa.sh
+./testing/02-load-predictive/run-k6-container-hpa.sh
 
 # Option 2: Run as OpenShift Job
-./run-k6-job-hpa.sh
+./testing/02-load-predictive/run-k6-job-hpa.sh
 
 # Custom model
-MODEL=my-model NAMESPACE=my-namespace ./run-k6-container-hpa.sh
+MODEL=my-model NAMESPACE=my-namespace ./testing/02-load-predictive/run-k6-container-hpa.sh
 ```
 
 **Alternative: Local k6 installation (legacy)**
 ```bash
 sudo dnf install -y k6
-./test-k6-hpa.sh  # Requires local k6 binary
+./testing/02-load-predictive/test-k6-hpa.sh  # Requires local k6 binary
 ```
 
 **Monitor in another terminal:**
@@ -227,7 +223,7 @@ watch -n 2 'oc get hpa,pods -n model-distilbert'
 **Alternative: Vegeta (simpler, no Prometheus)**
 ```bash
 # Quick benchmark with Vegeta
-RATE=50/1s DURATION=180s ./test-vegeta.sh
+RATE=50/1s DURATION=180s ./testing/02-load-predictive/test-vegeta.sh
 ```
 
 ### 2.2 KEDA Testing (Custom Metrics Autoscaling)
@@ -248,22 +244,20 @@ RATE=50/1s DURATION=180s ./test-vegeta.sh
 
 **Run KEDA test (containerized - recommended):**
 ```bash
-cd testing/02-load-predictive
-
 # Option 1: Run with podman/docker
-./run-k6-container-keda.sh
+./testing/02-load-predictive/run-k6-container-keda.sh
 
 # Option 2: Run as OpenShift Job
-./run-k6-job-keda.sh
+./testing/02-load-predictive/run-k6-job-keda.sh
 
 # Custom model
-MODEL=my-model NAMESPACE=my-namespace ./run-k6-container-keda.sh
+MODEL=my-model NAMESPACE=my-namespace ./testing/02-load-predictive/run-k6-container-keda.sh
 ```
 
 **Alternative: Local k6 (legacy)**
 ```bash
 sudo dnf install -y k6
-./test-k6-keda.sh  # Requires local k6 binary
+./testing/02-load-predictive/test-k6-keda.sh  # Requires local k6 binary
 ```
 
 **Monitor KEDA scaling:**
@@ -390,14 +384,14 @@ When we implement generative model testing with GuideLLM:
 pip install guidellm
 
 # Run benchmark against vLLM model
-testing/test-guidellm.sh \
+./testing/03-load-generative/test-guidellm.sh \
   --model qwen3-8b \
   --namespace model-qwen3 \
   --max-concurrency 50 \
   --duration 300
 
 # Test WVA autoscaling
-testing/test-guidellm-wva.sh \
+./testing/03-load-generative/test-guidellm-wva.sh \
   --model qwen3-8b \
   --namespace model-qwen3 \
   --watch-wva
@@ -429,8 +423,8 @@ testing/test-guidellm-wva.sh \
 | **Performance - Generative** | GuideLLM | vLLM models | Tokens/s, TTFT, latency |
 
 **Quick Start:**
-1. Functional test (predictive): `cd 01-functional && ./test-distilbert.sh`
-2. Functional test (generative): `cd 01-functional && ./test-generative.sh <namespace> <llmis-name>`
-3. Performance test (HPA): `cd 02-load-predictive && ./run-k6-container-hpa.sh`
-4. Performance test (KEDA): `cd 02-load-predictive && ./run-k6-container-keda.sh`
-5. Performance test (generative): `cd 03-load-generative` (Coming soon with GuideLLM)
+1. Functional test (predictive): `./testing/01-functional/test-distilbert.sh`
+2. Functional test (generative): `./testing/01-functional/test-generative.sh <namespace> <llmis-name>`
+3. Performance test (HPA): `./testing/02-load-predictive/run-k6-container-hpa.sh`
+4. Performance test (KEDA): `./testing/02-load-predictive/run-k6-container-keda.sh`
+5. Performance test (generative): (Coming soon - see `testing/03-load-generative/`)

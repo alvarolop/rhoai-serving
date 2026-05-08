@@ -20,9 +20,9 @@ See [../README.md](../README.md#3-performance-testing---generative-models) for f
 
 ```bash
 # Planned scripts (not yet implemented)
-./test-guidellm.sh                # Basic GuideLLM test
-./test-guidellm-wva.sh           # WVA autoscaling test
-./run-guidellm-container.sh      # Containerized GuideLLM
+./testing/03-load-generative/test-guidellm.sh                # Basic GuideLLM test
+./testing/03-load-generative/test-guidellm-wva.sh           # WVA autoscaling test
+./testing/03-load-generative/run-guidellm-container.sh      # Containerized GuideLLM
 ```
 
 ## Why Not Use k6 for Generative?

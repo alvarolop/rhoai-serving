@@ -8,31 +8,31 @@ Performance testing and autoscaling validation for predictive models (InferenceS
 
 **HPA Testing** (CPU-based autoscaling):
 ```bash
-./run-k6-container-hpa.sh
+./testing/02-load-predictive/run-k6-container-hpa.sh
 ```
 
 **KEDA Testing** (custom metrics autoscaling):
 ```bash
-./run-k6-container-keda.sh
+./testing/02-load-predictive/run-k6-container-keda.sh
 ```
 
 **OpenShift Job** (cloud-native):
 ```bash
-./run-k6-job-hpa.sh
-./run-k6-job-keda.sh
+./testing/02-load-predictive/run-k6-job-hpa.sh
+./testing/02-load-predictive/run-k6-job-keda.sh
 ```
 
 ### Alternative Tools
 
 **Vegeta** (simple HTTP load):
 ```bash
-./test-vegeta.sh
+./testing/02-load-predictive/test-vegeta.sh
 ```
 
 **k6 Local** (requires k6 binary installed):
 ```bash
-./test-k6-hpa.sh
-./test-k6-keda.sh
+./testing/02-load-predictive/test-k6-hpa.sh
+./testing/02-load-predictive/test-k6-keda.sh
 ```
 
 ## Structure

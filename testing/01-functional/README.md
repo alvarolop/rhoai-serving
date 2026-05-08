@@ -7,7 +7,7 @@ Quick validation scripts to verify models respond correctly to inference request
 Test predictive models using KServe v2 inference protocol:
 
 ```bash
-./test-distilbert.sh
+./testing/01-functional/test-distilbert.sh
 ```
 
 Works with OpenVINO models and other predictive workloads.
@@ -17,10 +17,10 @@ Works with OpenVINO models and other predictive workloads.
 Test generative models using OpenAI-compatible API:
 
 ```bash
-./test-generative.sh <namespace> <llmis-name>
+./testing/01-functional/test-generative.sh <namespace> <llmis-name>
 
 # Example
-./test-generative.sh model-qwen3 qwen3-8b
+./testing/01-functional/test-generative.sh model-qwen3 qwen3-8b
 ```
 
 Works with vLLM-based LLM models.
