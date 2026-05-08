@@ -15,24 +15,23 @@ serving:
     namespace: redhat-ods-applications
 
 # Scaling configuration - supports three modes for predictive models:
-# 1. "fixed" - Static replica count (default)
-# 2. "hpa" - Kubernetes HPA based on CPU/memory metrics (native KServe support)
+# 1. "fixed" - Static replica count
+# 2. "hpa" - Kubernetes HPA based on CPU/memory metrics (default)
 # 3. "keda" - KEDA autoscaling based on custom Prometheus metrics (requires KEDA operator)
 scaling:
-  mode: fixed
-  replicas: 1
+  mode: hpa
 
-  # HPA autoscaling configuration (only used when mode: hpa)
-  # KServe creates HPA automatically based on CPU/memory metrics
-  # Uncomment and set mode: hpa to enable HPA autoscaling
-  # hpa:
-  #   minReplicas: 1
-  #   maxReplicas: 5
-  #   scaleMetric: cpu      # cpu or memory
-  #   scaleTarget: 80       # Target value (e.g., 80 for 80% CPU utilization)
+  # Fixed scaling (uncomment and set mode: fixed to use)
+  # replicas: 1
+
+  # HPA autoscaling (active by default)
+  hpa:
+    minReplicas: 1
+    maxReplicas: 5
+    scaleMetric: cpu      # cpu or memory
+    scaleTarget: 80       # Target value (e.g., 80 for 80% CPU utilization)
 
   # KEDA autoscaling configuration (only used when mode: keda)
-  # Creates ScaledObject with custom Prometheus queries
   # Uncomment and set mode: keda to enable KEDA autoscaling
   # keda:
   #   minReplicas: 1
@@ -51,13 +50,13 @@ model:
 
 resources:
   limits:
-    cpu: "2"
-    memory: 8Gi
+    cpu: "200m"
+    memory: 2Gi
     # Override merged base defaults so CPU predictive does not inherit nvidia.com/gpu: "1"
     nvidia.com/gpu: null
   requests:
-    cpu: "1"
-    memory: 1Gi
+    cpu: "50m"
+    memory: 512Mi
     nvidia.com/gpu: null
 
 runtime:
