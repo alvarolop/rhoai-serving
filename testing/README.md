@@ -76,6 +76,73 @@ PAYLOAD='{"inputs": "Custom test sentence"}' ./test-distilbert.sh
 - High performance for GPU workload testing
 - Same framework for both scenarios
 
+**Official k6 Container Image**: [`docker.io/grafana/k6`](https://hub.docker.com/r/grafana/k6)
+
+### Containerized k6 Testing (No Local Installation)
+
+**Two approaches for running k6 without local installation:**
+
+#### Option 1: Podman/Docker (Local Container)
+
+Run k6 in a container with scripts mounted as volumes:
+
+```bash
+cd testing
+
+# HPA test
+./run-k6-container-hpa.sh
+
+# KEDA test
+./run-k6-container-keda.sh
+
+# Custom model
+MODEL=my-model NAMESPACE=my-namespace ./run-k6-container-hpa.sh
+```
+
+**How it works:**
+- Mounts `k6-scripts/` directory into container
+- Passes environment variables (MODEL, ROUTE_URL, TOKEN)
+- No local k6 installation needed
+- Uses official `grafana/k6` image
+
+#### Option 2: OpenShift Job (Cloud-Native)
+
+Run k6 as a Kubernetes Job directly in OpenShift:
+
+```bash
+cd testing
+
+# HPA test
+./run-k6-job-hpa.sh
+
+# KEDA test
+./run-k6-job-keda.sh
+
+# Custom model
+MODEL=my-model NAMESPACE=my-namespace ./run-k6-job-hpa.sh
+```
+
+**How it works:**
+- Creates ConfigMap with k6 scripts (`manifests/configmap-k6-scripts.yaml`)
+- Creates Secret with auth token
+- Launches Job with `grafana/k6` image
+- Follows job logs automatically
+- Runs entirely in OpenShift (no local dependencies)
+
+**OpenShift Best Practices Applied:**
+- ✓ Non-root container (k6 runs as UID 12345)
+- ✓ Read-only script volumes (`:ro`)
+- ✓ Security context with dropped capabilities
+- ✓ Resource limits (CPU: 1 core, Memory: 512Mi)
+- ✓ Auto-cleanup with `ttlSecondsAfterFinished`
+- ✓ Seccomp profile (RuntimeDefault)
+- ✓ No privilege escalation
+
+**Job Manifests:**
+- `manifests/configmap-k6-scripts.yaml` - k6 test scripts
+- `manifests/job-k6-hpa.yaml` - HPA test Job
+- `manifests/job-k6-keda.yaml` - KEDA test Job
+
 ### 2.1 HPA Testing (CPU-based Autoscaling)
 
 **Scenario**: CPU-based predictive model with Kubernetes HPA (e.g., DistilBERT on CPU).
@@ -86,21 +153,24 @@ PAYLOAD='{"inputs": "Custom test sentence"}' ./test-distilbert.sh
 3. HPA detects CPU > 80% → scales from 1 to 5 replicas
 4. Load decreases → HPA scales down after cooldown (~5 min)
 
-**Install k6:**
-```bash
-sudo dnf install -y https://dl.k6.io/rpm/repo.rpm
-sudo dnf install -y k6
-```
-
-**Run HPA test:**
+**Run HPA test (containerized - recommended):**
 ```bash
 cd testing
 
-# Default: test distilbert in model-distilbert namespace
-./test-k6-hpa.sh
+# Option 1: Run with podman/docker
+./run-k6-container-hpa.sh
+
+# Option 2: Run as OpenShift Job
+./run-k6-job-hpa.sh
 
 # Custom model
-MODEL=my-model NAMESPACE=my-namespace ./test-k6-hpa.sh
+MODEL=my-model NAMESPACE=my-namespace ./run-k6-container-hpa.sh
+```
+
+**Alternative: Local k6 installation (legacy)**
+```bash
+sudo dnf install -y k6
+./test-k6-hpa.sh  # Requires local k6 binary
 ```
 
 **Monitor in another terminal:**
@@ -136,12 +206,24 @@ RATE=50/1s DURATION=180s ./test-vegeta.sh
 - KEDA operator installed in cluster
 - ScaledObject created (chart does this automatically)
 
-**Run KEDA test:**
+**Run KEDA test (containerized - recommended):**
 ```bash
 cd testing
 
-# Test model with KEDA enabled
-MODEL=distilbert NAMESPACE=model-distilbert ./test-k6-keda.sh
+# Option 1: Run with podman/docker
+./run-k6-container-keda.sh
+
+# Option 2: Run as OpenShift Job
+./run-k6-job-keda.sh
+
+# Custom model
+MODEL=my-model NAMESPACE=my-namespace ./run-k6-container-keda.sh
+```
+
+**Alternative: Local k6 (legacy)**
+```bash
+sudo dnf install -y k6
+./test-k6-keda.sh  # Requires local k6 binary
 ```
 
 **Monitor KEDA scaling:**

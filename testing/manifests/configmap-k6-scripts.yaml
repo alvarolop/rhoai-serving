@@ -1,0 +1,153 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k6-test-scripts
+  labels:
+    app: k6-testing
+data:
+  hpa-test.js: |
+    // k6 HPA Autoscaling Test Script
+    // Runs in container with environment variables passed from Job
+
+    import http from 'k6/http';
+    import { check, sleep } from 'k6';
+    import { Counter, Trend, Rate } from 'k6/metrics';
+
+    // Custom metrics
+    const inferenceRequests = new Counter('inference_requests_total');
+    const inferenceLatency = new Trend('inference_latency_ms');
+    const inferenceErrors = new Rate('inference_errors');
+
+    // Configuration from environment variables
+    const MODEL = __ENV.MODEL;
+    const ROUTE_URL = __ENV.ROUTE_URL;
+    const TOKEN = __ENV.TOKEN;
+
+    export const options = {
+      scenarios: {
+        hpa_ramp: {
+          executor: 'ramping-vus',
+          startVUs: 0,
+          stages: [
+            { duration: '30s', target: 5 },
+            { duration: '1m', target: 30 },
+            { duration: '2m', target: 30 },
+            { duration: '30s', target: 50 },
+            { duration: '1m', target: 50 },
+            { duration: '1m', target: 0 },
+          ],
+        },
+      },
+      thresholds: {
+        'http_req_duration': ['p(95)<3000'],
+        'http_req_failed': ['rate<0.05'],
+        'inference_errors': ['rate<0.05'],
+      },
+    };
+
+    const payload = JSON.stringify({
+      inputs: 'Load testing for HPA autoscaling with k6 in container.'
+    });
+
+    const params = {
+      headers: {
+        'Authorization': `Bearer ${TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+    };
+
+    export default function () {
+      const url = `https://${ROUTE_URL}/v2/models/${MODEL}/infer`;
+
+      const startTime = Date.now();
+      const response = http.post(url, payload, params);
+      const duration = Date.now() - startTime;
+
+      inferenceRequests.add(1);
+      inferenceLatency.add(duration);
+
+      const success = check(response, {
+        'status is 200': (r) => r.status === 200,
+        'latency < 3s': (r) => r.timings.duration < 3000,
+      });
+
+      if (!success) {
+        inferenceErrors.add(1);
+      }
+
+      sleep(1);
+    }
+
+    export function setup() {
+      console.log(`k6 HPA Test - Model: ${MODEL} - URL: https://${ROUTE_URL}`);
+    }
+
+  keda-test.js: |
+    // k6 KEDA Autoscaling Test Script
+    // Maintains constant concurrent load to trigger KEDA ScaledObject
+
+    import http from 'k6/http';
+    import { check, sleep } from 'k6';
+    import { Counter, Trend, Rate } from 'k6/metrics';
+
+    const inferenceRequests = new Counter('inference_requests_total');
+    const inferenceLatency = new Trend('inference_latency_ms');
+    const inferenceErrors = new Rate('inference_errors');
+    const concurrentRequests = new Trend('concurrent_requests');
+
+    const MODEL = __ENV.MODEL;
+    const ROUTE_URL = __ENV.ROUTE_URL;
+    const TOKEN = __ENV.TOKEN;
+
+    export const options = {
+      scenarios: {
+        keda_constant_load: {
+          executor: 'constant-vus',
+          vus: 20,
+          duration: '5m',
+        },
+      },
+      thresholds: {
+        'http_req_duration': ['p(95)<5000'],
+        'http_req_failed': ['rate<0.05'],
+        'concurrent_requests': ['avg>10'],
+      },
+    };
+
+    const payload = JSON.stringify({
+      inputs: 'KEDA testing with concurrent requests monitoring.'
+    });
+
+    const params = {
+      headers: {
+        'Authorization': `Bearer ${TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+    };
+
+    export default function () {
+      const url = `https://${ROUTE_URL}/v2/models/${MODEL}/infer`;
+
+      const startTime = Date.now();
+      const response = http.post(url, payload, params);
+      const duration = Date.now() - startTime;
+
+      inferenceRequests.add(1);
+      inferenceLatency.add(duration);
+      concurrentRequests.add(__VU);
+
+      const success = check(response, {
+        'status is 200': (r) => r.status === 200,
+      });
+
+      if (!success) {
+        inferenceErrors.add(1);
+      }
+
+      sleep(0.5);
+    }
+
+    export function setup() {
+      console.log(`k6 KEDA Test - Model: ${MODEL} - Constant 20 VUs`);
+    }

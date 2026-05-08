@@ -1,0 +1,68 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-keda-test
+  labels:
+    app: k6-testing
+    test-type: keda
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        app: k6-testing
+        test-type: keda
+    spec:
+      restartPolicy: Never
+
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+      - name: k6
+        image: docker.io/grafana/k6:latest
+
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          runAsNonRoot: true
+
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: "1"
+            memory: 512Mi
+
+        command:
+          - k6
+          - run
+          - /scripts/keda-test.js
+
+        env:
+        - name: MODEL
+          value: "distilbert"
+        - name: ROUTE_URL
+          value: ""
+        - name: TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: k6-test-token
+              key: token
+
+        volumeMounts:
+        - name: k6-scripts
+          mountPath: /scripts
+          readOnly: true
+
+      volumes:
+      - name: k6-scripts
+        configMap:
+          name: k6-test-scripts

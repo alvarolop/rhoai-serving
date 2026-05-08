@@ -1,0 +1,74 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-hpa-test
+  labels:
+    app: k6-testing
+    test-type: hpa
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 600  # Auto-delete after 10 minutes
+  template:
+    metadata:
+      labels:
+        app: k6-testing
+        test-type: hpa
+    spec:
+      restartPolicy: Never
+
+      # Security context - OpenShift best practices
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+      - name: k6
+        image: docker.io/grafana/k6:latest
+
+        # Security context for container
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          runAsNonRoot: true
+
+        # Resource limits - OpenShift best practices
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: "1"
+            memory: 512Mi
+
+        # k6 command
+        command:
+          - k6
+          - run
+          - /scripts/hpa-test.js
+
+        # Environment variables
+        env:
+        - name: MODEL
+          value: "distilbert"  # Override with kustomize or helm
+        - name: ROUTE_URL
+          value: ""  # Must be set at runtime
+        - name: TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: k6-test-token
+              key: token
+
+        # Mount k6 scripts from ConfigMap
+        volumeMounts:
+        - name: k6-scripts
+          mountPath: /scripts
+          readOnly: true
+
+      volumes:
+      - name: k6-scripts
+        configMap:
+          name: k6-test-scripts
