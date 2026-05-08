@@ -69,10 +69,10 @@ scaling:
     minReplicas: 1
     # -- Maximum number of replicas for autoscaling
     maxReplicas: 5
-    # -- Target metric for scaling (cpu, memory, or custom metric name)
-    scaleTarget: cpu
+    # -- Scaling metric type (cpu or memory)
+    scaleMetric: cpu
     # -- Target value for the metric (e.g., 80 for 80% CPU utilization)
-    scaleMetric: 80
+    scaleTarget: 80
   # -- KEDA autoscaling configuration (only used when mode is "keda" for predictive models). Requires KEDA operator installed.
   keda:
     # -- Minimum number of replicas for autoscaling

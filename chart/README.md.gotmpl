@@ -116,14 +116,15 @@ scaling:
   hpa:
     minReplicas: 1
     maxReplicas: 5
-    scaleTarget: cpu      # cpu, memory, or custom metric name
-    scaleMetric: 80       # Target value (e.g., 80 for 80% CPU utilization)
+    scaleMetric: cpu      # cpu or memory
+    scaleTarget: 80       # Target value (e.g., 80 for 80% CPU utilization)
 ```
 
 When `mode: hpa`:
 - KServe creates a standard Kubernetes HPA automatically
 - Scales based on CPU utilization (default) or memory
-- Can use custom metrics via `scaleTarget` and `scaleMetric`
+- `scaleMetric` specifies the metric type (cpu or memory)
+- `scaleTarget` specifies the target value (e.g., 80 for 80% utilization)
 - No additional operators required
 
 #### **Option 3: KEDA autoscaling** (custom metrics)

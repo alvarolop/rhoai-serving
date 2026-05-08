@@ -23,13 +23,13 @@ scaling:
   replicas: 1
 
   # HPA autoscaling configuration (only used when mode: hpa)
-  # KServe creates HPA automatically based on CPU/memory or custom metrics
+  # KServe creates HPA automatically based on CPU/memory metrics
   # Uncomment and set mode: hpa to enable HPA autoscaling
   # hpa:
   #   minReplicas: 1
   #   maxReplicas: 5
-  #   scaleTarget: cpu      # cpu, memory, or custom metric name
-  #   scaleMetric: 80       # Target value (e.g., 80 for 80% CPU utilization)
+  #   scaleMetric: cpu      # cpu or memory
+  #   scaleTarget: 80       # Target value (e.g., 80 for 80% CPU utilization)
 
   # KEDA autoscaling configuration (only used when mode: keda)
   # Creates ScaledObject with custom Prometheus queries

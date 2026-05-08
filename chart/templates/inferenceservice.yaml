@@ -43,8 +43,8 @@ spec:
     {{- else if eq .Values.scaling.mode "hpa" }}
     minReplicas: {{ .Values.scaling.hpa.minReplicas }}
     maxReplicas: {{ .Values.scaling.hpa.maxReplicas }}
-    scaleTarget: {{ .Values.scaling.hpa.scaleTarget }}
     scaleMetric: {{ .Values.scaling.hpa.scaleMetric }}
+    scaleTarget: {{ .Values.scaling.hpa.scaleTarget }}
     {{- else if eq .Values.scaling.mode "keda" }}
     minReplicas: {{ .Values.scaling.keda.minReplicas }}
     maxReplicas: {{ .Values.scaling.keda.maxReplicas }}
