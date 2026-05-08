@@ -37,8 +37,18 @@ spec:
       type: RollingUpdate
     # imagePullSecrets:
     #   - name: {{ .Values.name }}
+    {{- if eq .Values.scaling.mode "fixed" }}
     minReplicas: {{ .Values.scaling.replicas }}
     maxReplicas: {{ .Values.scaling.replicas }}
+    {{- else if eq .Values.scaling.mode "hpa" }}
+    minReplicas: {{ .Values.scaling.hpa.minReplicas }}
+    maxReplicas: {{ .Values.scaling.hpa.maxReplicas }}
+    scaleTarget: {{ .Values.scaling.hpa.scaleTarget }}
+    scaleMetric: {{ .Values.scaling.hpa.scaleMetric }}
+    {{- else if eq .Values.scaling.mode "keda" }}
+    minReplicas: {{ .Values.scaling.keda.minReplicas }}
+    maxReplicas: {{ .Values.scaling.keda.maxReplicas }}
+    {{- end }}
     {{- if and (eq (include "rhoai-serving.hasNvidiaGpu" . | trim) "true") .Values.serving.gpuPodTolerations }}
     tolerations:
       - effect: NoSchedule

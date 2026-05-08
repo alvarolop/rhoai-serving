@@ -59,10 +59,20 @@ serving:
 
 # -- Scaling configuration for model serving workloads
 scaling:
-  # -- Scaling mode: "fixed" (static replicas), "keda" (predictive models autoscaling), "wva" (generative models autoscaling - not yet available)
+  # -- Scaling mode: "fixed" (static replicas), "hpa" (predictive models CPU/memory HPA), "keda" (predictive models custom metrics), "wva" (generative models - not yet available)
   mode: fixed
   # -- Number of replicas when mode is "fixed"
   replicas: 1
+  # -- HPA autoscaling configuration (only used when mode is "hpa" for predictive models). Uses standard Kubernetes HPA with CPU/memory metrics.
+  hpa:
+    # -- Minimum number of replicas for autoscaling
+    minReplicas: 1
+    # -- Maximum number of replicas for autoscaling
+    maxReplicas: 5
+    # -- Target metric for scaling (cpu, memory, or custom metric name)
+    scaleTarget: cpu
+    # -- Target value for the metric (e.g., 80 for 80% CPU utilization)
+    scaleMetric: 80
   # -- KEDA autoscaling configuration (only used when mode is "keda" for predictive models). Requires KEDA operator installed.
   keda:
     # -- Minimum number of replicas for autoscaling

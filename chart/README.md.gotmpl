@@ -77,11 +77,11 @@ See `values-example-minio-s3-tinyllama.yaml` and `values-example-odf-obc-s3.yaml
 
 ### Configuration Structure
 
-All models use a unified `scaling` configuration with three modes:
+All models use a unified `scaling` configuration with four modes:
 
 ```yaml
 scaling:
-  mode: fixed  # "fixed", "keda" (predictive only), or "wva" (generative only, not yet available)
+  mode: fixed  # "fixed", "hpa" (predictive only), "keda" (predictive only), or "wva" (generative only, not yet available)
   replicas: 1  # Used when mode: fixed
 ```
 
@@ -98,14 +98,36 @@ scaling:
 
 ### Predictive Models (InferenceService)
 
-**Option 1: Fixed scaling** (default):
+Predictive models support three scaling modes:
+
+#### **Option 1: Fixed scaling** (default)
+Static replica count, no autoscaling:
 ```yaml
 scaling:
   mode: fixed
   replicas: 1
 ```
 
-**Option 2: KEDA autoscaling** (requires KEDA operator):
+#### **Option 2: HPA autoscaling** (native Kubernetes)
+Standard Kubernetes HPA based on CPU/memory metrics. KServe creates the HPA automatically:
+```yaml
+scaling:
+  mode: hpa
+  hpa:
+    minReplicas: 1
+    maxReplicas: 5
+    scaleTarget: cpu      # cpu, memory, or custom metric name
+    scaleMetric: 80       # Target value (e.g., 80 for 80% CPU utilization)
+```
+
+When `mode: hpa`:
+- KServe creates a standard Kubernetes HPA automatically
+- Scales based on CPU utilization (default) or memory
+- Can use custom metrics via `scaleTarget` and `scaleMetric`
+- No additional operators required
+
+#### **Option 3: KEDA autoscaling** (custom metrics)
+KEDA-based autoscaling with custom Prometheus queries. Requires KEDA operator installed:
 ```yaml
 scaling:
   mode: keda
@@ -119,13 +141,28 @@ scaling:
       authModes: "bearer"
 ```
 
-When `mode: keda`, the chart:
+When `mode: keda`:
 - Sets `serving.kserve.io/autoscalerClass: external` to disable default KServe HPA
 - Creates a `ScaledObject` that monitors `ovms_current_requests` metric (OpenVINO current requests)
 - Scales between min/max replicas when concurrent requests exceed threshold
 - Uses Thanos Querier for Prometheus metrics access with bearer token auth
+- Requires KEDA operator installed cluster-wide
 
-See `values-distilbert.yaml` for configuration examples (KEDA block is commented by default).
+See `values-distilbert.yaml` for all configuration examples (HPA and KEDA blocks are commented by default).
+
+#### **Choosing Between HPA and KEDA**
+
+**Use HPA when:**
+- You want simple CPU or memory-based autoscaling
+- You don't need custom metrics from Prometheus
+- You want native Kubernetes functionality without additional operators
+- Resource-based scaling is sufficient for your workload
+
+**Use KEDA when:**
+- You need custom Prometheus metrics (e.g., `ovms_current_requests`)
+- You want to scale based on external systems (queues, databases, etc.)
+- You need more sophisticated scaling triggers
+- You already have KEDA deployed in your cluster
 
 ## Health Probes
 
