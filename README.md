@@ -32,10 +32,18 @@ In this repository, we will showcase all the features of RHOAI Serving. Since Op
 > [!NOTE]
 > Independently of the purpose of the model, we will use the `kserve` operator to serve the model using the **Raw deployment** mode since it is the most flexible and powerful mode.
 
-After you deploy a model, run the matching script from the repository root (with `oc` logged in and `jq` installed) to confirm it responds:
+## Testing
 
-- **Generative** (LLMInferenceService): [`tests/test-generative.sh`](tests/test-generative.sh) — arguments are `<namespace>` then the **LLMInferenceService object name** (the chart `name` in the model values file, e.g. `qwen3-8b`), not Helm’s `.Release.Name` from `./deploy-mode.sh`. If you pass a wrong name but there is only one LLMInferenceService in that namespace, the script uses it and prints a note. The script reads `spec.model.name` for the OpenAI `model` field; optional third argument overrides that id.
-- **Predictive** (InferenceService): [`tests/test-predictive.sh`](tests/test-predictive.sh) — argument is the InferenceService name; the script uses namespace `model-<name>`.
+Comprehensive testing guide covering functional validation, performance testing, and autoscaling:
+
+**📖 [Testing Documentation](testing/README.md)**
+
+Quick tests:
+- **Functional test** (verify model responds): `testing/test-distilbert.sh`
+- **HPA autoscaling** (CPU-based): `testing/test-k6-hpa.sh`
+- **KEDA autoscaling** (custom metrics): `testing/test-k6-keda.sh`
+
+Legacy test scripts (generative models): [`tests/test-generative.sh`](tests/test-generative.sh), [`tests/test-predictive.sh`](tests/test-predictive.sh)
 
 ## Architecture Components
 

@@ -28,12 +28,12 @@ model:
 
 resources:
   limits:
-    cpu: "2"
-    memory: 8Gi
+    cpu: "200m"
+    memory: 2Gi
     nvidia.com/gpu: null
   requests:
-    cpu: "1"
-    memory: 1Gi
+    cpu: "50m"
+    memory: 512Mi
     nvidia.com/gpu: null
 
 runtime:
