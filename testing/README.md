@@ -16,9 +16,9 @@ Comprehensive testing strategies for KServe model serving on OpenShift AI.
 
 **Goal**: Verify that deployed models respond to inference requests correctly and return valid predictions.
 
-### Quick Test: DistilBERT
+### 1.1 Predictive Models (InferenceService)
 
-Test the DistilBERT predictive model with a sample inference request:
+Test predictive models using KServe v2 inference protocol (e.g., DistilBERT, OpenVINO models):
 
 ```bash
 cd testing
@@ -26,7 +26,7 @@ cd testing
 ```
 
 **What it does:**
-- Sends a sample text classification request
+- Sends a sample inference request via KServe v2 protocol
 - Validates HTTP 200 response
 - Displays the inference output (predictions/scores)
 - Checks response time
@@ -46,15 +46,35 @@ cd testing
 }
 ```
 
-### Testing Other Models
+**Custom model:**
+```bash
+MODEL=my-model NAMESPACE=my-namespace ./test-distilbert.sh
+```
+
+### 1.2 Generative Models (LLMInferenceService)
+
+Test generative models using OpenAI-compatible API (e.g., vLLM-based LLMs):
 
 ```bash
-# Test with custom model
-MODEL=my-model NAMESPACE=my-namespace ./test-distilbert.sh
+cd testing
+./test-generative.sh <namespace> <llmis-name>
 
-# Test with custom payload
-PAYLOAD='{"inputs": "Custom test sentence"}' ./test-distilbert.sh
+# Example: Test Qwen3-8B
+./test-generative.sh model-qwen3 qwen3-8b
 ```
+
+**What it does:**
+- Sends chat completion request via OpenAI-compatible API
+- Auto-detects model name from `spec.model.name`
+- Validates response structure
+- Displays generated text
+
+**Arguments:**
+1. `namespace` - Namespace containing the LLMInferenceService
+2. `llmis-name` - LLMInferenceService metadata.name (chart `name`, not Helm release)
+3. `openai-model-id` (optional) - Override model ID
+
+**Note:** If only one LLMInferenceService exists in the namespace, the script auto-selects it.
 
 ---
 
@@ -382,13 +402,15 @@ testing/test-guidellm-wva.sh \
 
 | Test Type | Tool | Target | Metrics |
 |-----------|------|--------|---------|
-| **Functional** | curl/bash | All models | Response correctness |
-| **Predictive HPA** | k6 | CPU models | CPU %, replica count |
-| **Predictive KEDA** | k6 | GPU models | `ovms_current_requests`, replicas |
-| **Generative** | GuideLLM | vLLM models | Tokens/s, TTFT, latency |
+| **Functional - Predictive** | curl/bash | InferenceService | Response correctness |
+| **Functional - Generative** | curl/bash | LLMInferenceService | OpenAI API compatibility |
+| **Performance - HPA** | k6 | CPU models | CPU %, replica count |
+| **Performance - KEDA** | k6 | GPU models | `ovms_current_requests`, replicas |
+| **Performance - Generative** | GuideLLM | vLLM models | Tokens/s, TTFT, latency |
 
 **Quick Start:**
-1. Functional test: `./test-distilbert.sh`
-2. HPA test: `./test-k6-hpa.sh`
-3. KEDA test: Deploy with `mode: keda`, then `./test-k6-keda.sh`
-4. Generative: (Coming soon with GuideLLM)
+1. Functional test (predictive): `./test-distilbert.sh`
+2. Functional test (generative): `./test-generative.sh <namespace> <llmis-name>`
+3. Performance test (HPA): `./run-k6-container-hpa.sh`
+4. Performance test (KEDA): Deploy with `mode: keda`, then `./run-k6-container-keda.sh`
+5. Performance test (generative): (Coming soon with GuideLLM)

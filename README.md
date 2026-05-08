@@ -39,11 +39,10 @@ Comprehensive testing guide covering functional validation, performance testing,
 **📖 [Testing Documentation](testing/README.md)**
 
 Quick tests:
-- **Functional test** (verify model responds): `testing/test-distilbert.sh`
-- **HPA autoscaling** (CPU-based): `testing/test-k6-hpa.sh`
-- **KEDA autoscaling** (custom metrics): `testing/test-k6-keda.sh`
-
-Legacy test scripts (generative models): [`tests/test-generative.sh`](tests/test-generative.sh), [`tests/test-predictive.sh`](tests/test-predictive.sh)
+- **Functional - Predictive**: `testing/test-distilbert.sh` (InferenceService)
+- **Functional - Generative**: `testing/test-generative.sh` (LLMInferenceService)
+- **Performance - HPA**: `testing/run-k6-container-hpa.sh` (CPU autoscaling)
+- **Performance - KEDA**: `testing/run-k6-container-keda.sh` (custom metrics)
 
 ## Architecture Components
 
