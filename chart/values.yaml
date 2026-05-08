@@ -14,195 +14,184 @@
 # Predictive (OpenVINO) models: use a values file that sets serving.type: predictive and the
 # runtime block (see values-distilbert.yaml).
 
-# Resource identity
+# -- Resource identity name for the model serving deployment
 name: model-server
 
-# Target namespace for all chart resources
+# @section -- Namespace Configuration
+
+# -- Target namespace configuration for all chart resources
 namespace:
-  # When false, the Namespace object is not created — use an existing namespace (.name must match).
+  # -- Create the namespace if it doesn't exist
   create: true
+  # -- Namespace name
   name: model-serving
-  # OpenShift console: Namespace display name (defaults to .name if empty)
+  # -- OpenShift console display name (defaults to .name if empty)
   displayName: ""
-  # OpenShift console: longer description (optional; annotation omitted when empty)
+  # -- OpenShift console description annotation (optional)
   description: ""
-  # Kueue (Red Hat build): queue enforcement for serving workloads requires this label on the namespace
-  # (see OpenShift AI docs — Managing workloads with Kueue). Set false only if you intentionally opt out.
+  # -- Enable Kueue management label for queue enforcement (Red Hat OpenShift AI workload scheduling)
   kueueManaged: true
 
-# Kueue: LocalQueue name used as label kueue.x-k8s.io/queue-name on serving CRs (required by the
-# KServe LLMInferenceService admission webhook when Kueue validates). Must match a LocalQueue in
-# the model namespace (rhoai-gitops rhoai-environment-chart uses localQueueName: default).
+# @section -- Kueue Configuration
+
+# -- Kueue LocalQueue configuration
 kueue:
+  # -- LocalQueue name used as label kueue.x-k8s.io/queue-name on serving CRs. Must match a LocalQueue in the model namespace.
   localQueueName: default
 
-# Serving configuration (expects Kueue: namespace.kueueManaged on created namespaces)
-#   type: "generative" => Creates LLMInferenceService (vLLM-based generative models)
-#         "predictive" => Creates ServingRuntime + InferenceService (OpenVINO, ONNX, etc.)
-#   gpuPodTolerations: when true (default) and .Values.resources request nvidia.com/gpu (non-zero), emit
-#     nvidia.com/gpu NoSchedule tolerations on generative / predictive pod templates. Kueue
-#     ResourceFlavors (e.g. gpu-flavor) often define the same toleration; duplicates are harmless.
-#     Set false after verifying flavor tolerations reach pods without this (docs/004-kueue-gpu-tolerations.md).
-#   hardwareProfile: OpenShift AI HardwareProfile CR (rhoai-gitops: cpu-profile and gpu-profile in
-#     redhat-ods-applications). CPU-only models: name cpu-profile (chart treats this as no GPU request
-#     in rendered resources even if Helm merge left nvidia.com/gpu from another layer); GPU models: gpu-profile.
-#     Set both explicitly in each values-<model>.yaml. InferenceService always annotates the profile;
-#     LLMInferenceService annotates when name is non-empty.
+# @section -- Serving Configuration
+
+# -- Model serving configuration. Determines whether to deploy generative (LLMInferenceService) or predictive (InferenceService) models.
 serving:
+  # -- Serving type: "generative" for vLLM-based LLMs, "predictive" for OpenVINO/ONNX runtimes
   type: generative
+  # -- Enable GPU pod tolerations when resources request nvidia.com/gpu. Matches Kueue ResourceFlavor tolerations.
   gpuPodTolerations: true
+  # -- OpenShift AI HardwareProfile reference
   hardwareProfile:
+    # -- HardwareProfile name (cpu-profile for CPU-only, gpu-profile for GPU models)
     name: gpu-profile
+    # -- HardwareProfile namespace
+    # @default -- redhat-ods-applications
     namespace: redhat-ods-applications
 
-replicas: 1
+# @section -- Scaling Configuration
 
-# Model source (KServe / OpenShift AI storage URI on the serving CR — unchanged).
-# Supported URI schemes:
-#   HuggingFace: hf://RedHatAI/Qwen3-8B-FP8-dynamic
-#   S3 bucket:   s3://<bucket-name>/<object-key>
-#   PVC:         pvc://<claim-name>/<pvc-path>
-#   OCI image:   oci://<registry>/<org>/<repo>:<tag>
-#
-# Dashboard connection Secret (metadata.name == .name, linked via opendatahub.io/connections on
-# LLMInferenceService / InferenceService / ServingRuntime). Matches RHOAI connections API:
-#   - uri → Opaque, data.URI (base64), opendatahub.io/connection-type-ref uri-v1.
-#   - oci → Opaque, data.OCI_HOST = base64(model.uri), connection-type-ref oci-v1; optional data .dockerconfigjson.
-#   - s3  → Opaque, data AWS_* keys (base64), label opendatahub.io/managed, connection-type-ref s3; use connection-path on the serving CR
-#     via model.connection.s3.path when the model lives under a prefix in the bucket.
-# Use opendatahub.io/connection-type-protocol (not the deprecated connection-type-ref).
+# -- Scaling configuration for model serving workloads
+scaling:
+  # -- Scaling mode: "fixed" (static replicas), "keda" (predictive models autoscaling), "wva" (generative models autoscaling - not yet available)
+  mode: fixed
+  # -- Number of replicas when mode is "fixed"
+  replicas: 1
+  # -- KEDA autoscaling configuration (only used when mode is "keda" for predictive models). Requires KEDA operator installed.
+  keda:
+    # -- Minimum number of replicas for autoscaling
+    minReplicas: 1
+    # -- Maximum number of replicas for autoscaling
+    maxReplicas: 5
+    # -- Polling interval in seconds for checking metrics
+    pollingInterval: 5
+    # -- Prometheus trigger configuration
+    prometheus:
+      # -- Prometheus server address (default: Thanos Querier in openshift-monitoring)
+      # @default -- https://thanos-querier.openshift-monitoring.svc.cluster.local:9092
+      serverAddress: https://thanos-querier.openshift-monitoring.svc.cluster.local:9092
+      # -- PromQL query for scaling metric. Default uses ovms_current_requests for OpenVINO models.
+      # @default -- sum(ovms_current_requests{namespace="NAMESPACE", pod=~"NAME-predictor.*"})
+      query: ""
+      # -- Threshold value that triggers scaling (number of concurrent requests)
+      threshold: "2"
+      # -- Authentication mode for Prometheus (bearer token from ServiceAccount)
+      authModes: "bearer"
+
+# @section -- Model Configuration
+
+# -- Model source configuration (KServe/OpenShift AI storage URI). Supported schemes: hf://, s3://, pvc://, oci://
 model:
+  # -- Model URI (e.g., hf://RedHatAI/Qwen3-8B-FP8-dynamic, oci://registry.redhat.io/rhelai1/modelcar-qwen3-8b-fp8-dynamic:1.5)
   uri: ""
+  # -- Model name for serving requests
   name: ""
+  # -- Dashboard connection Secret configuration
   connection:
-    # auto | uri | oci | s3 — auto picks oci when model.uri starts with oci:// (or legacy: oci dockerconfigjson+host both set).
+    # -- Connection protocol: "auto", "uri", "oci", or "s3". Auto detects from model.uri prefix.
     protocol: auto
+    # -- OCI registry connection settings
     oci:
-      # Optional: include data[".dockerconfigjson"] when non-empty (private OCI registry). Public ModelCars
-      # omit this key; OCI_HOST always mirrors model.uri (same as dashboard “OCI” connections).
+      # -- Docker config JSON for private registries (base64 encoded). Leave empty for public registries.
       dockerconfigjson: ""
-      # Legacy only: with dockerconfigjson, both host and dockerconfigjson non-empty still forces oci in auto.
+      # -- Legacy OCI host field (deprecated, use model.uri)
       host: ""
+    # -- S3-compatible storage configuration
     s3:
-      # Option 1: Manual S3 configuration (MinIO, AWS S3, etc.)
-      # Required when protocol is s3 and objectBucketClaim is empty.
+      # -- S3 endpoint URL (e.g., http://minio.minio.svc.cluster.local:9000)
       endpoint: ""
+      # -- S3 bucket name
       bucket: ""
+      # -- S3 access key ID
       accessKeyId: ""
+      # -- S3 secret access key
       secretAccessKey: ""
+      # -- S3 region
       region: ""
-      # Object prefix inside the bucket (opendatahub.io/connection-path); no leading slash required.
+      # -- Object prefix/path inside the bucket (opendatahub.io/connection-path annotation)
       path: ""
-
-      # Option 2: Use OpenShift Data Foundation ObjectBucketClaim
-      # When set, the chart reads S3 credentials from the OBC-generated Secret/ConfigMap.
-      # ODF automatically creates:
-      #   - Secret: <obc-name> with AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
-      #   - ConfigMap: <obc-name> with BUCKET_HOST, BUCKET_NAME, BUCKET_PORT, BUCKET_REGION
-      # Example workflow:
-      #   1. Create ObjectBucketClaim: oc apply -f obc.yaml (creates Secret + ConfigMap)
-      #   2. Set objectBucketClaim: "my-model-bucket" (name of the OBC)
-      #   3. Chart automatically reads credentials from the generated Secret/ConfigMap
-      # Leave empty to use manual configuration above.
+      # -- OpenShift Data Foundation ObjectBucketClaim name. When set, credentials are read from ODF-generated Secret/ConfigMap instead of manual fields above.
       objectBucketClaim: ""
 
-# Hugging Face token for gated/private Hub weights. The chart creates hf-secret and mounts
-# HF_TOKEN only when model.uri starts with hf:// and this value is non-empty (see templates).
-# Pass at deploy time, e.g. ./deploy-mode.sh chart/values-….yaml --set-file hfToken=.hf_token
+# @section -- Authentication and Secrets
+
+# -- Hugging Face token for gated/private models. Chart creates hf-secret when model.uri starts with hf:// and this is non-empty.
+# @default -- "" (pass via --set-file hfToken=.hf_token)
 hfToken: ""
 
-# Authentication via Red Hat Connectivity Link (Kuadrant/Authorino)
+# -- Authentication configuration via Red Hat Connectivity Link (Kuadrant/Authorino)
 auth:
+  # -- Enable authentication for the inference service
   enabled: true
 
-# OpenShift AI dashboard annotations on LLMInferenceService (generative path only).
+# @section -- Dashboard Configuration
+
+# -- OpenShift AI dashboard annotations (generative models only)
 dashboard:
+  # -- Gen AI use case type: "chat", "embedding", "moderation"
   genaiUseCase: chat
+  # -- Model type annotation
   modelType: generative
 
-# TrustyAI monitoring for bias and data drift detection.
-# Deploys a TrustyAIService CR (PVC-backed) and the required CA bundle
-# ConfigMap in the model's namespace for KServe RawDeployment integration.
+# @section -- TrustyAI Configuration
+
+# -- TrustyAI monitoring for bias and data drift detection
 trustyai:
+  # -- Enable TrustyAI service deployment
   enabled: false
 
-# Container resources (limits/requests). Leave unset here; set resources in each values-<model>.yaml
-# (Helm deep-merges; CPU/GPU and memory differ per model).
+# @section -- Resources Configuration
+
+# -- Container resource limits and requests. Override in values-<model>.yaml files per model requirements.
+# @default -- {} (set in model-specific values files)
 resources: {}
 
-# Main container configuration (LLMInferenceService spec.template.containers[main]).
-# When image is empty, OpenShift AI / KServe default worker image applies.
+# @section -- Main Container Configuration
+
+# -- Main container configuration for LLMInferenceService/InferenceService pods
 mainContainer:
+  # -- Container image (leave empty to use OpenShift AI default vLLM or OpenVINO image)
   image: ""
+  # -- Container command override
   command: []
+  # -- Container args override
   args: []
-  # Extra arguments for the model runtime.
-  # - Generative (vLLM): joined into VLLM_ADDITIONAL_ARGS env var (required by KServe wrapper).
-  # - Predictive (OpenVINO): appended as container args.
-  # Example (generative with tool use):
-  #   extraArgs:
-  #     - "--enable-auto-tool-choice"
-  #     - "--tool-call-parser"
-  #     - "hermes"
-  # Example (generative with tuning):
-  #   extraArgs:
-  #     - "--gpu-memory-utilization"
-  #     - "0.95"
-  #     - "--max-model-len"
-  #     - "32768"
-  #     - "--enable-prefix-caching"
+  # -- Extra runtime arguments. For generative models, joined into VLLM_ADDITIONAL_ARGS env var. For predictive models, appended as container args.
   extraArgs: []
-  # Extra environment variables for the main container.
-  # Uses standard Kubernetes env var format.
-  # Example:
-  #   env:
-  #     - name: VLLM_CONFIGURE_LOGGING
-  #       value: "1"
-  #     - name: HF_HUB_OFFLINE
-  #       value: "0"
+  # -- Extra environment variables in standard Kubernetes env var format
   env: []
-  # Health check probes for the main container.
-  # By default, LLMInferenceService sets liveness and readiness probes.
-  # For large models that take >2min to load, add a startupProbe to prevent premature restarts.
-  # Example (large model with slow startup):
-  #   startupProbe:
-  #     httpGet:
-  #       path: /health
-  #       port: 8000
-  #       scheme: HTTPS
-  #     initialDelaySeconds: 30
-  #     periodSeconds: 10
-  #     failureThreshold: 30  # 30 × 10s = 5min max startup time
-  #   livenessProbe:
-  #     httpGet:
-  #       path: /health
-  #       port: 8000
-  #       scheme: HTTPS
-  #     periodSeconds: 30
-  #     failureThreshold: 2
-  #   readinessProbe:
-  #     httpGet:
-  #       path: /health
-  #       port: 8000
-  #       scheme: HTTPS
-  #     periodSeconds: 10
-  #     failureThreshold: 3
+  # -- Startup probe configuration (useful for large models with slow load times >2min)
   startupProbe: {}
+  # -- Liveness probe configuration
   livenessProbe: {}
+  # -- Readiness probe configuration
   readinessProbe: {}
 
-# Optional Gateway API refs for spec.router.gateway (non-empty => gateway.refs). Default empty
-# for normal llm-d + Route. MaaS overlay: chart/values-tinyllama-1b-maas.yaml (set refs to a real
-# Gateway, e.g. from oc get gateway.networking.k8s.io -A — do not assume maas-default-gateway).
+# @section -- Router Configuration
+
+# -- Gateway API refs for spec.router.gateway. Default empty for standard llm-d + Route. Set for MaaS deployments.
+# @default -- []
 routerGatewayRefs: []
 
+# @section -- Predictive Runtime Configuration
 
-
-# Predictive runtime configuration (only used when serving.type is "predictive")
+# -- Predictive runtime configuration (only used when serving.type is "predictive")
 runtime:
+  # -- ServingRuntime display name
   displayName: "OpenVINO Model Server"
+  # -- Runtime container image
   image: quay.io/opendatahub/openvino_model_server:stable
+  # -- Runtime version
   version: v2025.4
+  # -- Model format specification
   modelFormat:
+    # -- Model format name
     name: openvino_ir
+    # -- Model format version
     version: opset13

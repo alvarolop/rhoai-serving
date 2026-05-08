@@ -16,6 +16,12 @@ metadata:
     openshift.io/display-name: {{ .Values.name }}
     security.opendatahub.io/enable-auth: '{{ .Values.auth.enabled }}'
     serving.kserve.io/deploymentMode: RawDeployment
+    {{- if eq .Values.scaling.mode "keda" }}
+    serving.kserve.io/autoscalerClass: external
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "8001"
+    {{- end }}
     opendatahub.io/hardware-profile-name: {{ .Values.serving.hardwareProfile.name | quote }}
     opendatahub.io/hardware-profile-namespace: {{ .Values.serving.hardwareProfile.namespace | quote }}
   labels:
@@ -31,8 +37,8 @@ spec:
       type: RollingUpdate
     # imagePullSecrets:
     #   - name: {{ .Values.name }}
-    minReplicas: {{ .Values.replicas }}
-    maxReplicas: {{ .Values.replicas }}
+    minReplicas: {{ .Values.scaling.replicas }}
+    maxReplicas: {{ .Values.scaling.replicas }}
     {{- if and (eq (include "rhoai-serving.hasNvidiaGpu" . | trim) "true") .Values.serving.gpuPodTolerations }}
     tolerations:
       - effect: NoSchedule

@@ -1,0 +1,26 @@
+{{- if and (eq .Values.serving.type "predictive") (eq .Values.scaling.mode "keda") }}
+{{- $query := .Values.scaling.keda.prometheus.query | default (printf "sum(ovms_current_requests{namespace=\"%s\", pod=~\"%s-predictor.*\"})" (include "rhoai-serving.namespaceName" .) .Values.name) -}}
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ .Values.name }}-predictor
+  namespace: {{ include "rhoai-serving.namespaceName" . }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ .Values.name }}-predictor
+  minReplicaCount: {{ .Values.scaling.keda.minReplicas }}
+  maxReplicaCount: {{ .Values.scaling.keda.maxReplicas }}
+  pollingInterval: {{ .Values.scaling.keda.pollingInterval }}
+  triggers:
+    - type: prometheus
+      authenticationRef:
+        name: {{ .Values.name }}-keda-trigger-auth-prometheus
+      metadata:
+        serverAddress: {{ .Values.scaling.keda.prometheus.serverAddress | quote }}
+        query: {{ $query | quote }}
+        threshold: {{ .Values.scaling.keda.prometheus.threshold | quote }}
+        authModes: {{ .Values.scaling.keda.prometheus.authModes | quote }}
+{{- end }}

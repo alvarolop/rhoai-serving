@@ -29,6 +29,10 @@ serving:
     name: gpu-profile
     namespace: redhat-ods-applications
 
+scaling:
+  mode: fixed
+  replicas: 1
+
 mainContainer:
   extraArgs:
     - "--max-model-len"

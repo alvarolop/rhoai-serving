@@ -58,7 +58,7 @@ spec:
   #   dataLocal: 4
 
   # Decode workload (main)
-  replicas: {{ .Values.replicas }}
+  replicas: {{ .Values.scaling.replicas }}
   template:
     containers:
       - name: main

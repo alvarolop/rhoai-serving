@@ -38,8 +38,9 @@ serving:
     name: gpu-profile
     namespace: redhat-ods-applications
 
-# Single replica (chart default); set >1 only if you intentionally run multiple decoder pods.
-replicas: 1
+scaling:
+  mode: fixed
+  replicas: 1
 
 mainContainer:
   extraArgs:
