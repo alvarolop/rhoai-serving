@@ -6,7 +6,12 @@ set -e
 
 MODEL="${MODEL:-distilbert}"
 NAMESPACE="${NAMESPACE:-model-distilbert}"
-PAYLOAD="${PAYLOAD:-{\"inputs\": \"This is a test sentence for classification.\"}}"
+
+# KServe v2 inference protocol payload for DistilBERT (ONNX)
+# Pre-tokenized: "This is a test for classification"
+# input_ids: [CLS] This is a test for classification [SEP]
+# Shape: [batch_size=1, sequence_length=8]
+PAYLOAD='{"inputs":[{"name":"input_ids","shape":[1,8],"datatype":"INT64","data":[[101,2023,2003,1037,3231,2005,14965,102]]},{"name":"attention_mask","shape":[1,8],"datatype":"INT64","data":[[1,1,1,1,1,1,1,1]]}]}'
 
 echo "=========================================="
 echo "Functional Test: ${MODEL}"

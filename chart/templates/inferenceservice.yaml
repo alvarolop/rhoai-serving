@@ -20,7 +20,7 @@ metadata:
     serving.kserve.io/autoscalerClass: external
     prometheus.io/scrape: "true"
     prometheus.io/path: "/metrics"
-    prometheus.io/port: "8001"
+    prometheus.io/port: "8888"
     {{- end }}
     opendatahub.io/hardware-profile-name: {{ .Values.serving.hardwareProfile.name | quote }}
     opendatahub.io/hardware-profile-namespace: {{ .Values.serving.hardwareProfile.namespace | quote }}

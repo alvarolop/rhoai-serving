@@ -1,0 +1,16 @@
+{{- if and (eq .Values.serving.type "predictive") (eq .Values.scaling.mode "keda") }}
+---
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: {{ .Values.name }}-keda-trigger-auth-prometheus
+  namespace: {{ include "rhoai-serving.namespaceName" . }}
+spec:
+  secretTargetRef:
+    - parameter: bearerToken
+      name: {{ .Values.name }}-keda-sa-token
+      key: token
+    - parameter: ca
+      name: {{ .Values.name }}-keda-sa-token
+      key: ca.crt
+{{- end }}

@@ -32,8 +32,23 @@ export const options = {
   },
 };
 
+// KServe v2 inference protocol payload for DistilBERT (ONNX)
+// Pre-tokenized: "KEDA testing with concurrent requests"
 const payload = JSON.stringify({
-  inputs: 'KEDA testing with concurrent requests monitoring from k6 container.'
+  inputs: [
+    {
+      name: 'input_ids',
+      shape: [1, 8],
+      datatype: 'INT64',
+      data: [[101, 14272, 5604, 2007, 10820, 6134, 102, 0]]
+    },
+    {
+      name: 'attention_mask',
+      shape: [1, 8],
+      datatype: 'INT64',
+      data: [[1, 1, 1, 1, 1, 1, 1, 0]]
+    }
+  ]
 });
 
 const params = {

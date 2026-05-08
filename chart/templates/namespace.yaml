@@ -15,4 +15,7 @@ metadata:
     {{- if .Values.namespace.kueueManaged }}
     kueue.openshift.io/managed: 'true'
     {{- end }}
+    {{- if and (eq .Values.serving.type "predictive") (eq .Values.scaling.mode "keda") .Values.monitoring.userWorkloadDisabled }}
+    openshift.io/cluster-monitoring: 'true'
+    {{- end }}
 {{- end }}

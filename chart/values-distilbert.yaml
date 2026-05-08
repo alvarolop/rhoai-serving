@@ -8,6 +8,9 @@ name: distilbert
 namespace:
   name: model-distilbert
 
+monitoring:
+  userWorkloadDisabled: true
+
 serving:
   type: predictive
   hardwareProfile:
@@ -16,31 +19,31 @@ serving:
 
 # Scaling configuration - supports three modes for predictive models:
 # 1. "fixed" - Static replica count
-# 2. "hpa" - Kubernetes HPA based on CPU/memory metrics (default)
+# 2. "hpa" - Kubernetes HPA based on CPU/memory metrics
 # 3. "keda" - KEDA autoscaling based on custom Prometheus metrics (requires KEDA operator)
 scaling:
-  mode: hpa
+  mode: keda
 
   # Fixed scaling (uncomment and set mode: fixed to use)
   # replicas: 1
 
-  # HPA autoscaling (active by default)
-  hpa:
-    minReplicas: 1
-    maxReplicas: 5
-    scaleMetric: cpu      # cpu or memory
-    scaleTarget: 80       # Target value (e.g., 80 for 80% CPU utilization)
-
-  # KEDA autoscaling configuration (only used when mode: keda)
-  # Uncomment and set mode: keda to enable KEDA autoscaling
-  # keda:
+  # HPA autoscaling configuration (only used when mode: hpa)
+  # Uncomment and set mode: hpa to enable HPA autoscaling
+  # hpa:
   #   minReplicas: 1
-  #   maxReplicas: 5
-  #   pollingInterval: 5
-  #   prometheus:
-  #     serverAddress: https://thanos-querier.openshift-monitoring.svc.cluster.local:9092
-  #     threshold: "2"
-  #     authModes: "bearer"
+  #   maxReplicas: 3
+  #   scaleMetric: cpu      # cpu or memory
+  #   scaleTarget: 70       # Target value (e.g., 70 for 70% CPU utilization)
+
+  # KEDA autoscaling (active by default)
+  # Uses rate of successful requests over 1 minute
+  keda:
+    minReplicas: 1
+    maxReplicas: 3
+    pollingInterval: 5
+    prometheus:
+      query: 'sum(rate(ovms_requests_success{namespace="model-distilbert", method="ModelInfer"}[1m]))'
+      threshold: "10"
 
 model:
   uri: "oci://quay.io/redhattraining/models/distilbert:2.25"
@@ -50,14 +53,19 @@ model:
 
 resources:
   limits:
-    cpu: "200m"
+    cpu: "1000m"
     memory: 2Gi
     # Override merged base defaults so CPU predictive does not inherit nvidia.com/gpu: "1"
     nvidia.com/gpu: null
   requests:
-    cpu: "50m"
+    cpu: "100m"
     memory: 512Mi
     nvidia.com/gpu: null
+
+mainContainer:
+  extraArgs:
+    - --nireq=10
+    - --plugin_config={"PERFORMANCE_HINT":"THROUGHPUT"}
 
 runtime:
   displayName: "OpenVINO Model Server"

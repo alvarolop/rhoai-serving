@@ -1,37 +1,34 @@
-// k6 HPA Autoscaling Test Script
-// Runs in container with environment variables passed from Job
+// k6 Autoscaling Load Test
+// Works with both HPA and KEDA modes
 
 import http from 'k6/http';
-import { check, sleep } from 'k6';
+import { check } from 'k6';
 import { Counter, Trend, Rate } from 'k6/metrics';
 
-// Custom metrics
 const inferenceRequests = new Counter('inference_requests_total');
 const inferenceLatency = new Trend('inference_latency_ms');
 const inferenceErrors = new Rate('inference_errors');
 
-// Configuration from environment variables
 const MODEL = __ENV.MODEL;
 const ROUTE_URL = __ENV.ROUTE_URL;
 const TOKEN = __ENV.TOKEN;
+const SCALING_MODE = __ENV.SCALING_MODE || 'hpa';
 
 export const options = {
   scenarios: {
-    hpa_ramp: {
+    load_test: {
       executor: 'constant-vus',
-      vus: 25,                             // Constant 25 VUs
-      duration: '3m',                      // 3 minutes sustained
+      vus: SCALING_MODE === 'keda' ? 20 : 25,
+      duration: SCALING_MODE === 'keda' ? '5m' : '3m',
     },
   },
   thresholds: {
-    'http_req_duration': ['p(95)<8000'],
+    'http_req_duration': ['p(95)<5000'],
     'http_req_failed': ['rate<0.1'],
-    'inference_errors': ['rate<0.1'],
   },
 };
 
-// KServe v2 inference protocol payload for DistilBERT (ONNX)
-// Pre-tokenized: "Load testing for HPA autoscaling"
+// KServe v2 protocol payload (pre-tokenized DistilBERT)
 const payload = JSON.stringify({
   inputs: [
     {
@@ -68,28 +65,15 @@ export default function () {
 
   const success = check(response, {
     'status is 200': (r) => r.status === 200,
-    'latency < 3s': (r) => r.timings.duration < 3000,
   });
 
   if (!success) {
     inferenceErrors.add(1);
-    console.error(`Request failed: ${response.status}`);
   }
-
-  sleep(0.2);  // Balanced: 5 req/s per VU × 25 VUs = 125 req/s total
 }
 
 export function setup() {
-  console.log(`========================================`);
-  console.log(`k6 HPA Test Configuration`);
-  console.log(`========================================`);
+  console.log(`k6 Load Test - ${SCALING_MODE.toUpperCase()} mode`);
   console.log(`Model: ${MODEL}`);
-  console.log(`Route URL: https://${ROUTE_URL}`);
-  console.log(`========================================`);
-}
-
-export function teardown(data) {
-  console.log(`\n========================================`);
-  console.log(`HPA Test Completed`);
-  console.log(`========================================`);
+  console.log(`Route: https://${ROUTE_URL}`);
 }

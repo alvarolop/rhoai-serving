@@ -19,8 +19,8 @@ spec:
       authenticationRef:
         name: {{ .Values.name }}-keda-trigger-auth-prometheus
       metadata:
-        serverAddress: {{ .Values.scaling.keda.prometheus.serverAddress | quote }}
+        serverAddress: "https://thanos-querier.openshift-monitoring.svc.cluster.local:9091"
         query: {{ $query | quote }}
         threshold: {{ .Values.scaling.keda.prometheus.threshold | quote }}
-        authModes: {{ .Values.scaling.keda.prometheus.authModes | quote }}
+        authModes: "bearer"
 {{- end }}
