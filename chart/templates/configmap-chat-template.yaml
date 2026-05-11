@@ -1,0 +1,11 @@
+{{- if and (eq .Values.serving.type "generative") .Values.chatTemplate.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.name }}-chat-template
+  namespace: {{ include "rhoai-serving.namespaceName" . }}
+data:
+  template.jinja: |
+{{ .Values.chatTemplate.template | indent 4 }}
+{{- end }}

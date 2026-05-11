@@ -1,0 +1,65 @@
+# Gemma 4 31B with Custom Chat Template
+# Example: How to provide a chat template for models that lack built-in templates
+#
+# Usage: helm template gemma chart/ -f chart/values.yaml -f chart/values-gemma-4-31b-chat-template-example.yaml
+
+name: gemma-4-31b
+namespace:
+  name: model-gemma
+
+model:
+  uri: oci://registry.redhat.io/rhelai1/modelcar-gemma-4-31b-it-fp8-dynamic:1.5
+  name: RedHatAI/gemma-4-31B-it-FP8-Dynamic
+  connection:
+    protocol: oci
+
+serving:
+  hardwareProfile:
+    name: gpu-profile
+    namespace: redhat-ods-applications
+
+scaling:
+  mode: fixed
+  replicas: 1
+
+mainContainer:
+  extraArgs:
+    - --tensor-parallel-size=2
+    - --disable-uvicorn-access-log
+
+resources:
+  limits:
+    cpu: 8
+    memory: 256Gi
+    nvidia.com/gpu: 2
+  requests:
+    cpu: 2
+    memory: 128Gi
+    nvidia.com/gpu: 2
+
+# Custom chat template for Gemma models
+# Gemma uses <start_of_turn> and <end_of_turn> tokens
+chatTemplate:
+  enabled: true
+  template: |
+    {{ bos_token }}
+    {%- for message in messages %}
+    {%- if message['role'] == 'system' %}
+    <start_of_turn>user
+    {{ message['content'] }}<end_of_turn>
+    {%- elif message['role'] == 'user' %}
+    <start_of_turn>user
+    {{ message['content'] }}<end_of_turn>
+    {%- elif message['role'] == 'assistant' %}
+    <start_of_turn>model
+    {{ message['content'] }}<end_of_turn>
+    {%- endif %}
+    {%- endfor %}
+    {%- if add_generation_prompt %}
+    <start_of_turn>model
+    {%- endif %}
+
+# For Model-as-a-Service (MaaS) routing, uncomment and configure:
+# routerGatewayRefs:
+#   - name: maas-default-gateway
+#     namespace: openshift-ingress

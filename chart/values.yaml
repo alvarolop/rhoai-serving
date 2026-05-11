@@ -149,6 +149,16 @@ dashboard:
   # -- Model type annotation
   modelType: generative
 
+# @section -- Chat Template Configuration
+
+# -- Custom chat template for generative models (vLLM). Use when model lacks built-in template.
+chatTemplate:
+  # -- Enable custom chat template via ConfigMap
+  enabled: false
+  # -- Jinja2 template content. Mounted at /etc/vllm/template.jinja and passed to vLLM via --chat-template
+  # @default -- "" (provide template in model-specific values file)
+  template: ""
+
 # @section -- TrustyAI Configuration
 
 # -- TrustyAI monitoring for bias and data drift detection

@@ -82,11 +82,17 @@ spec:
                 name: hf-secret
                 key: HF_TOKEN
           {{- end }}
-          {{- if .Values.mainContainer.extraArgs }}
+          {{- if or .Values.mainContainer.extraArgs .Values.chatTemplate.enabled }}
           # KServe wrapper script reads VLLM_ADDITIONAL_ARGS and passes to vLLM
           # (vLLM v0.20+ may warn about unknown env var, but KServe requires this)
           - name: VLLM_ADDITIONAL_ARGS
+            {{- if and .Values.chatTemplate.enabled .Values.mainContainer.extraArgs }}
+            value: --chat-template /etc/vllm/template.jinja {{ join " " .Values.mainContainer.extraArgs }}
+            {{- else if .Values.chatTemplate.enabled }}
+            value: --chat-template /etc/vllm/template.jinja
+            {{- else }}
             value: {{ join " " .Values.mainContainer.extraArgs | quote }}
+            {{- end }}
           {{- end }}
           {{- with .Values.mainContainer.env }}
           {{- toYaml . | nindent 10 }}
@@ -106,6 +112,17 @@ spec:
         {{- end }}
         resources:
           {{- include "rhoai-serving.kserveModelResources" . | nindent 10 }}
+        {{- if .Values.chatTemplate.enabled }}
+        volumeMounts:
+          - name: chat-template-volume
+            mountPath: /etc/vllm
+        {{- end }}
+    {{- if .Values.chatTemplate.enabled }}
+    volumes:
+      - name: chat-template-volume
+        configMap:
+          name: {{ .Values.name }}-chat-template
+    {{- end }}
     {{- if and (eq (include "rhoai-serving.hasNvidiaGpu" . | trim) "true") .Values.serving.gpuPodTolerations }}
     tolerations:
       # Match Kueue gpu-flavor (operator Exists) or unsuspend Pod updates can fail.
