@@ -66,3 +66,8 @@ mainContainer:
 
 trustyai:
   enabled: false
+
+# For Model-as-a-Service (MaaS) routing, uncomment and configure:
+# routerGatewayRefs:
+#   - name: maas-default-gateway
+#     namespace: openshift-ingress

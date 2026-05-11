@@ -69,8 +69,7 @@ resources:
     cpu: 2
     memory: 4Gi
 
-# Required for MaaS routing: non-empty list. Example after maas-platform is installed:
+# For Model-as-a-Service (MaaS) routing, uncomment and configure:
 # routerGatewayRefs:
 #   - name: maas-default-gateway
 #     namespace: openshift-ingress
-routerGatewayRefs: []

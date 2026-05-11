@@ -71,3 +71,8 @@ resources:
 #   - "gemma4"
 #   - "--reasoning-parser"
 #   - "gemma4"
+
+# For Model-as-a-Service (MaaS) routing, uncomment and configure:
+# routerGatewayRefs:
+#   - name: maas-default-gateway
+#     namespace: openshift-ingress
