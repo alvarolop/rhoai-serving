@@ -64,10 +64,11 @@ podman build --platform linux/amd64 \
 
 ## Image Structure
 
-- **Base:** UBI 9 Python 3.11 (builder) → UBI Micro (runtime)
+- **Base:** UBI 9 Python 3.12 (builder) → UBI Micro (runtime)
 - **Model location:** `/models` in the image
 - **Runtime mount:** KServe mounts at `/mnt/models` in the pod
 - **Permissions:** World-readable (`a=rX`), runs as UID 1001
+- **Layer splitting:** Model files are copied in multiple layers (configs + 4 chunks of safetensors) to stay under Quay's 20GB per-layer limit. Small models use fewer layers automatically.
 
 ## Notes
 
@@ -75,7 +76,7 @@ podman build --platform linux/amd64 \
 - ⏱️ **Build time:** Depends on download speed (HuggingFace → ~10-30min for large models)
 - 🔐 **Private registry:** Add `.dockerconfigjson` to `model.connection.oci` in values file
 - 🐛 **Symlink fix:** `download_model.py` uses `local_dir_use_symlinks=False` (see docs/009-modelcar-symlinks-huggingface-blobs.md)
-- ⚠️ **Quay layer size limit:** Default maximum layer size is 20GB. For larger models, increase `MAXIMUM_LAYER_SIZE` in Quay config.yaml ([KCS #7088073](https://access.redhat.com/solutions/7088073))
+- 📦 **Layer splitting:** Dockerfile splits large models into multiple layers (~4 files per chunk) to avoid Quay's 20GB layer limit. If you still hit limits, increase `MAXIMUM_LAYER_SIZE` in Quay config.yaml ([KCS #7088073](https://access.redhat.com/solutions/7088073))
 
 ## Reference
 
