@@ -17,7 +17,6 @@ metadata:
     kubernetes.io/service-account.name: "{{ .Values.name }}-sa"
     openshift.io/display-name: {{ .Values.name }}-user
 type: kubernetes.io/service-account-token
-data: {}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
