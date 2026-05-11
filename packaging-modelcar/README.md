@@ -62,6 +62,15 @@ podman build --platform linux/amd64 \
   -t quay.io/alopezme/modelcar-llama-3.1-8b:latest
 ```
 
+**Granite Guardian 4.1 8B (guardrails/moderation):**
+```bash
+podman build --platform linux/amd64 \
+  -f packaging-modelcar/Dockerfile packaging-modelcar \
+  --build-arg MODEL_REPO=ibm-granite/granite-guardian-4.1-8b \
+  --build-arg HF_TOKEN=$(cat .hf_token) \
+  -t quay.io/alopezme/modelcar-granite-guardian-4.1-8b:latest
+```
+
 ## Image Structure
 
 - **Base:** UBI 9 Python 3.12 (builder) → UBI Micro (runtime)
