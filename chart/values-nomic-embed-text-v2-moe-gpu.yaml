@@ -27,8 +27,8 @@ dashboard:
   modelType: generative
 
 model:
-  uri: "hf://nomic-ai/nomic-embed-text-v2-moe"
-  name: "nomic-ai/nomic-embed-text-v2-moe"
+  uri: hf://nomic-ai/nomic-embed-text-v2-moe
+  name: nomic-ai/nomic-embed-text-v2-moe
   connection:
     protocol: uri
 
@@ -55,13 +55,13 @@ mainContainer:
 
 resources:
   limits:
-    cpu: "6"
+    cpu: 6
     memory: 24Gi
-    nvidia.com/gpu: "1"
+    nvidia.com/gpu: 1
   requests:
-    cpu: "2"
+    cpu: 2
     memory: 12Gi
-    nvidia.com/gpu: "1"
+    nvidia.com/gpu: 1
 
 trustyai:
   enabled: false

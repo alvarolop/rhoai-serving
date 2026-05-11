@@ -14,8 +14,8 @@ namespace:
   name: model-granite
 
 model:
-  uri: "oci://registry.redhat.io/rhai/modelcar-granite-4-0-h-tiny-fp8-dynamic:3.0"
-  name: "granite-4-0-h-tiny-fp8-dynamic"
+  uri: oci://registry.redhat.io/rhai/modelcar-granite-4-0-h-tiny-fp8-dynamic:3.0
+  name: granite-4-0-h-tiny-fp8-dynamic
   connection:
     protocol: oci
 
@@ -30,10 +30,10 @@ mainContainer:
 
 resources:
   limits:
-    cpu: "4"
+    cpu: 4
     memory: 32Gi
-    nvidia.com/gpu: "1"
+    nvidia.com/gpu: 1
   requests:
-    cpu: "1"
+    cpu: 1
     memory: 8Gi
-    nvidia.com/gpu: "1"
+    nvidia.com/gpu: 1

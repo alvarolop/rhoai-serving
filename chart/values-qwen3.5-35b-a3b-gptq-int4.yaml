@@ -7,8 +7,8 @@ namespace:
   name: model-qwen
 
 model:
-  uri: "hf://Qwen/Qwen3.5-35B-A3B-GPTQ-Int4"
-  name: "Qwen/Qwen3.5-35B-A3B-GPTQ-Int4"
+  uri: hf://Qwen/Qwen3.5-35B-A3B-GPTQ-Int4
+  name: Qwen/Qwen3.5-35B-A3B-GPTQ-Int4
   connection:
     protocol: uri
 
@@ -23,10 +23,10 @@ mainContainer:
 
 resources:
   limits:
-    cpu: "8"
+    cpu: 8
     memory: 128Gi
-    nvidia.com/gpu: "4"
+    nvidia.com/gpu: 4
   requests:
-    cpu: "4"
+    cpu: 4
     memory: 64Gi
-    nvidia.com/gpu: "4"
+    nvidia.com/gpu: 4

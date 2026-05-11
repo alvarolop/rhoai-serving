@@ -75,6 +75,7 @@ podman build --platform linux/amd64 \
 - ⏱️ **Build time:** Depends on download speed (HuggingFace → ~10-30min for large models)
 - 🔐 **Private registry:** Add `.dockerconfigjson` to `model.connection.oci` in values file
 - 🐛 **Symlink fix:** `download_model.py` uses `local_dir_use_symlinks=False` (see docs/009-modelcar-symlinks-huggingface-blobs.md)
+- ⚠️ **Quay layer size limit:** Default maximum layer size is 20GB. For larger models, increase `MAXIMUM_LAYER_SIZE` in Quay config.yaml ([KCS #7088073](https://access.redhat.com/solutions/7088073))
 
 ## Reference
 

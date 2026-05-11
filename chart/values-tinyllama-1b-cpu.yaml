@@ -11,8 +11,8 @@ namespace:
   name: model-tinyllama
 
 model:
-  uri: "oci://quay.io/rh-aiservices-bu/tinyllama:1.0"
-  name: "tinyllama-1b"
+  uri: oci://quay.io/rh-aiservices-bu/tinyllama:1.0
+  name: tinyllama-1b
   connection:
     protocol: oci
 
@@ -44,8 +44,8 @@ mainContainer:
 
 resources:
   limits:
-    cpu: "8"
+    cpu: 8
     memory: 8Gi
   requests:
-    cpu: "2"
+    cpu: 2
     memory: 4Gi

@@ -10,7 +10,7 @@ namespace:
 
 model:
   # KServe / initializer typically resolve s3://… into the pod (often under /mnt/models); keep in sync with .connection.s3.
-  uri: "s3://rhoai-demo-models/tinyllama-1.1b"
+  uri: s3://rhoai-demo-models/tinyllama-1.1b
   name: tinyllama-s3-minio
   connection:
     protocol: s3
@@ -50,8 +50,8 @@ mainContainer:
 
 resources:
   limits:
-    cpu: "8"
+    cpu: 8
     memory: 8Gi
   requests:
-    cpu: "2"
+    cpu: 2
     memory: 4Gi

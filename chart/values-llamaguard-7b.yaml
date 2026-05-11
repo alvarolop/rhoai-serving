@@ -28,8 +28,8 @@ dashboard:
   modelType: generative
 
 model:
-  uri: "hf://meta-llama/LlamaGuard-7b"
-  name: "meta-llama/LlamaGuard-7b"
+  uri: hf://meta-llama/LlamaGuard-7b
+  name: meta-llama/LlamaGuard-7b
   connection:
     protocol: uri
 
@@ -50,13 +50,13 @@ mainContainer:
 
 resources:
   limits:
-    cpu: "8"
+    cpu: 8
     memory: 32Gi
-    nvidia.com/gpu: "1"
+    nvidia.com/gpu: 1
   requests:
-    cpu: "2"
+    cpu: 2
     memory: 16Gi
-    nvidia.com/gpu: "1"
+    nvidia.com/gpu: 1
 
 trustyai:
   enabled: false

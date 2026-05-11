@@ -90,9 +90,9 @@ scaling:
       # @default -- sum(ovms_current_requests{namespace="NAMESPACE", pod=~"NAME-predictor.*"})
       query: ""
       # -- Threshold value that triggers scaling (number of concurrent requests)
-      threshold: "2"
+      threshold: 2
       # -- Authentication mode for Prometheus (bearer token from ServiceAccount)
-      authModes: "bearer"
+      authModes: bearer
 
 # @section -- Model Configuration
 

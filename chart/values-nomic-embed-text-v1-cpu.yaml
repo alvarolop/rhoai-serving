@@ -26,8 +26,8 @@ dashboard:
   modelType: generative
 
 model:
-  uri: "hf://nomic-ai/nomic-embed-text-v1"
-  name: "nomic-ai/nomic-embed-text-v1"
+  uri: hf://nomic-ai/nomic-embed-text-v1
+  name: nomic-ai/nomic-embed-text-v1
   connection:
     protocol: uri
 
@@ -56,10 +56,10 @@ mainContainer:
 # CPU resources for embedding inference
 resources:
   limits:
-    cpu: "8"
+    cpu: 8
     memory: 16Gi
   requests:
-    cpu: "4"
+    cpu: 4
     memory: 8Gi
 
 trustyai:

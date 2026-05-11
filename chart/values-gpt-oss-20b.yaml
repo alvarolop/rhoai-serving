@@ -8,8 +8,8 @@ namespace:
   name: model-gpt-oss
 
 model:
-  uri: "oci://registry.redhat.io/rhelai1/modelcar-gpt-oss-20b:1.5"
-  name: "gpt-oss-20b"
+  uri: oci://registry.redhat.io/rhelai1/modelcar-gpt-oss-20b:1.5
+  name: gpt-oss-20b
   connection:
     protocol: oci
 
@@ -54,10 +54,10 @@ mainContainer:
 
 resources:
   limits:
-    cpu: "8"
+    cpu: 8
     memory: 32Gi
-    nvidia.com/gpu: "1"
+    nvidia.com/gpu: 1
   requests:
-    cpu: "1"
+    cpu: 1
     memory: 12Gi
-    nvidia.com/gpu: "1"
+    nvidia.com/gpu: 1

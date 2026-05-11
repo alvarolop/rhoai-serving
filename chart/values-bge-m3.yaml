@@ -19,8 +19,8 @@ dashboard:
   modelType: generative
 
 model:
-  uri: "hf://BAAI/bge-m3"
-  name: "BAAI/bge-m3"
+  uri: hf://BAAI/bge-m3
+  name: BAAI/bge-m3
   connection:
     protocol: uri
 
@@ -41,13 +41,13 @@ mainContainer:
 
 resources:
   limits:
-    cpu: "6"
+    cpu: 6
     memory: 24Gi
-    nvidia.com/gpu: "1"
+    nvidia.com/gpu: 1
   requests:
-    cpu: "2"
+    cpu: 2
     memory: 8Gi
-    nvidia.com/gpu: "1"
+    nvidia.com/gpu: 1
 
 trustyai:
   enabled: false

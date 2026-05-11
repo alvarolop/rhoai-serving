@@ -31,8 +31,8 @@ model:
   # S3 path to model within the bucket
   # Format: s3://<bucket-name>/<path-to-model>
   # The bucket name will be read from the OBC ConfigMap
-  uri: "s3://my-model-bucket/models/tinyllama"
-  name: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+  uri: s3://my-model-bucket/models/tinyllama
+  name: TinyLlama/TinyLlama-1.1B-Chat-v1.0
   connection:
     protocol: s3
     s3:
@@ -52,10 +52,10 @@ serving:
 
 resources:
   limits:
-    cpu: "4"
+    cpu: 4
     memory: 8Gi
   requests:
-    cpu: "2"
+    cpu: 2
     memory: 4Gi
 
 mainContainer:
