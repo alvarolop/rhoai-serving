@@ -117,14 +117,23 @@ trustyai:
 #     namespace: openshift-ingress
 
 # If the model lacks a chat template, enable custom template:
-# See values-gemma-4-31b-chat-template-example.yaml for reference
+# Uncomment to fix "/chat/completions" errors on models without built-in templates
 # chatTemplate:
 #   enabled: true
 #   template: |
 #     {{ bos_token }}
 #     {%- for message in messages %}
-#     <start_of_turn>{{ message['role'] }}
+#     {%- if message['role'] == 'system' %}
+#     <start_of_turn>user
 #     {{ message['content'] }}<end_of_turn>
+#     {%- elif message['role'] == 'user' %}
+#     <start_of_turn>user
+#     {{ message['content'] }}<end_of_turn>
+#     {%- elif message['role'] == 'assistant' %}
+#     <start_of_turn>model
+#     {{ message['content'] }}<end_of_turn>
+#     {%- endif %}
 #     {%- endfor %}
-#     {%- if add_generation_prompt %}<start_of_turn>model
+#     {%- if add_generation_prompt %}
+#     <start_of_turn>model
 #     {%- endif %}

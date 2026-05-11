@@ -1,0 +1,63 @@
+# IBM Granite Guardian 4.1 8B — safety / guardrails model for content moderation
+# Model card: https://huggingface.co/ibm-granite/granite-guardian-4.1-8b
+#
+# Usage:
+#   helm template granite-guardian chart/ \
+#     -f chart/values.yaml \
+#     -f chart/values-granite-guardian-4.1-8b.yaml | oc apply -f -
+#
+# Granite Guardian is a specialized model for safety and content moderation.
+# It uses a Guardian Block format with structured criteria evaluation.
+# Wire into your application's safety layer or use with TrustyAI.
+#
+# See model card for Guardian Block format and usage examples:
+# - Binary yes/no judgements with <score></score> tags
+# - Optional reasoning with <think></think> tags
+# - Pre-built criteria: safety, hallucination, function calling
+# - Custom user-defined rules supported
+
+name: granite-guardian-4-1-8b
+namespace:
+  name: model-granite-guardian
+
+dashboard:
+  genaiUseCase: moderation
+  modelType: generative
+
+model:
+  uri: oci://quay.io/alopezme/modelcar-granite-guardian-4.1-8b:latest
+  name: ibm-granite/granite-guardian-4.1-8b
+  connection:
+    protocol: oci
+
+serving:
+  hardwareProfile:
+    name: gpu-profile
+    namespace: redhat-ods-applications
+
+scaling:
+  mode: fixed
+  replicas: 1
+
+mainContainer:
+  extraArgs:
+    - --max-model-len=8192
+    - --disable-uvicorn-access-log
+
+resources:
+  limits:
+    cpu: 8
+    memory: 32Gi
+    nvidia.com/gpu: 1
+  requests:
+    cpu: 2
+    memory: 16Gi
+    nvidia.com/gpu: 1
+
+trustyai:
+  enabled: false
+
+# For Model-as-a-Service (MaaS) routing, uncomment and configure:
+# routerGatewayRefs:
+#   - name: maas-default-gateway
+#     namespace: openshift-ingress
