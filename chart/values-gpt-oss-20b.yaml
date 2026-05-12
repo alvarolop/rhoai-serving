@@ -62,6 +62,10 @@ resources:
     memory: "12Gi"
     nvidia.com/gpu: "1"
 
+guardrails:
+  enabled: true
+  type: nemo
+
 # For Model-as-a-Service (MaaS) routing, uncomment and configure:
 # routerGatewayRefs:
 #   - name: maas-default-gateway

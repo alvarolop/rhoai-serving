@@ -117,6 +117,10 @@ resources:
 trustyai:
   enabled: false
 
+guardrails:
+  enabled: true
+  type: nemo
+
 # For Model-as-a-Service (MaaS) routing, uncomment and configure:
 # routerGatewayRefs:
 #   - name: maas-default-gateway

@@ -166,6 +166,15 @@ trustyai:
   # -- Enable TrustyAI service deployment
   enabled: false
 
+# @section -- Guardrails Configuration
+
+# -- Guardrails for content moderation and safety
+guardrails:
+  # -- Enable guardrails integration
+  enabled: false
+  # -- Guardrails type: "nemo" (NVIDIA NeMo Guardrails)
+  type: nemo
+
 # @section -- Resources Configuration
 
 # -- Container resource limits and requests. Override in values-<model>.yaml files per model requirements.
