@@ -56,11 +56,11 @@ mainContainer:
 # CPU resources for embedding inference
 resources:
   limits:
-    cpu: 8
-    memory: 16Gi
+    cpu: "8"
+    memory: "16Gi"
   requests:
-    cpu: 4
-    memory: 8Gi
+    cpu: "4"
+    memory: "8Gi"
 
 trustyai:
   enabled: false

@@ -26,13 +26,13 @@ mainContainer:
 
 resources:
   limits:
-    cpu: 4
-    memory: 32Gi
-    nvidia.com/gpu: 1
+    cpu: "4"
+    memory: "32Gi"
+    nvidia.com/gpu: "1"
   requests:
-    cpu: 1
-    memory: 8Gi
-    nvidia.com/gpu: 1
+    cpu: "1"
+    memory: "8Gi"
+    nvidia.com/gpu: "1"
 
 # For Model-as-a-Service (MaaS) routing, uncomment and configure:
 # routerGatewayRefs:

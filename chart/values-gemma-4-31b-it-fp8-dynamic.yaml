@@ -71,13 +71,13 @@ mainContainer:
 
 resources:
   limits:
-    cpu: 8
-    memory: 64Gi
-    nvidia.com/gpu: 1  # Single H100 recommended
+    cpu: "8"
+    memory: "64Gi"
+    nvidia.com/gpu: "1"  # Single H100 recommended
   requests:
-    cpu: 2
-    memory: 16Gi
-    nvidia.com/gpu: 1
+    cpu: "2"
+    memory: "16Gi"
+    nvidia.com/gpu: "1"
 
 # Troubleshooting OOM during CUDA graph capture on H100:
 #

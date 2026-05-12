@@ -41,13 +41,13 @@ mainContainer:
 
 resources:
   limits:
-    cpu: 6
-    memory: 24Gi
-    nvidia.com/gpu: 1
+    cpu: "6"
+    memory: "24Gi"
+    nvidia.com/gpu: "1"
   requests:
-    cpu: 2
-    memory: 8Gi
-    nvidia.com/gpu: 1
+    cpu: "2"
+    memory: "8Gi"
+    nvidia.com/gpu: "1"
 
 trustyai:
   enabled: false
