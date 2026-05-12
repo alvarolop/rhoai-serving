@@ -1,11 +1,19 @@
 {{- if and (eq .Values.serving.type "generative") .Values.guardrails.enabled (eq .Values.guardrails.type "nemo") }}
 {{- $modelUrl := .Values.guardrails.nemo.modelUrl | default "" | toString | trim -}}
 {{- if not $modelUrl }}
-  {{- $gwSvc := .Values.guardrails.nemo.gatewayService | default "openshift-ai-inference-openshift-ai-inference" -}}
-  {{- $gwNs := .Values.guardrails.nemo.gatewayNamespace | default "openshift-ingress" -}}
   {{- $modelNs := include "rhoai-serving.namespaceName" . -}}
   {{- $modelName := .Values.name -}}
-  {{- $modelUrl = printf "http://%s.%s.svc.cluster.local/%s/%s/v1" $gwSvc $gwNs $modelNs $modelName -}}
+  {{- if and .Values.guardrails.nemo.useGatewayRefs .Values.routerGatewayRefs }}
+    {{- $gateway := index .Values.routerGatewayRefs 0 -}}
+    {{- $gwName := $gateway.name | required "routerGatewayRefs[0].name is required when guardrails.nemo.useGatewayRefs is true" -}}
+    {{- $gwNs := $gateway.namespace | required "routerGatewayRefs[0].namespace is required when guardrails.nemo.useGatewayRefs is true" -}}
+    {{- $gwSvc := printf "%s-%s" $gwName $gwName -}}
+    {{- $modelUrl = printf "http://%s.%s.svc.cluster.local/%s/%s/v1" $gwSvc $gwNs $modelNs $modelName -}}
+  {{- else }}
+    {{- $gwSvc := "openshift-ai-inference-openshift-ai-inference" -}}
+    {{- $gwNs := "openshift-ingress" -}}
+    {{- $modelUrl = printf "http://%s.%s.svc.cluster.local/%s/%s/v1" $gwSvc $gwNs $modelNs $modelName -}}
+  {{- end }}
 {{- end }}
 ---
 apiVersion: v1

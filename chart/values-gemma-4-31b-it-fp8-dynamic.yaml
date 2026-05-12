@@ -121,13 +121,15 @@ guardrails:
   enabled: true
   type: nemo
   nemo:
-    # Update with your actual gateway/router URL for this model
+    # Leave empty to auto-generate from routerGatewayRefs when useGatewayRefs: true
     modelUrl: ""
+    # Set to true to derive URL from routerGatewayRefs below
+    useGatewayRefs: true
 
-# For Model-as-a-Service (MaaS) routing, uncomment and configure:
-# routerGatewayRefs:
-#   - name: maas-default-gateway
-#     namespace: openshift-ingress
+# For Model-as-a-Service (MaaS) routing and NeMo Guardrails URL generation
+routerGatewayRefs:
+  - name: maas-default-gateway
+    namespace: openshift-ingress
 
 # If the model lacks a chat template, enable custom template:
 # Uncomment to fix "/chat/completions" errors on models without built-in templates

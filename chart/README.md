@@ -223,12 +223,11 @@ Deploys a TrustyAIService CR and required CA bundle ConfigMap. See `values-disti
 | dashboard | object | `{"genaiUseCase":"chat","modelType":"generative"}` | OpenShift AI dashboard annotations (generative models only) |
 | dashboard.genaiUseCase | string | `"chat"` | Gen AI use case type: "chat", "embedding", "moderation" |
 | dashboard.modelType | string | `"generative"` | Model type annotation |
-| guardrails | object | `{"enabled":false,"nemo":{"gatewayNamespace":"openshift-ingress","gatewayService":"openshift-ai-inference-openshift-ai-inference","modelUrl":""},"type":"nemo"}` | Guardrails for content moderation and safety |
+| guardrails | object | `{"enabled":false,"nemo":{"modelUrl":"","useGatewayRefs":false},"type":"nemo"}` | Guardrails for content moderation and safety |
 | guardrails.enabled | bool | `false` | Enable guardrails integration |
-| guardrails.nemo | object | `{"gatewayNamespace":"openshift-ingress","gatewayService":"openshift-ai-inference-openshift-ai-inference","modelUrl":""}` | NeMo Guardrails configuration (only used when type is "nemo") |
-| guardrails.nemo.gatewayNamespace | string | openshift-ingress | MaaS gateway namespace for auto-generated modelUrl |
-| guardrails.nemo.gatewayService | string | openshift-ai-inference-openshift-ai-inference | MaaS gateway service name for auto-generated modelUrl |
-| guardrails.nemo.modelUrl | string | `""` | LLM model endpoint URL. If empty, auto-generates internal MaaS gateway URL: http://<gateway-service>.<gateway-namespace>.svc.cluster.local/<model-namespace>/<model-name>/v1 |
+| guardrails.nemo | object | `{"modelUrl":"","useGatewayRefs":false}` | NeMo Guardrails configuration (only used when type is "nemo") |
+| guardrails.nemo.modelUrl | string | `""` | LLM model endpoint URL. If empty and useGatewayRefs is true, auto-generates from routerGatewayRefs. If empty and useGatewayRefs is false, uses fallback defaults. |
+| guardrails.nemo.useGatewayRefs | bool | `false` | Use routerGatewayRefs to auto-generate modelUrl. When true, constructs URL from first gateway ref: http://<gateway-name>-<gateway-name>.<gateway-namespace>.svc.cluster.local/<model-namespace>/<model-name>/v1 |
 | guardrails.type | string | `"nemo"` | Guardrails type: "nemo" (NVIDIA NeMo Guardrails) |
 | hfToken | string | "" (pass via --set-file hfToken=.hf_token) | Hugging Face token for gated/private models. Chart creates hf-secret when model.uri starts with hf:// and this is non-empty. |
 | kueue | object | `{"localQueueName":"default"}` | Kueue LocalQueue configuration |

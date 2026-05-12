@@ -176,14 +176,10 @@ guardrails:
   type: nemo
   # -- NeMo Guardrails configuration (only used when type is "nemo")
   nemo:
-    # -- LLM model endpoint URL. If empty, auto-generates internal MaaS gateway URL: http://<gateway-service>.<gateway-namespace>.svc.cluster.local/<model-namespace>/<model-name>/v1
+    # -- LLM model endpoint URL. If empty and useGatewayRefs is true, auto-generates from routerGatewayRefs. If empty and useGatewayRefs is false, uses fallback defaults.
     modelUrl: ""
-    # -- MaaS gateway service name for auto-generated modelUrl
-    # @default -- openshift-ai-inference-openshift-ai-inference
-    gatewayService: openshift-ai-inference-openshift-ai-inference
-    # -- MaaS gateway namespace for auto-generated modelUrl
-    # @default -- openshift-ingress
-    gatewayNamespace: openshift-ingress
+    # -- Use routerGatewayRefs to auto-generate modelUrl. When true, constructs URL from first gateway ref: http://<gateway-name>-<gateway-name>.<gateway-namespace>.svc.cluster.local/<model-namespace>/<model-name>/v1
+    useGatewayRefs: false
 
 # @section -- Resources Configuration
 
