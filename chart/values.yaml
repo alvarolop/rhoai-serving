@@ -176,21 +176,14 @@ guardrails:
   type: nemo
   # -- NeMo Guardrails configuration (only used when type is "nemo")
   nemo:
-    # -- LLM model endpoint URL (e.g., https://model-name-predictor.namespace.svc.cluster.local:8443/v1)
+    # -- LLM model endpoint URL. If empty, auto-generates internal MaaS gateway URL: http://<gateway-service>.<gateway-namespace>.svc.cluster.local/<model-namespace>/<model-name>/v1
     modelUrl: ""
-    # -- API token for model authentication (if required)
-    modelToken: ""
-    # -- Container image for NeMo Guardrails server
-    # @default -- quay.io/rhoai/nemo-guardrails:latest
-    image: ""
-    # -- Container resource limits and requests
-    resources:
-      limits:
-        cpu: "2"
-        memory: "4Gi"
-      requests:
-        cpu: "500m"
-        memory: "1Gi"
+    # -- MaaS gateway service name for auto-generated modelUrl
+    # @default -- openshift-ai-inference-openshift-ai-inference
+    gatewayService: openshift-ai-inference-openshift-ai-inference
+    # -- MaaS gateway namespace for auto-generated modelUrl
+    # @default -- openshift-ingress
+    gatewayNamespace: openshift-ingress
 
 # @section -- Resources Configuration
 

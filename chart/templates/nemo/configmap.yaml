@@ -1,4 +1,12 @@
 {{- if and (eq .Values.serving.type "generative") .Values.guardrails.enabled (eq .Values.guardrails.type "nemo") }}
+{{- $modelUrl := .Values.guardrails.nemo.modelUrl | default "" | toString | trim -}}
+{{- if not $modelUrl }}
+  {{- $gwSvc := .Values.guardrails.nemo.gatewayService | default "openshift-ai-inference-openshift-ai-inference" -}}
+  {{- $gwNs := .Values.guardrails.nemo.gatewayNamespace | default "openshift-ingress" -}}
+  {{- $modelNs := include "rhoai-serving.namespaceName" . -}}
+  {{- $modelName := .Values.name -}}
+  {{- $modelUrl = printf "http://%s.%s.svc.cluster.local/%s/%s/v1" $gwSvc $gwNs $modelNs $modelName -}}
+{{- end }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -14,10 +22,7 @@ data:
         engine: openai
         model: {{ .Values.model.name }}
         parameters:
-          api_base: {{ .Values.guardrails.nemo.modelUrl | required "guardrails.nemo.modelUrl is required when guardrails are enabled" }}
-          {{- if .Values.guardrails.nemo.modelToken }}
-          api_key: {{ .Values.guardrails.nemo.modelToken }}
-          {{- end }}
+          api_base: {{ $modelUrl }}
 
     rails:
       input:

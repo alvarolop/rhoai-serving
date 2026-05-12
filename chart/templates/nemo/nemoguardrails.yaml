@@ -14,12 +14,10 @@ spec:
     - name: {{ .Values.name }}-nemo-config
       configMaps:
         - {{ .Values.name }}-nemo-config
-  {{- if .Values.guardrails.nemo.modelToken }}
   env:
     - name: "OPENAI_API_KEY"
       valueFrom:
         secretKeyRef:
-          name: {{ .Values.name }}-nemo-api-token
+          name: {{ .Values.name }}-sa-token
           key: "token"
-  {{- end }}
 {{- end }}
