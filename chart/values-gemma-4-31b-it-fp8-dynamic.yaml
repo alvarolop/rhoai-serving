@@ -120,6 +120,10 @@ trustyai:
 guardrails:
   enabled: true
   type: nemo
+  nemo:
+    # Update with your model's predictor service URL
+    modelUrl: "https://gemma-4-31b-it-fp8-dynamic-predictor.model-gemma4-fp8.svc.cluster.local:8443/v1"
+    modelToken: ""  # Add token if required
 
 # For Model-as-a-Service (MaaS) routing, uncomment and configure:
 # routerGatewayRefs:

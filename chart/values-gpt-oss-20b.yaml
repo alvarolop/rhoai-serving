@@ -65,6 +65,10 @@ resources:
 guardrails:
   enabled: true
   type: nemo
+  nemo:
+    # Update with your model's predictor service URL
+    modelUrl: "https://gpt-oss-20b-predictor.model-gpt-oss.svc.cluster.local:8443/v1"
+    modelToken: ""  # Add token if required
 
 # For Model-as-a-Service (MaaS) routing, uncomment and configure:
 # routerGatewayRefs:

@@ -1,0 +1,38 @@
+{{- if and (eq .Values.serving.type "generative") .Values.guardrails.enabled (eq .Values.guardrails.type "nemo") }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.name }}-nemo-config
+  namespace: {{ include "rhoai-serving.namespaceName" . }}
+  labels:
+    app: {{ .Values.name }}-nemo-guardrails
+data:
+  config.yml: |
+    models:
+      - type: main
+        engine: openai
+        model: {{ .Values.model.name }}
+        parameters:
+          api_base: {{ .Values.guardrails.nemo.modelUrl | required "guardrails.nemo.modelUrl is required when guardrails are enabled" }}
+          {{- if .Values.guardrails.nemo.modelToken }}
+          api_key: {{ .Values.guardrails.nemo.modelToken }}
+          {{- end }}
+
+    rails:
+      input:
+        flows:
+          - check message length
+      output:
+        flows:
+          - check message length
+
+  rails.co: |
+    define flow check message length
+      if $user_message.length > 2000
+        bot inform message too long
+        stop
+
+    define bot inform message too long
+      "Your message is too long. Please keep messages under 2000 characters."
+{{- end }}
