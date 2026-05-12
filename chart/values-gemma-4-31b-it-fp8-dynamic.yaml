@@ -48,16 +48,22 @@ mainContainer:
   # Passed as VLLM_ADDITIONAL_ARGS to KServe wrapper script
   # Configuration tuned for H100 80GB to avoid OOM during CUDA graph capture
   extraArgs:
-    - "--max-model-len"
-    - "16384"  # Conservative for H100 80GB; increase to 32768 if VRAM allows
-    - "--gpu-memory-utilization"
-    - "0.85"  # Reduced from 0.90 to leave headroom for CUDA graphs
-    - "--max-num-batched-tokens"
-    - "8192"
-    - "--max-num-seqs"
-    - "256"  # Limit concurrent sequences to reduce CUDA graph memory
-    - "--disable-log-stats"  # Reduce logging overhead
     - "--disable-uvicorn-access-log"
+    # - "--chat-template"
+    # - "/vllm-workspace/examples/tool_chat_template_gemma4.jinja"
+    - "--limit-mm-per-prompt"
+    - "'{\"image\": 0, \"audio\": 0}'"
+
+    # - "--max-model-len"
+    # - "16384"  # Conservative for H100 80GB; increase to 32768 if VRAM allows
+    # - "--gpu-memory-utilization"
+    # - "0.85"  # Reduced from 0.90 to leave headroom for CUDA graphs
+    # - "--max-num-batched-tokens"
+    # - "8192"
+    # - "--max-num-seqs"
+    # - "256"  # Limit concurrent sequences to reduce CUDA graph memory
+    # - "--disable-log-stats"  # Reduce logging overhead
+    
     # CUDA graph memory controls (uncomment progressively if OOM):
     # Step 1: Limit CUDA graph batch sizes
     # - "--max-cudagraph-capture-size"

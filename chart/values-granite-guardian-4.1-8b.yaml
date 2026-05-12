@@ -54,9 +54,6 @@ resources:
     memory: "16Gi"
     nvidia.com/gpu: "1"
 
-trustyai:
-  enabled: false
-
 # For Model-as-a-Service (MaaS) routing, uncomment and configure:
 # routerGatewayRefs:
 #   - name: maas-default-gateway
