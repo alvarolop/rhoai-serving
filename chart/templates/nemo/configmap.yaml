@@ -28,9 +28,9 @@ data:
     models:
       - type: main
         engine: openai
-        model: {{ .Values.model.name }}
         parameters:
-          api_base: {{ $modelUrl }}
+          openai_api_base: {{ $modelUrl }}
+          model_name: {{ .Values.model.name }}
 
     rails:
       input:
