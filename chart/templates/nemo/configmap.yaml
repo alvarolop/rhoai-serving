@@ -10,9 +10,9 @@
     {{- $gwSvc := printf "%s-%s" $gwName $gwName -}}
     {{- $modelUrl = printf "http://%s.%s.svc.cluster.local/%s/%s/v1" $gwSvc $gwNs $modelNs $modelName -}}
   {{- else }}
-    {{- $gwSvc := "openshift-ai-inference-openshift-ai-inference" -}}
-    {{- $gwNs := "openshift-ingress" -}}
-    {{- $modelUrl = printf "http://%s.%s.svc.cluster.local/%s/%s/v1" $gwSvc $gwNs $modelNs $modelName -}}
+    {{- /* Default: use internal workload service (HTTPS) */ -}}
+    {{- $workloadSvc := printf "%s-kserve-workload-svc" $modelName -}}
+    {{- $modelUrl = printf "https://%s.%s.svc.cluster.local:8000" $workloadSvc $modelNs -}}
   {{- end }}
 {{- end }}
 ---

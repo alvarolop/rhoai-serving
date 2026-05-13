@@ -121,10 +121,10 @@ guardrails:
   enabled: true
   type: nemo
   nemo:
-    # Leave empty to auto-generate from routerGatewayRefs when useGatewayRefs: true
+    # Leave empty to auto-generate internal workload service URL
     modelUrl: ""
-    # Set to true to derive URL from routerGatewayRefs below
-    useGatewayRefs: true
+    # Set to true to derive URL from routerGatewayRefs (gateway routing)
+    useGatewayRefs: false
 
 # For Model-as-a-Service (MaaS) routing and NeMo Guardrails URL generation
 routerGatewayRefs:
