@@ -10,7 +10,7 @@ metadata:
 rules:
   - apiGroups: [""]
     resources: ["services"]
-    resourceNames: ["{{ .Values.name }}-nemo-guardrails-service"]
+    resourceNames: ["{{ .Values.name }}-nemo-guardrails"]
     verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
