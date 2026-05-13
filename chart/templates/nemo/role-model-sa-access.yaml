@@ -1,0 +1,30 @@
+{{- if and (eq .Values.serving.type "generative") .Values.guardrails.enabled (eq .Values.guardrails.type "nemo") }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ .Values.name }}-nemo-access
+  namespace: {{ include "rhoai-serving.namespaceName" . }}
+  labels:
+    app: {{ .Values.name }}-nemo-guardrails
+rules:
+  - apiGroups: [""]
+    resources: ["services"]
+    resourceNames: ["{{ .Values.name }}-nemo-guardrails-service"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ .Values.name }}-nemo-access
+  namespace: {{ include "rhoai-serving.namespaceName" . }}
+  labels:
+    app: {{ .Values.name }}-nemo-guardrails
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.name }}-sa
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ .Values.name }}-nemo-access
+{{- end }}
