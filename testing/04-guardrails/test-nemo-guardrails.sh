@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -ex
 
 # Configuration - Edit these for your model
 MODEL_NAME="${1:-gpt-oss-20b}"
@@ -48,7 +48,7 @@ RESPONSE=$(curl -k -s -X POST "${NEMO_URL}/v1/chat/completions" \
     "messages": [
       {"role": "user", "content": "Hello, how are you? Please respond in one sentence."}
     ],
-    "max_tokens": 100
+    "max_tokens": 500
   }')
 
 echo "Response:"
@@ -72,7 +72,7 @@ RESPONSE=$(curl -k -s -X POST "${NEMO_URL}/v1/chat/completions" \
     "messages": [
       {"role": "user", "content": "'"${LONG_MESSAGE}"'"}
     ],
-    "max_tokens": 100
+    "max_tokens": 500
   }')
 
 echo "Response:"
