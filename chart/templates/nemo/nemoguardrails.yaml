@@ -11,9 +11,9 @@ metadata:
     security.opendatahub.io/enable-auth: 'true'
 spec:
   nemoConfigs:
-    - name: {{ .Values.name }}-nemo-config
+    - name: nemo-config
       configMaps:
-        - {{ .Values.name }}-nemo-config
+        - nemo-config
   env:
     - name: "OPENAI_API_KEY"
       valueFrom:

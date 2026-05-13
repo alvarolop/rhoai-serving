@@ -19,7 +19,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ .Values.name }}-nemo-config
+  name: nemo-config
   namespace: {{ include "rhoai-serving.namespaceName" . }}
   labels:
     app: {{ .Values.name }}-nemo-guardrails
