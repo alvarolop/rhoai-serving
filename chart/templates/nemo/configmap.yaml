@@ -24,7 +24,7 @@ metadata:
   labels:
     app: {{ .Values.name }}-nemo-guardrails
 data:
-  config.yml: |
+  config.yaml: |
     models:
       - type: main
         engine: openai
