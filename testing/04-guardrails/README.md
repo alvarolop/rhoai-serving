@@ -13,17 +13,17 @@ Test scripts for validating NeMo Guardrails integration with model deployments.
 ### Test GPT-OSS 20B with Guardrails
 
 ```bash
-./test-nemo-guardrails.sh
+./testing/04-guardrails/test-nemo-guardrails.sh
 ```
 
 ### Test a Different Model
 
 ```bash
-./test-nemo-guardrails.sh <model-name> <namespace>
+./testing/04-guardrails/test-nemo-guardrails.sh <model-name> <namespace>
 
 # Examples:
-./test-nemo-guardrails.sh gemma-4-31b-it-fp8-dynamic model-gemma4-fp8
-./test-nemo-guardrails.sh gpt-oss-20b model-gpt-oss
+./testing/04-guardrails/test-nemo-guardrails.sh gemma-4-31b-it-fp8-dynamic model-gemma4-fp8
+./testing/04-guardrails/test-nemo-guardrails.sh gpt-oss-20b model-gpt-oss
 ```
 
 ## What the Test Does
