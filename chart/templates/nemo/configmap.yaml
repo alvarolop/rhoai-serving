@@ -42,7 +42,7 @@ data:
 
   rails.co: |
     define flow check message length
-      if $user_message.length > 2000
+      if len($user_message) > 2000
         bot inform message too long
         stop
 
