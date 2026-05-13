@@ -1,5 +1,5 @@
 #!/bin/bash
-set -ex
+set -e
 
 # Configuration - Edit these for your model
 MODEL_NAME="${1:-gpt-oss-20b}"

@@ -67,13 +67,13 @@ guardrails:
   type: nemo
   nemo:
     # Leave empty to auto-generate internal workload service URL
-    modelUrl: ""
+    modelUrl: "https://openshift-ai-inference.apps.ocp.sandbox1330.opentlc.com/model-gpt-oss/gpt-oss-20b/v1"
     # Set to true to derive URL from routerGatewayRefs (gateway routing)
     useGatewayRefs: false
 
 # For Model-as-a-Service (MaaS) routing and NeMo Guardrails URL generation
 routerGatewayRefs:
-  - name: maas-default-gateway
+  - name: openshift-ai-inference
     namespace: openshift-ingress
 
 # -- Custom chat template for generative models (vLLM). Use when model lacks built-in template.

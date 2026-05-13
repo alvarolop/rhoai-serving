@@ -13,7 +13,7 @@ spec:
   nemoConfigs:
     - name: nemo-config
       configMaps:
-        - nemo-config
+        - {{ .Values.name }}-nemo-config
   env:
     - name: "OPENAI_API_KEY"
       valueFrom:
