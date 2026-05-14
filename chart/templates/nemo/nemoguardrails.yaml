@@ -20,4 +20,7 @@ spec:
         secretKeyRef:
           name: {{ .Values.name }}-sa-token
           key: "token"
+    # Use OpenShift service CA bundle for internal gateway HTTPS
+    - name: "SSL_CERT_FILE"
+      value: "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
 {{- end }}
