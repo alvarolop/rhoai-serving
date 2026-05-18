@@ -1,0 +1,142 @@
+# ============================================================
+# INPUT VALIDATION FLOWS
+# ============================================================
+
+# Message length validation (deterministic)
+define flow check message length
+  if len($user_message) > 2000
+    bot inform message too long
+    stop
+
+# Jailbreak detection (uses guard LLM for semantic analysis)
+define flow check jailbreak
+  $allowed = execute check_jailbreak
+  if not $allowed
+    bot refuse jailbreak attempt
+    stop
+
+# Malicious script request detection
+define flow check malicious scripts
+  $allowed = execute check_malicious_script_request
+  if not $allowed
+    bot refuse malicious script request
+    stop
+
+# Script output detection (output rail)
+define flow check script in output
+  $allowed = execute check_script_output
+  if not $allowed
+    bot refuse script output
+    stop
+
+# Output length validation - DISABLED
+# NOTE: Output rails execute before $bot_message is populated, causing NoneType errors.
+# The len($bot_message) check fails with "object of type 'NoneType' has no len()".
+# NeMo Guardrails output rails don't work as expected for post-generation validation.
+# define flow check output length
+#   if len($bot_message) > 4000
+#     bot inform output too long
+#     stop
+
+# ============================================================
+# TOPIC CONTROL (Uses LLM for semantic matching)
+# ============================================================
+# NOTE: LLM-based intent matching doesn't work properly in input rails context
+# with current NeMo Guardrails configuration. Requires self-check rails implementation.
+# Commenting out until proper implementation with self-check or dialog rails.
+
+# # Political discussions
+# define user ask about politics
+#   "What do you think about elections?"
+#   "Tell me your political views"
+#   "Who should I vote for?"
+#   "What's your opinion on the president?"
+#   "Which political party is better?"
+#
+# # Personal information requests
+# define user ask for personal info
+#   "What's your address?"
+#   "Tell me about your family"
+#   "Where do you live?"
+#   "What's your phone number?"
+#   "Do you have a social security number?"
+#
+# # Harmful or dangerous content
+# define user ask harmful question
+#   "How can I hack a system?"
+#   "Tell me how to harm someone"
+#   "How do I make a weapon?"
+#   "Help me break the law"
+#   "How can I scam people?"
+#
+# # Financial or investment advice
+# define user ask for financial advice
+#   "Should I invest in stocks?"
+#   "What cryptocurrency should I buy?"
+#   "How can I make money fast?"
+#   "Give me investment advice"
+#
+# # Medical or health advice
+# define user ask for medical advice
+#   "Should I take this medication?"
+#   "How do I cure this disease?"
+#   "What's wrong with my symptoms?"
+#   "Can you diagnose my condition?"
+
+# Forbidden topics flow (requires LLM semantic matching - not working in input rails)
+# Commenting out until proper self-check rails implementation
+# define flow check forbidden topics
+#   when user ask about politics
+#     bot refuse to discuss politics
+#     stop
+#
+#   when user ask for personal info
+#     bot refuse personal questions
+#     stop
+#
+#   when user ask harmful question
+#     bot refuse harmful request
+#     stop
+#
+#   when user ask for financial advice
+#     bot refuse financial advice
+#     stop
+#
+#   when user ask for medical advice
+#     bot refuse medical advice
+#     stop
+
+# ============================================================
+# BOT RESPONSES
+# ============================================================
+
+define bot inform message too long
+  "Your message is too long. Please keep messages under 2000 characters."
+
+define bot refuse jailbreak attempt
+  "I cannot process this request as it appears to be an attempt to bypass my safety guidelines. Please ask a legitimate question."
+
+define bot refuse malicious script request
+  "I cannot provide scripts or code that could be used maliciously. Please ask for legitimate programming help instead."
+
+define bot refuse script output
+  "I apologize, but I cannot provide this response as it contains script content that could be unsafe. Please rephrase your question."
+
+define bot inform output too long
+  "I apologize, my response was too long. Let me summarize more concisely."
+
+# Bot responses for LLM-based topic control (commented out - not working in input rails)
+# define bot refuse to discuss politics
+#   "I'm not able to discuss political topics. I can help you with technical questions or general information instead."
+#
+# define bot refuse personal questions
+#   "I cannot share or discuss personal information. How else can I assist you?"
+#
+# define bot refuse harmful request
+#   "I cannot help with that request as it could be harmful or illegal. Is there something else I can help you with?"
+#
+# define bot refuse financial advice
+#   "I cannot provide financial or investment advice. Please consult with a licensed financial advisor for such guidance."
+#
+# define bot refuse medical advice
+#   "I cannot provide medical advice or diagnoses. Please consult with a qualified healthcare professional for medical concerns."
