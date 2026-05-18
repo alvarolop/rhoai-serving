@@ -50,17 +50,17 @@ metadata:
     app: {{ .Values.name }}-nemo-guardrails
 data:
   config.yaml: |
-{{ tpl (.Files.Get "nemo-configs/config.yaml.tpl") (merge (dict "modelUrl" $modelUrl "guardUrl" $guardUrl "guardModelName" $guardModelName) .) | nindent 4 }}
+{{ tpl (.Files.Get "nemo-configs/00-config.yaml.tpl") (merge (dict "modelUrl" $modelUrl "guardUrl" $guardUrl "guardModelName" $guardModelName) .) | nindent 4 }}
 
   rails.co: |
-{{ .Files.Get "nemo-configs/rails.co" | nindent 4 }}
+{{ .Files.Get "nemo-configs/02-rails.co" | nindent 4 }}
 
   actions.py: |
-{{ .Files.Get "nemo-configs/actions.py" | nindent 4 }}
+{{ .Files.Get "nemo-configs/01-actions.py" | nindent 4 }}
 
   prompts.yaml: |
-{{ .Files.Get "nemo-configs/prompts.yaml" | nindent 4 }}
+{{ .Files.Get "nemo-configs/03-prompts.yaml" | nindent 4 }}
 
   flows_advanced.co: |
-{{ .Files.Get "nemo-configs/flows_advanced.co" | nindent 4 }}
+{{ .Files.Get "nemo-configs/04-flows_advanced.co" | nindent 4 }}
 {{- end }}
