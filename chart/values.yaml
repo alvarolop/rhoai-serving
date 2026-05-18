@@ -197,13 +197,16 @@ guardrails:
       #       - PERSON
 
       # Guardrails activation - controls which flows from rails.co actually run
+      # NOTE: Only deterministic validations work in input rails currently.
+      # LLM-based semantic matching (jailbreak, topic control) requires different implementation.
       rails:
         input:
           flows:
             - check message length
-            - check jailbreak
-            - check forbidden topics
-            # Uncomment to enable additional input rails:
+            # LLM-based flows (commented out - not working in input rails context):
+            # - check jailbreak
+            # - check forbidden topics
+            # Uncomment to enable additional deterministic input rails:
             # - check rate limit
             # - check profanity
         output:
