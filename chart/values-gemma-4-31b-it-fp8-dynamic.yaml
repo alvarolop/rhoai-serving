@@ -121,12 +121,14 @@ guardrails:
   enabled: true
   type: nemo
   nemo:
-    # Leave empty to auto-generate internal workload service URL
+    # Leave empty to auto-generate based on routerGatewayRefs
+    # If routerGatewayRefs exists (below), uses internal gateway
+    # Otherwise, uses direct workload service
     modelUrl: ""
-    # Set to true to derive URL from routerGatewayRefs (gateway routing)
-    useGatewayRefs: false
 
-# For Model-as-a-Service (MaaS) routing and NeMo Guardrails URL generation
+# For Model-as-a-Service (MaaS) routing
+# When defined, NeMo Guardrails automatically uses internal gateway URL
+# Comment out to use direct workload service instead
 routerGatewayRefs:
   - name: maas-default-gateway
     namespace: openshift-ingress

@@ -176,10 +176,8 @@ guardrails:
   type: nemo
   # -- NeMo Guardrails configuration (only used when type is "nemo")
   nemo:
-    # -- LLM model endpoint URL. If empty and useGatewayRefs is true, auto-generates from routerGatewayRefs. If empty and useGatewayRefs is false, uses fallback defaults.
+    # -- LLM model endpoint URL. Leave empty to auto-generate: If routerGatewayRefs exists, uses internal gateway (https://<gateway-svc>/<namespace>/<model>/v1). Otherwise, uses direct workload service (https://<model>-kserve-workload-svc:8000).
     modelUrl: ""
-    # -- Use routerGatewayRefs to auto-generate modelUrl. When true, constructs URL from first gateway ref: http://<gateway-name>-<gateway-name>.<gateway-namespace>.svc.cluster.local/<model-namespace>/<model-name>/v1
-    useGatewayRefs: false
 
 # @section -- Resources Configuration
 

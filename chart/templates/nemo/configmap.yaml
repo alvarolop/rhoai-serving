@@ -3,10 +3,11 @@
 {{- if not $modelUrl }}
   {{- $modelNs := include "rhoai-serving.namespaceName" . -}}
   {{- $modelName := .Values.name -}}
-  {{- if and .Values.guardrails.nemo.useGatewayRefs .Values.routerGatewayRefs }}
+  {{- if .Values.routerGatewayRefs }}
+    {{- /* Use internal gateway if routerGatewayRefs is configured */ -}}
     {{- $gateway := index .Values.routerGatewayRefs 0 -}}
-    {{- $gwName := $gateway.name | required "routerGatewayRefs[0].name is required when guardrails.nemo.useGatewayRefs is true" -}}
-    {{- $gwNs := $gateway.namespace | required "routerGatewayRefs[0].namespace is required when guardrails.nemo.useGatewayRefs is true" -}}
+    {{- $gwName := $gateway.name | required "routerGatewayRefs[0].name is required" -}}
+    {{- $gwNs := $gateway.namespace | required "routerGatewayRefs[0].namespace is required" -}}
     {{- $gwSvc := printf "%s-%s" $gwName $gwName -}}
     {{- $modelUrl = printf "https://%s.%s.svc.cluster.local/%s/%s/v1" $gwSvc $gwNs $modelNs $modelName -}}
   {{- else }}
