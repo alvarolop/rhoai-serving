@@ -32,31 +32,7 @@ data:
         parameters:
           openai_api_base: {{ $modelUrl }}
           model_name: {{ .Values.model.name }}
-
-    # PII Detection Configuration (regex-based, no model needed)
-    # Uncomment to enable sensitive data detection
-    # sensitive_data_detection:
-    #   input:
-    #     entities:
-    #       - EMAIL_ADDRESS
-    #       - PHONE_NUMBER
-    #       - CREDIT_CARD
-    #   output:
-    #     entities:
-    #       - PERSON
-
-    # Guardrails activation
-    rails:
-      input:
-        flows:
-          - check message length
-          - check forbidden topics
-          # - check rate limit  # Uncomment to enable rate limiting
-          # - check profanity   # Uncomment to enable profanity filtering
-      output:
-        flows:
-          - check output length
-          # - validate json output  # Uncomment for structured output validation
+{{ .Values.guardrails.nemo.config | nindent 4 }}
 
   # Main flows and topic control
   rails.co: |

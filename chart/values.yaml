@@ -179,6 +179,38 @@ guardrails:
     # -- LLM model endpoint URL. Leave empty to auto-generate: If routerGatewayRefs exists, uses internal gateway (https://<gateway-svc>/<namespace>/<model>/v1). Otherwise, uses direct workload service (https://<model>-kserve-workload-svc:8000).
     modelUrl: ""
 
+    # -- NeMo Guardrails config.yaml content. This controls which guardrails are active.
+    # The model connection (openai_api_base, model_name) is auto-injected by the template.
+    # Customize per model to enable/disable specific flows, PII detection, etc.
+    # @default -- Basic configuration with message length and topic control
+    config: |
+      # PII Detection Configuration (regex-based, no model needed)
+      # Uncomment to enable sensitive data detection
+      # sensitive_data_detection:
+      #   input:
+      #     entities:
+      #       - EMAIL_ADDRESS
+      #       - PHONE_NUMBER
+      #       - CREDIT_CARD
+      #   output:
+      #     entities:
+      #       - PERSON
+
+      # Guardrails activation - controls which flows from rails.co actually run
+      rails:
+        input:
+          flows:
+            - check message length
+            - check forbidden topics
+            # Uncomment to enable additional input rails:
+            # - check rate limit
+            # - check profanity
+        output:
+          flows:
+            - check output length
+            # Uncomment to enable additional output rails:
+            # - validate json output
+
 # @section -- Resources Configuration
 
 # -- Container resource limits and requests. Override in values-<model>.yaml files per model requirements.
