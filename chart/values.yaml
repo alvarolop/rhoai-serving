@@ -197,8 +197,9 @@ guardrails:
       #       - PERSON
 
       # Guardrails activation - controls which flows from rails.co actually run
-      # NOTE: Only deterministic validations work in input rails currently.
-      # LLM-based semantic matching (jailbreak, topic control) requires different implementation.
+      # NOTE: Only input message length validation works currently.
+      # - LLM-based flows (jailbreak, topic control) don't work in input rails
+      # - Output rails don't work ($bot_message is NoneType when flow executes)
       rails:
         input:
           flows:
@@ -209,11 +210,10 @@ guardrails:
             # Uncomment to enable additional deterministic input rails:
             # - check rate limit
             # - check profanity
-        output:
-          flows:
-            - check output length
-            # Uncomment to enable additional output rails:
-            # - validate json output
+        # Output rails disabled - don't work as expected in NeMo
+        # output:
+        #   flows:
+        #     - check output length
 
 # @section -- Resources Configuration
 

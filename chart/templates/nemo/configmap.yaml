@@ -46,11 +46,14 @@ data:
         bot inform message too long
         stop
 
-    # Output length validation
-    define flow check output length
-      if len($bot_message) > 4000
-        bot inform output too long
-        stop
+    # Output length validation - DISABLED
+    # NOTE: Output rails execute before $bot_message is populated, causing NoneType errors.
+    # The len($bot_message) check fails with "object of type 'NoneType' has no len()".
+    # NeMo Guardrails output rails don't work as expected for post-generation validation.
+    # define flow check output length
+    #   if len($bot_message) > 4000
+    #     bot inform output too long
+    #     stop
 
     # ============================================================
     # TOPIC CONTROL (Uses LLM for semantic matching)

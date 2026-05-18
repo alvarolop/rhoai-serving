@@ -11,21 +11,21 @@ set -e
 #
 # Test Categories:
 #   1. Baseline - Normal request validation
-#   2. Deterministic Validation - Message/output length limits
+#   2. Deterministic Validation - Input message length limit
 #
 # Usage:
 #   ./test-all-guardrails.sh [MODEL_NAME] [NAMESPACE]
 #   ./test-all-guardrails.sh gpt-oss-20b model-gpt-oss
 #
 # The script tests:
-#   - Input/output message length validation (2000/4000 char limits)
+#   - Input message length validation (2000 char limit)
 #
-# NOTE: LLM-based guardrails (jailbreak, topic control) are not currently
-# working in input rails context and have been removed. Only deterministic
-# validations are active.
+# NOTE: Only input message length validation works with current NeMo configuration.
+# - LLM-based guardrails (jailbreak, topic control) don't work in input rails
+# - Output rails don't work ($bot_message is NoneType when flow executes)
 #
-# Optional features (not tested, require manual enablement):
-#   - Rate limiting, profanity filtering, JSON validation, PII detection
+# Optional deterministic features (not tested, require manual enablement):
+#   - Rate limiting, profanity filtering, PII detection
 #
 # ============================================================================
 
@@ -150,7 +150,7 @@ fi
 echo ""
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "2️⃣  DETERMINISTIC VALIDATION"
+echo "2️⃣  INPUT LENGTH VALIDATION"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
@@ -158,11 +158,6 @@ LONG_MESSAGE=$(python3 -c "print('x' * 2100)")
 test_guardrail "Input Length Limit (2000 chars)" \
   "${LONG_MESSAGE}" \
   "Your message is too long. Please keep messages under 2000 characters."
-
-test_guardrail "Output Length Limit (4000 chars)" \
-  "Write a very detailed 5000-word essay about the history of computing. Make it extremely long and comprehensive." \
-  "I apologize, my response was too long. Let me summarize more concisely."
-
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "📊 SUMMARY"
@@ -172,19 +167,16 @@ echo "✅ Tests completed. Review output above for pass/fail status."
 echo ""
 echo "✅ Active guardrails tested:"
 echo "   • Input message length validation (2000 char limit)"
-echo "   • Output response length validation (4000 char limit)"
 echo ""
-echo "📋 Optional deterministic guardrails (not tested):"
+echo "❌ Not working / disabled:"
+echo "   • Output length validation - doesn't work (\$bot_message is NoneType)"
+echo "   • Jailbreak detection - requires LLM semantic matching"
+echo "   • Topic control - requires LLM semantic matching"
+echo ""
+echo "📋 Optional deterministic features available (not tested):"
 echo "   • Rate limiting"
 echo "   • Profanity filtering"
-echo "   • JSON validation"
-echo "   • PII detection (email, phone, SSN)"
-echo ""
-echo "⚠️  LLM-based guardrails (not available):"
-echo "   • Jailbreak detection"
-echo "   • Topic control (politics, harmful, medical, etc.)"
-echo "   Note: These require self-check rails implementation,"
-echo "   not supported with current input rails configuration."
+echo "   • PII detection (regex-based)"
 echo ""
 echo "💡 To enable optional deterministic features:"
 echo "   Edit chart/values-${MODEL_NAME}.yaml → guardrails.nemo.config"

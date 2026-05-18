@@ -25,6 +25,13 @@ scaling:
 mainContainer:
   extraArgs:
     - "--disable-uvicorn-access-log"
+    # Context and generation limits for 4000+ character responses
+    - "--max-model-len"
+    - "8192"  # Total context window (input + output) - conservative for 20B on single GPU
+    - "--gpu-memory-utilization"
+    - "0.90"  # Use 90% of GPU memory for model weights and KV cache
+    - "--max-num-batched-tokens"
+    - "8192"  # Match max-model-len for efficient batching
   # Health probes tuned for large model loading (~3min)
   startupProbe:
     httpGet:
@@ -78,9 +85,10 @@ guardrails:
         input:
           flows:
             - check message length
-        output:
-          flows:
-            - check output length
+        # Output length check disabled - causes empty responses
+        # output:
+        #   flows:
+        #     - check output length
 
 # For Model-as-a-Service (MaaS) routing
 # When defined, NeMo Guardrails automatically uses internal gateway URL
