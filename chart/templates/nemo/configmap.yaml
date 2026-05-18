@@ -84,6 +84,20 @@ data:
         bot refuse jailbreak attempt
         stop
 
+    # Malicious script request detection
+    define flow check malicious scripts
+      $allowed = execute check_malicious_script_request
+      if not $allowed
+        bot refuse malicious script request
+        stop
+
+    # Script output detection (output rail)
+    define flow check script in output
+      $allowed = execute check_script_output
+      if not $allowed
+        bot refuse script output
+        stop
+
     # Output length validation - DISABLED
     # NOTE: Output rails execute before $bot_message is populated, causing NoneType errors.
     # The len($bot_message) check fails with "object of type 'NoneType' has no len()".
@@ -171,6 +185,12 @@ data:
     define bot refuse jailbreak attempt
       "I cannot process this request as it appears to be an attempt to bypass my safety guidelines. Please ask a legitimate question."
 
+    define bot refuse malicious script request
+      "I cannot provide scripts or code that could be used maliciously. Please ask for legitimate programming help instead."
+
+    define bot refuse script output
+      "I apologize, but I cannot provide this response as it contains script content that could be unsafe. Please rephrase your question."
+
     define bot inform output too long
       "I apologize, my response was too long. Let me summarize more concisely."
 
@@ -243,6 +263,87 @@ data:
                 return False  # Block - jailbreak detected
 
         return True  # Allow - no jailbreak detected
+
+    # ============================================================
+    # MALICIOUS SCRIPT DETECTION
+    # ============================================================
+
+    @action(is_system_action=True)
+    async def check_malicious_script_request(context: Optional[dict] = None) -> bool:
+        """
+        Check if user is asking for malicious scripts or code.
+        Returns: True if allowed, False if malicious script request detected
+        """
+        user_message = context.get("user_message", "").lower()
+
+        # Malicious script request patterns
+        malicious_patterns = [
+            "write a virus",
+            "create a virus",
+            "make a virus",
+            "write malware",
+            "create malware",
+            "ransomware",
+            "keylogger",
+            "backdoor",
+            "trojan",
+            "exploit code",
+            "reverse shell",
+            "sql injection",
+            "xss script",
+            "cross-site scripting",
+            "remote code execution",
+            "privilege escalation",
+            "bypass antivirus",
+            "evade detection",
+            "cryptominer",
+            "botnet",
+            "ddos script",
+            "phishing script",
+            "credential stealer",
+            "password cracker"
+        ]
+
+        # Check if message contains malicious script patterns
+        for pattern in malicious_patterns:
+            if pattern in user_message:
+                return False  # Block - malicious script request detected
+
+        return True  # Allow - no malicious script request detected
+
+    @action(is_system_action=True)
+    async def check_script_output(context: Optional[dict] = None) -> bool:
+        """
+        Check if bot response contains script tags or potentially executable code.
+        Returns: True if allowed, False if script content detected
+        """
+        bot_message = context.get("bot_message", "")
+        if not bot_message:
+            return True  # Allow if no message yet
+
+        bot_message_lower = bot_message.lower()
+
+        # Script tag patterns (HTML/JavaScript)
+        script_indicators = [
+            "<script",
+            "</script>",
+            "javascript:",
+            "onerror=",
+            "onload=",
+            "onclick=",
+            "<iframe",
+            "eval(",
+            "document.cookie",
+            "document.write",
+            "window.location"
+        ]
+
+        # Check if message contains script indicators
+        for indicator in script_indicators:
+            if indicator in bot_message_lower:
+                return False  # Block - script content detected
+
+        return True  # Allow - no script content detected
 
     # ============================================================
     # RATE LIMITING

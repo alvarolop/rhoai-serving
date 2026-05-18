@@ -93,12 +93,12 @@ guardrails:
       rails:
         input:
           flows:
-            - check message length  # Deterministic length validation
-            - check jailbreak       # LLM-based jailbreak detection via guard model
-        # Output length check disabled - causes empty responses
-        # output:
-        #   flows:
-        #     - check output length
+            - check message length    # Deterministic length validation
+            - check jailbreak         # Keyword-based jailbreak detection
+            - check malicious scripts # Malicious script request detection
+        output:
+          flows:
+            - check script in output  # Prevent script content in responses
 
 # For Model-as-a-Service (MaaS) routing
 # When defined, NeMo Guardrails automatically uses internal gateway URL
