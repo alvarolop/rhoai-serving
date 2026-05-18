@@ -14,11 +14,13 @@
 #   - OTEL collector configured to receive traces on the standard gRPC port (4317)
 #
 # The NeMo Guardrails pod will automatically export traces using the
-# OpenTelemetry environment variables (OTEL_EXPORTER_OTLP_ENDPOINT, etc.)
-# configured via the cluster's OTEL collector service discovery or
-# environment variable injection.
+# OpenTelemetry environment variables (OTEL_SERVICE_NAME, OTEL_EXPORTER_OTLP_ENDPOINT, etc.)
+# injected into the pod.
 
 guardrails:
   nemo:
     otel:
       enabled: true
+      # Optional: Override OTEL collector endpoint
+      # Default: http://opentelemetry-collector.opentelemetry.svc.cluster.local:4317
+      # endpoint: "http://my-otel-collector.monitoring.svc.cluster.local:4317"
