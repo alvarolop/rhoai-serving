@@ -71,6 +71,18 @@ guardrails:
     # Otherwise, uses direct workload service
     modelUrl: ""
 
+    # Customize which guardrails are active for this model
+    config: |
+      # Guardrails activation
+      rails:
+        input:
+          flows:
+            - check message length
+            - check forbidden topics
+        output:
+          flows:
+            - check output length
+
 # For Model-as-a-Service (MaaS) routing
 # When defined, NeMo Guardrails automatically uses internal gateway URL
 routerGatewayRefs:
