@@ -78,6 +78,7 @@ guardrails:
         input:
           flows:
             - check message length
+            - check jailbreak
             - check forbidden topics
         output:
           flows:
