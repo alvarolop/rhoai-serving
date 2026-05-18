@@ -89,16 +89,22 @@ guardrails:
 
     # Customize which guardrails are active for this model
     config: |
-      # Guardrails activation
+      # Guardrails activation - Defense-in-depth with multiple layers
       rails:
         input:
           flows:
+            # === LLM-Based Semantic Validation (Granite Guardian) ===
+            - self check input        # Primary jailbreak/prompt injection detection via guard LLM
+            # === Keyword-Based Pattern Matching (Fallback) ===
             - check message length    # Deterministic length validation
-            - check jailbreak         # Keyword-based jailbreak detection
+            - check jailbreak         # Keyword-based jailbreak detection (backup)
             - check malicious scripts # Malicious script request detection
         output:
           flows:
-            - check script in output  # Prevent script content in responses
+            # === LLM-Based Semantic Validation (Granite Guardian) ===
+            - self check output       # Primary output validation via guard LLM
+            # === Content Pattern Matching (Fallback) ===
+            - check script in output  # Prevent script tags in responses (backup)
 
 # For Model-as-a-Service (MaaS) routing
 # When defined, NeMo Guardrails automatically uses internal gateway URL
