@@ -78,6 +78,15 @@ guardrails:
     # Otherwise, uses direct workload service
     modelUrl: ""
 
+    # Guard LLM for semantic validation (jailbreak detection, topic control)
+    guardLlm:
+      enabled: true
+      # Leave empty to auto-generate from name/namespace
+      url: ""
+      modelName: "ibm-granite/granite-guardian-4.1-8b"
+      name: "granite-guardian-4-1-8b"
+      namespace: "model-granite-guardian"
+
     # Customize which guardrails are active for this model
     config: |
       # Guardrails activation (only deterministic validations)

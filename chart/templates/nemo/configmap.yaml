@@ -1,4 +1,5 @@
 {{- if and (eq .Values.serving.type "generative") .Values.guardrails.enabled (eq .Values.guardrails.type "nemo") }}
+{{- /* Auto-generate main model URL if not provided */ -}}
 {{- $modelUrl := .Values.guardrails.nemo.modelUrl | default "" | toString | trim -}}
 {{- if not $modelUrl }}
   {{- $modelNs := include "rhoai-serving.namespaceName" . -}}
@@ -14,6 +15,29 @@
     {{- /* Default: use internal workload service (HTTPS) */ -}}
     {{- $workloadSvc := printf "%s-kserve-workload-svc" $modelName -}}
     {{- $modelUrl = printf "https://%s.%s.svc.cluster.local:8000" $workloadSvc $modelNs -}}
+  {{- end }}
+{{- end }}
+{{- /* Auto-generate guard LLM URL if enabled and not provided */ -}}
+{{- $guardUrl := "" -}}
+{{- $guardModelName := "" -}}
+{{- if .Values.guardrails.nemo.guardLlm.enabled }}
+  {{- $guardUrl = .Values.guardrails.nemo.guardLlm.url | default "" | toString | trim -}}
+  {{- $guardModelName = .Values.guardrails.nemo.guardLlm.modelName | required "guardrails.nemo.guardLlm.modelName is required when guardLlm.enabled is true" -}}
+  {{- if not $guardUrl }}
+    {{- $guardName := .Values.guardrails.nemo.guardLlm.name | required "guardrails.nemo.guardLlm.name is required when guardLlm.url is empty" -}}
+    {{- $guardNs := .Values.guardrails.nemo.guardLlm.namespace | required "guardrails.nemo.guardLlm.namespace is required when guardLlm.url is empty" -}}
+    {{- if .Values.routerGatewayRefs }}
+      {{- /* Use internal gateway if routerGatewayRefs is configured */ -}}
+      {{- $gateway := index .Values.routerGatewayRefs 0 -}}
+      {{- $gwName := $gateway.name -}}
+      {{- $gwNs := $gateway.namespace -}}
+      {{- $gwSvc := printf "%s-%s" $gwName $gwName -}}
+      {{- $guardUrl = printf "https://%s.%s.svc.cluster.local/%s/%s/v1" $gwSvc $gwNs $guardNs $guardName -}}
+    {{- else }}
+      {{- /* Default: use internal workload service (HTTPS) */ -}}
+      {{- $guardWorkloadSvc := printf "%s-kserve-workload-svc" $guardName -}}
+      {{- $guardUrl = printf "https://%s.%s.svc.cluster.local:8000" $guardWorkloadSvc $guardNs -}}
+    {{- end }}
   {{- end }}
 {{- end }}
 ---
@@ -32,6 +56,13 @@ data:
         parameters:
           openai_api_base: {{ $modelUrl }}
           model_name: {{ .Values.model.name }}
+{{- if .Values.guardrails.nemo.guardLlm.enabled }}
+      - type: self_check
+        engine: openai
+        parameters:
+          openai_api_base: {{ $guardUrl }}
+          model_name: {{ $guardModelName }}
+{{- end }}
 {{ .Values.guardrails.nemo.config | nindent 4 }}
 
   # Main flows and topic control

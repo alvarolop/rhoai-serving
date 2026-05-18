@@ -179,6 +179,19 @@ guardrails:
     # -- LLM model endpoint URL. Leave empty to auto-generate: If routerGatewayRefs exists, uses internal gateway (https://<gateway-svc>/<namespace>/<model>/v1). Otherwise, uses direct workload service (https://<model>-kserve-workload-svc:8000).
     modelUrl: ""
 
+    # -- Guard LLM configuration for semantic matching (jailbreak detection, topic control)
+    guardLlm:
+      # -- Enable guard LLM for NeMo Guardrails self-check and semantic validation
+      enabled: false
+      # -- Guard model endpoint URL. Leave empty to auto-generate from name/namespace.
+      url: ""
+      # -- Guard model name for API calls (e.g., "ibm-granite/granite-guardian-4.1-8b")
+      modelName: ""
+      # -- Guard model deployment name for auto-generating URL (e.g., "granite-guardian-4-1-8b")
+      name: ""
+      # -- Guard model namespace for auto-generating URL (e.g., "model-granite-guardian")
+      namespace: ""
+
     # -- NeMo Guardrails config.yaml content. This controls which guardrails are active.
     # The model connection (openai_api_base, model_name) is auto-injected by the template.
     # Customize per model to enable/disable specific flows, PII detection, etc.
