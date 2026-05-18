@@ -1,0 +1,24 @@
+# Example: Enable OpenTelemetry Tracing for NeMo Guardrails
+#
+# Usage:
+#   helm template <release> chart/ \
+#     -f chart/values.yaml \
+#     -f chart/values-gpt-oss-20b.yaml \
+#     -f chart/values-example-otel.yaml
+#
+# This enables OpenTelemetry tracing for observability.
+# Traces are exported to the configured OTEL collector in your cluster.
+#
+# Prerequisites:
+#   - OpenTelemetry Collector deployed in your cluster
+#   - OTEL collector configured to receive traces on the standard gRPC port (4317)
+#
+# The NeMo Guardrails pod will automatically export traces using the
+# OpenTelemetry environment variables (OTEL_EXPORTER_OTLP_ENDPOINT, etc.)
+# configured via the cluster's OTEL collector service discovery or
+# environment variable injection.
+
+guardrails:
+  nemo:
+    otel:
+      enabled: true

@@ -192,6 +192,11 @@ guardrails:
       # -- Guard model namespace for auto-generating URL (e.g., "model-granite-guardian")
       namespace: ""
 
+    # -- OpenTelemetry tracing configuration
+    otel:
+      # -- Enable OpenTelemetry tracing for observability (exports traces to configured OTEL collector)
+      enabled: false
+
     # -- NeMo Guardrails config.yaml content. This controls which guardrails are active.
     # The model connection (openai_api_base, model_name) is auto-injected by the template.
     # Customize per model to enable/disable specific flows, PII detection, etc.
