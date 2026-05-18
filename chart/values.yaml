@@ -25,9 +25,9 @@ namespace:
   create: true
   # -- Namespace name
   name: model-serving
-  # -- OpenShift console display name (defaults to .name if empty)
+  # -- OpenShift console display name (defaults to "Model - <name>" if empty)
   displayName: ""
-  # -- OpenShift console description annotation (optional)
+  # -- OpenShift console description (defaults to "Serving model <name>" if empty)
   description: ""
   # -- Enable Kueue management label for queue enforcement (Red Hat OpenShift AI workload scheduling)
   kueueManaged: true

@@ -9,7 +9,14 @@ Namespace name used by all namespaced resources.
 OpenShift console display name for the Namespace (when namespace.create is true).
 */}}
 {{- define "rhoai-serving.namespaceDisplayName" -}}
-{{- .Values.namespace.displayName | default .Values.namespace.name -}}
+{{- .Values.namespace.displayName | default (printf "Model - %s" .Values.name) -}}
+{{- end }}
+
+{{/*
+OpenShift console description for the Namespace (when namespace.create is true).
+*/}}
+{{- define "rhoai-serving.namespaceDescription" -}}
+{{- .Values.namespace.description | default (printf "Serving model %s" .Values.name) -}}
 {{- end }}
 
 {{/*

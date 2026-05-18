@@ -6,9 +6,7 @@ metadata:
   name: {{ include "rhoai-serving.namespaceName" . }}
   annotations:
     openshift.io/display-name: {{ include "rhoai-serving.namespaceDisplayName" . | quote }}
-    {{- if .Values.namespace.description }}
-    openshift.io/description: {{ .Values.namespace.description | quote }}
-    {{- end }}
+    openshift.io/description: {{ include "rhoai-serving.namespaceDescription" . | quote }}
   labels:
     opendatahub.io/dashboard: 'true'
     rhoai-serving/model: 'true'
