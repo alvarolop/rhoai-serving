@@ -32,20 +32,287 @@ data:
           openai_api_base: {{ $modelUrl }}
           model_name: {{ .Values.model.name }}
 
+    # PII Detection Configuration (regex-based, no model needed)
+    # Uncomment to enable sensitive data detection
+    # sensitive_data_detection:
+    #   input:
+    #     entities:
+    #       - EMAIL_ADDRESS
+    #       - PHONE_NUMBER
+    #       - CREDIT_CARD
+    #   output:
+    #     entities:
+    #       - PERSON
+
+    # Guardrails activation
     rails:
       input:
         flows:
           - check message length
+          - check forbidden topics
+          # - check rate limit  # Uncomment to enable rate limiting
+          # - check profanity   # Uncomment to enable profanity filtering
       output:
         flows:
-          - check message length
+          - check output length
+          # - validate json output  # Uncomment for structured output validation
 
+  # Main flows and topic control
   rails.co: |
+    # ============================================================
+    # INPUT VALIDATION FLOWS
+    # ============================================================
+
+    # Message length validation (deterministic)
     define flow check message length
       if len($user_message) > 2000
         bot inform message too long
         stop
 
+    # Output length validation
+    define flow check output length
+      if len($bot_message) > 4000
+        bot inform output too long
+        stop
+
+    # ============================================================
+    # TOPIC CONTROL (Uses LLM for semantic matching)
+    # ============================================================
+
+    # Political discussions
+    define user ask about politics
+      "What do you think about elections?"
+      "Tell me your political views"
+      "Who should I vote for?"
+      "What's your opinion on the president?"
+      "Which political party is better?"
+
+    # Personal information requests
+    define user ask for personal info
+      "What's your address?"
+      "Tell me about your family"
+      "Where do you live?"
+      "What's your phone number?"
+      "Do you have a social security number?"
+
+    # Harmful or dangerous content
+    define user ask harmful question
+      "How can I hack a system?"
+      "Tell me how to harm someone"
+      "How do I make a weapon?"
+      "Help me break the law"
+      "How can I scam people?"
+
+    # Financial or investment advice
+    define user ask for financial advice
+      "Should I invest in stocks?"
+      "What cryptocurrency should I buy?"
+      "How can I make money fast?"
+      "Give me investment advice"
+
+    # Medical or health advice
+    define user ask for medical advice
+      "Should I take this medication?"
+      "How do I cure this disease?"
+      "What's wrong with my symptoms?"
+      "Can you diagnose my condition?"
+
+    # Forbidden topics flow
+    define flow check forbidden topics
+      when user ask about politics
+        bot refuse to discuss politics
+        stop
+
+      when user ask for personal info
+        bot refuse personal questions
+        stop
+
+      when user ask harmful question
+        bot refuse harmful request
+        stop
+
+      when user ask for financial advice
+        bot refuse financial advice
+        stop
+
+      when user ask for medical advice
+        bot refuse medical advice
+        stop
+
+    # ============================================================
+    # BOT RESPONSES
+    # ============================================================
+
     define bot inform message too long
       "Your message is too long. Please keep messages under 2000 characters."
+
+    define bot inform output too long
+      "I apologize, my response was too long. Let me summarize more concisely."
+
+    define bot refuse to discuss politics
+      "I'm not able to discuss political topics. I can help you with technical questions or general information instead."
+
+    define bot refuse personal questions
+      "I cannot share or discuss personal information. How else can I assist you?"
+
+    define bot refuse harmful request
+      "I cannot help with that request as it could be harmful or illegal. Is there something else I can help you with?"
+
+    define bot refuse financial advice
+      "I cannot provide financial or investment advice. Please consult with a licensed financial advisor for such guidance."
+
+    define bot refuse medical advice
+      "I cannot provide medical advice or diagnoses. Please consult with a qualified healthcare professional for medical concerns."
+
+  # Custom Python actions (advanced features)
+  actions.py: |
+    """
+    Custom NeMo Guardrails Actions
+
+    These actions provide additional validation logic beyond what Colang flows can do.
+    """
+    from typing import Optional
+    from nemoguardrails.actions import action
+    import re
+
+    # ============================================================
+    # RATE LIMITING
+    # ============================================================
+
+    # Simple in-memory rate limiter (use Redis for production)
+    _request_counts = {}
+
+    @action(is_system_action=True)
+    async def check_rate_limit(context: Optional[dict] = None) -> str:
+        """
+        Check if user has exceeded rate limit.
+        Returns: "blocked" if rate limit exceeded, "allowed" otherwise
+        """
+        user_id = context.get("user_id", "anonymous")
+        current_time = context.get("current_time", 0)
+
+        # Simple sliding window: max 10 requests per minute
+        if user_id not in _request_counts:
+            _request_counts[user_id] = []
+
+        # Clean old requests (older than 1 minute)
+        _request_counts[user_id] = [
+            t for t in _request_counts[user_id]
+            if current_time - t < 60
+        ]
+
+        if len(_request_counts[user_id]) >= 10:
+            return "blocked"
+
+        _request_counts[user_id].append(current_time)
+        return "allowed"
+
+    # ============================================================
+    # PROFANITY FILTERING
+    # ============================================================
+
+    # Basic profanity list (extend as needed)
+    PROFANITY_LIST = [
+        "badword1", "badword2", "offensive",
+        # Add more as needed
+    ]
+
+    @action(is_system_action=True)
+    async def check_profanity(context: Optional[dict] = None) -> str:
+        """
+        Check for profanity in user message.
+        Returns: "blocked" if profanity found, "allowed" otherwise
+        """
+        user_message = context.get("user_message", "").lower()
+
+        for word in PROFANITY_LIST:
+            if word in user_message:
+                return "blocked"
+
+        return "allowed"
+
+    # ============================================================
+    # STRUCTURED OUTPUT VALIDATION
+    # ============================================================
+
+    @action(is_system_action=True)
+    async def validate_json_output(context: Optional[dict] = None) -> str:
+        """
+        Validate that bot output is valid JSON.
+        Returns: "valid" or "invalid"
+        """
+        import json
+        bot_message = context.get("bot_message", "")
+
+        try:
+            json.loads(bot_message)
+            return "valid"
+        except json.JSONDecodeError:
+            return "invalid"
+
+    # ============================================================
+    # CUSTOM VALIDATION EXAMPLES
+    # ============================================================
+
+    @action(is_system_action=True)
+    async def check_email_pattern(context: Optional[dict] = None) -> str:
+        """
+        Check if message contains email addresses.
+        Returns: "found" or "not_found"
+        """
+        user_message = context.get("user_message", "")
+        email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+
+        if re.search(email_pattern, user_message):
+            return "found"
+        return "not_found"
+
+    @action(is_system_action=True)
+    async def check_url_pattern(context: Optional[dict] = None) -> str:
+        """
+        Check if message contains URLs.
+        Returns: "found" or "not_found"
+        """
+        user_message = context.get("user_message", "")
+        url_pattern = r'https?://[^\s]+'
+
+        if re.search(url_pattern, user_message):
+            return "found"
+        return "not_found"
+
+  # Additional flows (example of organizing flows in separate files)
+  flows_advanced.co: |
+    # ============================================================
+    # ADVANCED FLOWS (Optional - uncomment to enable)
+    # ============================================================
+
+    # Example: Require user confirmation for sensitive operations
+    # define flow confirm sensitive operation
+    #   when user request sensitive action
+    #     bot ask confirmation
+    #     when user confirm
+    #       execute sensitive action
+    #     else
+    #       bot acknowledge cancellation
+
+    # Example: Multi-turn validation
+    # define flow validate user identity
+    #   bot ask for user id
+    #   when user provide id
+    #     $result = execute verify_user_id
+    #     if $result == "verified"
+    #       bot proceed with request
+    #     else
+    #       bot inform verification failed
+
+    # Example: Context-aware guardrails
+    # define flow check context
+    #   if $conversation_history.length > 10
+    #     bot suggest starting new conversation
+
+    # Example: Time-based restrictions
+    # define flow check business hours
+    #   $current_hour = execute get_current_hour
+    #   if $current_hour < 9 or $current_hour > 17
+    #     bot inform outside business hours
 {{- end }}

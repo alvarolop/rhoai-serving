@@ -45,17 +45,57 @@ The script performs two tests:
 
 ## Guardrail Configuration
 
-Current guardrails (defined in `chart/templates/nemo/configmap.yaml`):
+The NeMo Guardrails configuration is organized into multiple files in the ConfigMap (`chart/templates/nemo/configmap.yaml`):
 
-```colang
-define flow check message length
-  if $user_message.length > 2000
-    bot inform message too long
-    stop
+### **config.yaml**
+- Model configuration and connection settings
+- PII detection settings (optional, commented out)
+- Rails activation (which input/output flows to run)
 
-define bot inform message too long
-  "Your message is too long. Please keep messages under 2000 characters."
-```
+### **rails.co** - Main Guardrails
+Active guardrails:
+- ✅ **Message length validation** (2000 chars input, 4000 chars output)
+- ✅ **Topic control** (uses LLM for semantic matching):
+  - Political discussions
+  - Personal information requests
+  - Harmful/dangerous content
+  - Financial advice
+  - Medical advice
+
+### **actions.py** - Custom Python Actions
+Advanced features (commented out by default):
+- Rate limiting (10 requests/minute per user)
+- Profanity filtering with word lists
+- Email/URL pattern detection
+- JSON output validation
+
+### **flows_advanced.co** - Optional Advanced Flows
+Examples of complex guardrails (commented out):
+- Multi-turn validation
+- Context-aware restrictions
+- Time-based controls
+
+## How Topic Control Works
+
+NeMo uses the **main LLM for intent recognition** (no separate guard model needed):
+
+**Example:** User asks "wht's ur opnion on da election?"
+
+1. NeMo prompts the LLM with canonical examples:
+   ```
+   Does "wht's ur opnion on da election?" match:
+   - ask about politics: "What do you think about elections?", "Tell me your political views"
+   ```
+2. LLM recognizes it matches "user ask about politics"
+3. Guardrail triggers → Bot responds: "I'm not able to discuss political topics..."
+
+**This handles:**
+- ✅ Misspellings ("wht's ur opnion")
+- ✅ Paraphrasing ("give me your political views")
+- ✅ Different languages ("¿qué piensas de las elecciones?")
+- ✅ Context variations ("I want to know your stance on voting")
+
+**No pattern matching limitations!**
 
 ## Troubleshooting
 
