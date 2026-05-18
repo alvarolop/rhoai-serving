@@ -42,6 +42,8 @@ scaling:
 mainContainer:
   extraArgs:
     - --max-model-len=8192
+    - --temperature=0.0
+    - --max-tokens=2048
     - --disable-uvicorn-access-log
 
 resources:
