@@ -176,17 +176,22 @@ guardrails:
   # -- LLM model endpoint URL. Leave empty to auto-generate: If routerGatewayRefs exists, uses internal gateway (https://<gateway-svc>/<namespace>/<model>/v1). Otherwise, uses direct workload service (https://<model>-kserve-workload-svc:8000).
   modelUrl: ""
 
-  # EXPERIMENTAL: Guard LLM Configuration (Not Currently Working)
-  # According to official NeMo Guardrails documentation, self-check flows use the main model.
-  # There is no support for separate guard models in NeMo v0.21.0 self-check system.
-  # Keep this commented for reference if NeMo adds dedicated safety model support in future versions.
-  # guardLlm:
-  #   enabled: false
-  #   url: ""
-  #   modelName: ""
-  #   name: ""
-  #   namespace: ""
-  #   token: ""
+  # -- Guard LLM Configuration for self-check flows
+  # Red Hat OpenShift AI supports using separate models for self-check guardrails (type: self_check_input, self_check_output)
+  # This enables smaller, faster models as guardrail judges while reserving larger models for inference
+  guardLlm:
+    # -- Enable guard LLM for self-check flows
+    enabled: false
+    # -- Guard model endpoint URL (leave empty to auto-generate from name/namespace)
+    url: ""
+    # -- Guard model name (must match model.name in the guard model's deployment)
+    modelName: ""
+    # -- Guard model deployment name (used for URL generation if url is empty)
+    name: ""
+    # -- Guard model namespace (used for URL generation if url is empty)
+    namespace: ""
+    # -- Guard model ServiceAccount token (pass via --set guardrails.guardLlm.token=$(oc get secret <guard-sa-token> -n <namespace> -o jsonpath='{.data.token}' | base64 -d))
+    token: ""
 
   # -- OpenTelemetry tracing configuration
   otel:

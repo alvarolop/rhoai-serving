@@ -20,6 +20,14 @@ spec:
         secretKeyRef:
           name: {{ .Values.name }}-sa-token
           key: "token"
+{{- if .Values.guardrails.guardLlm.enabled }}
+    # Guard model authentication token for self-check flows
+    - name: "GUARD_MODEL_API_KEY"
+      valueFrom:
+        secretKeyRef:
+          name: {{ .Values.name }}-guard-token
+          key: "token"
+{{- end }}
     # Use OpenShift service CA bundle for internal gateway HTTPS
     - name: "SSL_CERT_FILE"
       value: "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"

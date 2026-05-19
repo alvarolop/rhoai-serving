@@ -59,6 +59,121 @@ Three production-ready guardrails are **active by default** for all models:
 
 ---
 
+## Optional: LLM-Based Self-Check Guardrails
+
+For enhanced semantic detection, you can enable a **separate guard model** for self-check flows.
+
+### What is Self-Check?
+
+Self-check uses an LLM to evaluate whether:
+- **Input** contains jailbreak attempts, policy violations, or harmful content
+- **Output** meets safety and moderation policies
+
+### Why Use a Separate Guard Model?
+
+Red Hat OpenShift AI supports using **different models** for self-check than for response generation:
+
+| Aspect | Keyword-based (Default) | LLM Self-Check (Optional) |
+|--------|-------------------------|---------------------------|
+| **Detection** | Pattern matching | Semantic understanding |
+| **Speed** | Very fast (< 1ms) | Slower (LLM inference) |
+| **Accuracy** | Good for known patterns | Better for novel attacks |
+| **Resource** | Minimal overhead | Requires guard model deployment |
+| **Use Case** | Basic protection | High-security environments |
+
+**Recommended:** Use **both** keyword-based (fast) and LLM-based (accurate) for defense-in-depth.
+
+### Enabling Guard LLM (Example: Granite Guardian)
+
+**1. Deploy a guard model** (e.g., Granite Guardian):
+
+```bash
+helm install granite-guardian chart/ \
+  -f chart/values-granite-guardian.yaml
+```
+
+**2. Enable in model values file** (`chart/values-gpt-oss-20b.yaml`):
+
+```yaml
+guardrails:
+  enabled: true
+  guardLlm:
+    enabled: true
+    modelName: "ibm-granite/granite-guardian-4.1-8b"
+    name: "granite-guardian-4-1-8b"
+    namespace: "model-granite-guardian"
+    token: ""  # Pass via --set at deploy time
+
+  config: |
+    rails:
+      input:
+        flows:
+          - self check input        # LLM semantic detection (NEW)
+          - check jailbreak         # Keyword fallback
+          - check malicious scripts
+      output:
+        flows:
+          - self check output       # LLM validation (NEW)
+          - check script in output
+```
+
+**3. Deploy with guard token:**
+
+```bash
+GUARD_TOKEN=$(oc get secret granite-guardian-4-1-8b-sa-token \
+  -n model-granite-guardian \
+  -o jsonpath='{.data.token}' | base64 -d)
+
+helm upgrade gpt-oss-20b chart/ \
+  -f chart/values.yaml \
+  -f chart/values-gpt-oss-20b.yaml \
+  --set guardrails.guardLlm.token="$GUARD_TOKEN"
+```
+
+### How It Works
+
+```
+┌─────────────────┐
+│  User Input     │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────────────────────────┐
+│ GRANITE GUARDIAN (self_check_input) │ ← Semantic jailbreak detection
+│ "Is this a jailbreak? Yes/No"       │
+└────────┬────────────────────────────┘
+         │ No (allowed)
+         ▼
+┌─────────────────────────────────────┐
+│ KEYWORD CHECKS (fallback)           │ ← Fast pattern matching
+│ - check jailbreak                   │
+│ - check malicious scripts           │
+└────────┬────────────────────────────┘
+         │ All pass
+         ▼
+┌─────────────────────────────────────┐
+│ GPT-OSS-20B (main model)            │ ← Generate response
+└────────┬────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────┐
+│ GRANITE GUARDIAN (self_check_output)│ ← Validate safety
+│ "Should this be blocked? Yes/No"    │
+└────────┬────────────────────────────┘
+         │ No (safe)
+         ▼
+┌─────────────────┐
+│  Return to User │
+└─────────────────┘
+```
+
+**Configuration Files:**
+- **Model types:** `chart/nemo-configs/00-config.yaml.tpl` defines `type: self_check_input` and `type: self_check_output`
+- **Prompts:** `chart/nemo-configs/03-prompts.yaml` contains self-check prompts sent to guard model
+- **Flows:** Activated in `chart/values-<model>.yaml` config section
+
+---
+
 ## Configuration Structure
 
 Guardrails are configured using a **two-layer approach**:
