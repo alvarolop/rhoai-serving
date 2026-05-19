@@ -1,22 +1,31 @@
 #!/bin/bash
 set -e
 
-# Configuration - Edit these for your model
-MODEL_NAME="${1:-gpt-oss-20b}"
+# Usage:
+#   ./test-nemo-guardrails.sh [DEPLOYMENT_NAME] [NAMESPACE] [MODEL_NAME]
+#   ./test-nemo-guardrails.sh gpt-oss-20b model-gpt-oss RedHatAI/gpt-oss-20b
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=_lib.sh
+source "${SCRIPT_DIR}/_lib.sh"
+
+DEPLOYMENT_NAME="${1:-gpt-oss-20b}"
 NAMESPACE="${2:-model-gpt-oss}"
+MODEL_NAME="$(resolve_api_model_name "${DEPLOYMENT_NAME}" "${NAMESPACE}" "${3:-}")"
 
 echo "========================================="
 echo "Testing NeMo Guardrails"
-echo "Model: ${MODEL_NAME}"
+echo "Deployment: ${DEPLOYMENT_NAME}"
+echo "OpenAI model: ${MODEL_NAME}"
 echo "Namespace: ${NAMESPACE}"
 echo "========================================="
 echo ""
 
 # Get NeMo Guardrails route
 echo "📡 Getting NeMo Guardrails route..."
-NEMO_ROUTE=$(oc get route ${MODEL_NAME}-nemo-guardrails -n ${NAMESPACE} -o jsonpath='{.spec.host}' 2>/dev/null)
+NEMO_ROUTE=$(oc get route "${DEPLOYMENT_NAME}-nemo-guardrails" -n "${NAMESPACE}" -o jsonpath='{.spec.host}' 2>/dev/null)
 if [ -z "$NEMO_ROUTE" ]; then
-  echo "❌ ERROR: Route ${MODEL_NAME}-nemo-guardrails not found in namespace ${NAMESPACE}"
+  echo "❌ ERROR: Route ${DEPLOYMENT_NAME}-nemo-guardrails not found in namespace ${NAMESPACE}"
   exit 1
 fi
 NEMO_URL="https://${NEMO_ROUTE}"
@@ -25,9 +34,9 @@ echo ""
 
 # Get ServiceAccount token
 echo "🔑 Getting authentication token..."
-TOKEN=$(oc get secret ${MODEL_NAME}-sa-token -n ${NAMESPACE} -o jsonpath='{.data.token}' 2>/dev/null | base64 -d)
+TOKEN=$(oc get secret "${DEPLOYMENT_NAME}-sa-token" -n "${NAMESPACE}" -o jsonpath='{.data.token}' 2>/dev/null | base64 -d)
 if [ -z "$TOKEN" ]; then
-  echo "❌ ERROR: Secret ${MODEL_NAME}-sa-token not found in namespace ${NAMESPACE}"
+  echo "❌ ERROR: Secret ${DEPLOYMENT_NAME}-sa-token not found in namespace ${NAMESPACE}"
   exit 1
 fi
 echo "✅ Token retrieved"
@@ -92,4 +101,4 @@ echo "Test Complete"
 echo "========================================="
 echo ""
 echo "💡 To see guardrails in action, check the logs:"
-echo "   oc logs -n ${NAMESPACE} -l app=${MODEL_NAME}-nemo-guardrails -c nemo-guardrails --tail=50"
+echo "   oc logs -n ${NAMESPACE} -l app=${DEPLOYMENT_NAME}-nemo-guardrails -c nemo-guardrails --tail=50"

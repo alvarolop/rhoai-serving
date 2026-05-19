@@ -8,7 +8,8 @@ This shows the new simplified output format of `test-all-guardrails.sh`:
 ║  NeMo Guardrails Test Suite            ║
 ╚════════════════════════════════════════╝
 
-Model: gpt-oss-20b
+Deployment: gpt-oss-20b
+OpenAI model: RedHatAI/gpt-oss-20b
 Namespace: model-gpt-oss
 
 🔗 Testing endpoint: https://gpt-oss-20b-nemo-guardrails-model-gpt-oss.apps.cluster.example.com

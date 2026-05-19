@@ -91,7 +91,7 @@ Based on your output, here are the issues found:
    - Suggests requests going directly to model, not through NeMo
 
 2. **Configuration Not Applied**
-   - Check if ConfigMap was updated: `oc get cm ${MODEL_NAME}-nemo-config -n ${NAMESPACE} -o yaml`
+   - Check if ConfigMap was updated: `oc get cm ${DEPLOYMENT_NAME}-nemo-config -n ${NAMESPACE} -o yaml`
    - Verify NeMo pod restarted after config change
 
 3. **Connection/Timeout Issues**
@@ -140,7 +140,7 @@ MODEL_ROUTE=$(oc get route gpt-oss-20b -n model-gpt-oss -o jsonpath='{.spec.host
 curl -k "https://${MODEL_ROUTE}/v1/chat/completions" \
   -H "Authorization: Bearer ${TOKEN}" \
   -H "Content-Type: application/json" \
-  -d '{"model":"gpt-oss-20b","messages":[{"role":"user","content":"Hello"}],"max_tokens":50}'
+  -d '{"model":"RedHatAI/gpt-oss-20b","messages":[{"role":"user","content":"Hello"}],"max_tokens":50}'
 ```
 
 If this works but NeMo route doesn't, NeMo pod has issues.

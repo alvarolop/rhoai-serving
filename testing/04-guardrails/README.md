@@ -185,11 +185,23 @@ Tests all active guardrails with multiple variations:
 
 ```bash
 ./testing/04-guardrails/test-all-guardrails.sh
-# Defaults to gpt-oss-20b in model-gpt-oss namespace
+# Defaults: deployment gpt-oss-20b, namespace model-gpt-oss
+# OpenAI model id is read from LLMInferenceService spec.model.name
 
-# Or specify model:
-./testing/04-guardrails/test-all-guardrails.sh gemma-4-31b-it-fp8-dynamic model-gemma4-fp8
+# Deployment name + namespace (model id auto-detected):
+./testing/04-guardrails/test-all-guardrails.sh gpt-oss-20b model-gpt-oss
+
+# Full HuggingFace-style model id (when it differs from deployment name):
+./testing/04-guardrails/test-all-guardrails.sh gpt-oss-20b model-gpt-oss RedHatAI/gpt-oss-20b
 ```
+
+**Arguments:**
+
+| Position | Variable | Purpose |
+|----------|----------|---------|
+| 1 | `DEPLOYMENT_NAME` | Chart `name` / LLMInferenceService metadata.name (routes, secrets, labels) |
+| 2 | `NAMESPACE` | Model namespace |
+| 3 | `MODEL_NAME` (optional) | OpenAI `model` field in API requests (`spec.model.name`). Auto-detected from the cluster when omitted. |
 
 ### Simple Test (Basic Validation)
 
@@ -197,7 +209,7 @@ Quick test of message length validation:
 
 ```bash
 ./testing/04-guardrails/test-nemo-guardrails.sh
-# Or: ./testing/04-guardrails/test-nemo-guardrails.sh <model-name> <namespace>
+# Or: ./testing/04-guardrails/test-nemo-guardrails.sh <deployment-name> <namespace> [<openai-model-id>]
 ```
 
 ## What the Comprehensive Test Suite Does
@@ -473,12 +485,12 @@ oc get route -n <namespace> | grep nemo
 
 ### Token Not Found
 ```bash
-oc get secret <model-name>-sa-token -n <namespace>
+oc get secret <deployment-name>-sa-token -n <namespace>
 ```
 
 ### Check Guardrails Logs
 ```bash
-oc logs -n <namespace> -l app=<model-name>-nemo-guardrails -c nemo-guardrails --tail=50 -f
+oc logs -n <namespace> -l app=<deployment-name>-nemo-guardrails -c nemo-guardrails --tail=50 -f
 ```
 
 ### Check Pod Status
@@ -490,12 +502,13 @@ oc get pods -n <namespace> | grep nemo
 
 **Through Guardrails (Protected):**
 ```bash
-https://<model-name>-nemo-guardrails-<namespace>.apps.<cluster>/v1/chat/completions
+https://<deployment-name>-nemo-guardrails-<namespace>.apps.<cluster>/v1/chat/completions
+# API body: {"model": "<spec.model.name>", ...}  e.g. RedHatAI/gpt-oss-20b
 ```
 
 **Direct to Model (Unprotected):**
 ```bash
-https://<model-name>-<namespace>.apps.<cluster>/v1/chat/completions
+https://<deployment-name>-<namespace>.apps.<cluster>/v1/chat/completions
 ```
 
 Only requests through the guardrails endpoint are protected by rails.co rules.

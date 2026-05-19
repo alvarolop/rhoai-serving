@@ -17,8 +17,12 @@ set -e
 #   5. Deterministic Validation - Input message length limit
 #
 # Usage:
-#   ./test-all-guardrails.sh [MODEL_NAME] [NAMESPACE]
+#   ./test-all-guardrails.sh [DEPLOYMENT_NAME] [NAMESPACE] [MODEL_NAME]
 #   ./test-all-guardrails.sh gpt-oss-20b model-gpt-oss
+#   ./test-all-guardrails.sh gpt-oss-20b model-gpt-oss RedHatAI/gpt-oss-20b
+#
+# DEPLOYMENT_NAME — chart `name` (K8s routes/secrets). MODEL_NAME — OpenAI model id
+# in API requests (spec.model.name). When MODEL_NAME is omitted, it is read from the cluster.
 #
 # The script tests:
 #   - Jailbreak detection (keyword-based pattern matching)
@@ -32,29 +36,35 @@ set -e
 # ============================================================================
 
 # Configuration
-MODEL_NAME="${1:-gpt-oss-20b}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=_lib.sh
+source "${SCRIPT_DIR}/_lib.sh"
+
+DEPLOYMENT_NAME="${1:-gpt-oss-20b}"
 NAMESPACE="${2:-model-gpt-oss}"
+MODEL_NAME="$(resolve_api_model_name "${DEPLOYMENT_NAME}" "${NAMESPACE}" "${3:-}")"
 
 echo ""
 echo "╔════════════════════════════════════════╗"
 echo "║  NeMo Guardrails Test Suite            ║"
 echo "╚════════════════════════════════════════╝"
 echo ""
-echo "Model: ${MODEL_NAME}"
+echo "Deployment: ${DEPLOYMENT_NAME}"
+echo "OpenAI model: ${MODEL_NAME}"
 echo "Namespace: ${NAMESPACE}"
 echo ""
 
 # Get NeMo Guardrails route
-NEMO_ROUTE=$(oc get route ${MODEL_NAME}-nemo-guardrails -n ${NAMESPACE} -o jsonpath='{.spec.host}' 2>/dev/null)
+NEMO_ROUTE=$(oc get route "${DEPLOYMENT_NAME}-nemo-guardrails" -n "${NAMESPACE}" -o jsonpath='{.spec.host}' 2>/dev/null)
 if [ -z "$NEMO_ROUTE" ]; then
-  echo "❌ ERROR: Route ${MODEL_NAME}-nemo-guardrails not found in namespace ${NAMESPACE}"
+  echo "❌ ERROR: Route ${DEPLOYMENT_NAME}-nemo-guardrails not found in namespace ${NAMESPACE}"
   exit 1
 fi
 NEMO_URL="https://${NEMO_ROUTE}"
 
-TOKEN=$(oc get secret ${MODEL_NAME}-sa-token -n ${NAMESPACE} -o jsonpath='{.data.token}' 2>/dev/null | base64 -d)
+TOKEN=$(oc get secret "${DEPLOYMENT_NAME}-sa-token" -n "${NAMESPACE}" -o jsonpath='{.data.token}' 2>/dev/null | base64 -d)
 if [ -z "$TOKEN" ]; then
-  echo "❌ ERROR: Secret ${MODEL_NAME}-sa-token not found in namespace ${NAMESPACE}"
+  echo "❌ ERROR: Secret ${DEPLOYMENT_NAME}-sa-token not found in namespace ${NAMESPACE}"
   exit 1
 fi
 
@@ -238,8 +248,8 @@ echo "   ⚪ Profanity filtering (available in actions.py)"
 echo "   ⚪ PII detection (available, regex-based)"
 echo ""
 echo "💡 To enable optional deterministic features:"
-echo "   Edit chart/values-${MODEL_NAME}.yaml → guardrails.nemo.config"
+echo "   Edit chart/values-${DEPLOYMENT_NAME}.yaml → guardrails.nemo.config"
 echo ""
 echo "🔍 View guardrails logs:"
-echo "   oc logs -n ${NAMESPACE} -l app=${MODEL_NAME}-nemo-guardrails --tail=50 -f"
+echo "   oc logs -n ${NAMESPACE} -l app=${DEPLOYMENT_NAME}-nemo-guardrails --tail=50 -f"
 echo ""
