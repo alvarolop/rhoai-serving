@@ -76,48 +76,22 @@ guardrails:
   # Otherwise, uses direct workload service
   modelUrl: ""
 
-  # Guard LLM for semantic self-check flows
-  # Uses Granite Guardian for LLM-based jailbreak detection and output validation
+  # Guard LLM for semantic self-check flows (DISABLED - reasoning models too slow)
+  # Granite Guardian takes 15+ seconds per request and blocks too aggressively
+  # Using fast keyword-based detection instead
   guardLlm:
-    enabled: true
-    url: ""  # Auto-generated from name/namespace
+    enabled: false
+    url: ""
     modelName: "ibm-granite/granite-guardian-4.1-8b"
     name: "granite-guardian-4-1-8b"
     namespace: "model-granite-guardian"
-    token: ""  # Pass via --set guardrails.guardLlm.token=...
+    token: ""
 
-  # Enhanced guardrails with both keyword-based and LLM-based detection
-  config: |
-    # Presidio-based PII Detection
-    sensitive_data_detection:
-      input:
-        score_threshold: 0.6
-        entities:
-          - EMAIL_ADDRESS
-          - PHONE_NUMBER
-          - CREDIT_CARD
-          - US_SSN
-      output:
-        score_threshold: 0.6
-        entities:
-          - EMAIL_ADDRESS
-          - PHONE_NUMBER
-          - CREDIT_CARD
-
-    # Active guardrails - Multi-layer defense
-    rails:
-      input:
-        flows:
-          - self check input           # LLM-based semantic jailbreak detection (Granite Guardian)
-          - check message length       # Deterministic length check
-          - check jailbreak            # Keyword-based pattern matching
-          - check malicious scripts    # Malicious code request detection
-          - mask sensitive data on input  # Presidio PII masking
-      output:
-        flows:
-          - self check output          # LLM-based output validation (Granite Guardian)
-          - check script in output     # Script tag filtering
-          - mask sensitive data on output  # Presidio PII masking
+  # Uses default guardrails from values.yaml:
+  # - Jailbreak detection (keyword-based) - Fast, effective
+  # - Malicious script blocking - Prevents exploit generation
+  # - PII detection with Presidio - Masks sensitive data
+  # Override 'config' here to customize flows or PII entities for this specific model
 
 # For Model-as-a-Service (MaaS) routing
 # When defined, NeMo Guardrails automatically uses internal gateway URL
