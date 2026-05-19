@@ -71,40 +71,38 @@ resources:
 
 guardrails:
   enabled: true
-  type: nemo
-  nemo:
-    # Leave empty to auto-generate based on routerGatewayRefs
-    # If routerGatewayRefs exists (below), uses internal gateway
-    # Otherwise, uses direct workload service
-    modelUrl: ""
+  # Leave empty to auto-generate based on routerGatewayRefs
+  # If routerGatewayRefs exists (below), uses internal gateway
+  # Otherwise, uses direct workload service
+  modelUrl: ""
 
-    # Guard LLM for semantic validation (jailbreak detection, topic control)
-    guardLlm:
-      enabled: true
-      # Leave empty to auto-generate from name/namespace
-      url: ""
-      modelName: "ibm-granite/granite-guardian-4.1-8b"
-      name: "granite-guardian-4-1-8b"
-      namespace: "model-granite-guardian"
+  # Guard LLM for semantic validation (jailbreak detection, topic control)
+  guardLlm:
+    enabled: true
+    # Leave empty to auto-generate from name/namespace
+    url: ""
+    modelName: "ibm-granite/granite-guardian-4.1-8b"
+    name: "granite-guardian-4-1-8b"
+    namespace: "model-granite-guardian"
 
-    # Customize which guardrails are active for this model
-    config: |
-      # Guardrails activation - Defense-in-depth with multiple layers
-      rails:
-        input:
-          flows:
-            # === LLM-Based Semantic Validation (Granite Guardian) ===
-            - self check input        # Primary jailbreak/prompt injection detection via guard LLM
-            # === Keyword-Based Pattern Matching (Fallback) ===
-            - check message length    # Deterministic length validation
-            - check jailbreak         # Keyword-based jailbreak detection (backup)
-            - check malicious scripts # Malicious script request detection
-        output:
-          flows:
-            # === LLM-Based Semantic Validation (Granite Guardian) ===
-            - self check output       # Primary output validation via guard LLM
-            # === Content Pattern Matching (Fallback) ===
-            - check script in output  # Prevent script tags in responses (backup)
+  # Customize which guardrails are active for this model
+  config: |
+    # Guardrails activation - Defense-in-depth with multiple layers
+    rails:
+      input:
+        flows:
+          # === LLM-Based Semantic Validation (Granite Guardian) ===
+          - self check input        # Primary jailbreak/prompt injection detection via guard LLM
+          # === Keyword-Based Pattern Matching (Fallback) ===
+          - check message length    # Deterministic length validation
+          - check jailbreak         # Keyword-based jailbreak detection (backup)
+          - check malicious scripts # Malicious script request detection
+      output:
+        flows:
+          # === LLM-Based Semantic Validation (Granite Guardian) ===
+          - self check output       # Primary output validation via guard LLM
+          # === Content Pattern Matching (Fallback) ===
+          - check script in output  # Prevent script tags in responses (backup)
 
 # For Model-as-a-Service (MaaS) routing
 # When defined, NeMo Guardrails automatically uses internal gateway URL

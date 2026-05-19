@@ -170,71 +170,68 @@ trustyai:
 
 # -- Guardrails for content moderation and safety
 guardrails:
-  # -- Enable guardrails integration
+  # -- Enable NeMo Guardrails integration
   enabled: false
-  # -- Guardrails type: "nemo" (NVIDIA NeMo Guardrails)
-  type: nemo
-  # -- NeMo Guardrails configuration (only used when type is "nemo")
-  nemo:
-    # -- LLM model endpoint URL. Leave empty to auto-generate: If routerGatewayRefs exists, uses internal gateway (https://<gateway-svc>/<namespace>/<model>/v1). Otherwise, uses direct workload service (https://<model>-kserve-workload-svc:8000).
-    modelUrl: ""
 
-    # -- Guard LLM configuration for semantic matching (jailbreak detection, topic control)
-    guardLlm:
-      # -- Enable guard LLM for NeMo Guardrails self-check and semantic validation
-      enabled: false
-      # -- Guard model endpoint URL. Leave empty to auto-generate from name/namespace.
-      url: ""
-      # -- Guard model name for API calls (e.g., "ibm-granite/granite-guardian-4.1-8b")
-      modelName: ""
-      # -- Guard model deployment name for auto-generating URL (e.g., "granite-guardian-4-1-8b")
-      name: ""
-      # -- Guard model namespace for auto-generating URL (e.g., "model-granite-guardian")
-      namespace: ""
+  # -- LLM model endpoint URL. Leave empty to auto-generate: If routerGatewayRefs exists, uses internal gateway (https://<gateway-svc>/<namespace>/<model>/v1). Otherwise, uses direct workload service (https://<model>-kserve-workload-svc:8000).
+  modelUrl: ""
 
-    # -- OpenTelemetry tracing configuration
-    otel:
-      # -- Enable OpenTelemetry tracing for observability (exports traces to configured OTEL collector)
-      enabled: false
-      # -- OTEL collector endpoint (gRPC). Override if your collector is in a different namespace/cluster.
-      # @default -- "http://opentelemetry-collector.opentelemetry.svc.cluster.local:4317"
-      endpoint: "http://opentelemetry-collector.opentelemetry.svc.cluster.local:4317"
+  # -- Guard LLM configuration for semantic matching (jailbreak detection, topic control)
+  guardLlm:
+    # -- Enable guard LLM for NeMo Guardrails self-check and semantic validation
+    enabled: false
+    # -- Guard model endpoint URL. Leave empty to auto-generate from name/namespace.
+    url: ""
+    # -- Guard model name for API calls (e.g., "ibm-granite/granite-guardian-4.1-8b")
+    modelName: ""
+    # -- Guard model deployment name for auto-generating URL (e.g., "granite-guardian-4-1-8b")
+    name: ""
+    # -- Guard model namespace for auto-generating URL (e.g., "model-granite-guardian")
+    namespace: ""
 
-    # -- NeMo Guardrails config.yaml content. This controls which guardrails are active.
-    # The model connection (openai_api_base, model_name) is auto-injected by the template.
-    # Customize per model to enable/disable specific flows, PII detection, etc.
-    # @default -- Basic configuration with message length and topic control
-    config: |
-      # PII Detection Configuration (regex-based, no model needed)
-      # Uncomment to enable sensitive data detection
-      # sensitive_data_detection:
-      #   input:
-      #     entities:
-      #       - EMAIL_ADDRESS
-      #       - PHONE_NUMBER
-      #       - CREDIT_CARD
-      #   output:
-      #     entities:
-      #       - PERSON
+  # -- OpenTelemetry tracing configuration
+  otel:
+    # -- Enable OpenTelemetry tracing for observability (exports traces to configured OTEL collector)
+    enabled: false
+    # -- OTEL collector endpoint (gRPC). Override if your collector is in a different namespace/cluster.
+    # @default -- "http://opentelemetry-collector.opentelemetry.svc.cluster.local:4317"
+    endpoint: "http://opentelemetry-collector.opentelemetry.svc.cluster.local:4317"
 
-      # Guardrails activation - controls which flows from rails.co actually run
-      # NOTE: Only input message length validation works currently.
-      # - LLM-based flows (jailbreak, topic control) don't work in input rails
-      # - Output rails don't work ($bot_message is NoneType when flow executes)
-      rails:
-        input:
-          flows:
-            - check message length
-            # LLM-based flows (commented out - not working in input rails context):
-            # - check jailbreak
-            # - check forbidden topics
-            # Uncomment to enable additional deterministic input rails:
-            # - check rate limit
-            # - check profanity
-        # Output rails disabled - don't work as expected in NeMo
-        # output:
-        #   flows:
-        #     - check output length
+  # -- NeMo Guardrails config.yaml content. This controls which guardrails are active.
+  # The model connection (openai_api_base, model_name) is auto-injected by the template.
+  # Customize per model to enable/disable specific flows, PII detection, etc.
+  # @default -- Basic configuration with message length and topic control
+  config: |
+    # PII Detection Configuration (regex-based, no model needed)
+    # Uncomment to enable sensitive data detection
+    # sensitive_data_detection:
+    #   input:
+    #     entities:
+    #       - EMAIL_ADDRESS
+    #       - PHONE_NUMBER
+    #       - CREDIT_CARD
+    #   output:
+    #     entities:
+    #       - PERSON
+
+    # Guardrails activation - controls which flows from rails.co actually run
+    # NOTE: Only input message length validation works currently.
+    # - LLM-based flows (jailbreak, topic control) don't work in input rails
+    # - Output rails don't work ($bot_message is NoneType when flow executes)
+    rails:
+      input:
+        flows:
+          - check message length
+          # LLM-based flows (commented out - not working in input rails context):
+          # - check jailbreak
+          # - check forbidden topics
+          # Uncomment to enable additional deterministic input rails:
+          # - check rate limit
+          # - check profanity
+      # Output rails disabled - don't work as expected in NeMo
+      # output:
+      #   flows:
+      #     - check output length
 
 # @section -- Resources Configuration
 

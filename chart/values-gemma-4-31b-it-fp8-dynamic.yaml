@@ -119,12 +119,10 @@ trustyai:
 
 guardrails:
   enabled: true
-  type: nemo
-  nemo:
-    # Leave empty to auto-generate based on routerGatewayRefs
-    # If routerGatewayRefs exists (below), uses internal gateway
-    # Otherwise, uses direct workload service
-    modelUrl: ""
+  # Leave empty to auto-generate based on routerGatewayRefs
+  # If routerGatewayRefs exists (below), uses internal gateway
+  # Otherwise, uses direct workload service
+  modelUrl: ""
 
 # For Model-as-a-Service (MaaS) routing
 # When defined, NeMo Guardrails automatically uses internal gateway URL

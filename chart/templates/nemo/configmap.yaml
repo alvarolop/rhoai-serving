@@ -1,6 +1,6 @@
-{{- if and (eq .Values.serving.type "generative") .Values.guardrails.enabled (eq .Values.guardrails.type "nemo") }}
+{{- if and (eq .Values.serving.type "generative") .Values.guardrails.enabled }}
 {{- /* Auto-generate main model URL if not provided */ -}}
-{{- $modelUrl := .Values.guardrails.nemo.modelUrl | default "" | toString | trim -}}
+{{- $modelUrl := .Values.guardrails.modelUrl | default "" | toString | trim -}}
 {{- if not $modelUrl }}
   {{- $modelNs := include "rhoai-serving.namespaceName" . -}}
   {{- $modelName := .Values.name -}}
@@ -20,12 +20,12 @@
 {{- /* Auto-generate guard LLM URL if enabled and not provided */ -}}
 {{- $guardUrl := "" -}}
 {{- $guardModelName := "" -}}
-{{- if .Values.guardrails.nemo.guardLlm.enabled }}
-  {{- $guardUrl = .Values.guardrails.nemo.guardLlm.url | default "" | toString | trim -}}
-  {{- $guardModelName = .Values.guardrails.nemo.guardLlm.modelName | required "guardrails.nemo.guardLlm.modelName is required when guardLlm.enabled is true" -}}
+{{- if .Values.guardrails.guardLlm.enabled }}
+  {{- $guardUrl = .Values.guardrails.guardLlm.url | default "" | toString | trim -}}
+  {{- $guardModelName = .Values.guardrails.guardLlm.modelName | required "guardrails.guardLlm.modelName is required when guardLlm.enabled is true" -}}
   {{- if not $guardUrl }}
-    {{- $guardName := .Values.guardrails.nemo.guardLlm.name | required "guardrails.nemo.guardLlm.name is required when guardLlm.url is empty" -}}
-    {{- $guardNs := .Values.guardrails.nemo.guardLlm.namespace | required "guardrails.nemo.guardLlm.namespace is required when guardLlm.url is empty" -}}
+    {{- $guardName := .Values.guardrails.guardLlm.name | required "guardrails.guardLlm.name is required when guardLlm.url is empty" -}}
+    {{- $guardNs := .Values.guardrails.guardLlm.namespace | required "guardrails.guardLlm.namespace is required when guardLlm.url is empty" -}}
     {{- if .Values.routerGatewayRefs }}
       {{- /* Use internal gateway if routerGatewayRefs is configured */ -}}
       {{- $gateway := index .Values.routerGatewayRefs 0 -}}

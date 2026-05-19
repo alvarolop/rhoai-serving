@@ -18,9 +18,8 @@
 # injected into the pod.
 
 guardrails:
-  nemo:
-    otel:
-      enabled: true
-      # Optional: Override OTEL collector endpoint
-      # Default: http://opentelemetry-collector.opentelemetry.svc.cluster.local:4317
-      # endpoint: "http://my-otel-collector.monitoring.svc.cluster.local:4317"
+  otel:
+    enabled: true
+    # Optional: Override OTEL collector endpoint
+    # Default: http://opentelemetry-collector.opentelemetry.svc.cluster.local:4317
+    # endpoint: "http://my-otel-collector.monitoring.svc.cluster.local:4317"
