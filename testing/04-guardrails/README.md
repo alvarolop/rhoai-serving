@@ -2,6 +2,30 @@
 
 Test scripts for validating NeMo Guardrails integration with model deployments.
 
+## ⚠️ Known Issues
+
+### NeMo Self-Check Bug (v0.21.0)
+
+**Issue:** NeMo's built-in `self check input` and `self check output` flows have a bug where they call the main model instead of the guard model (configured with `type: self_check`).
+
+**Symptoms:** All requests (including benign ones like "Hello, how are you?") get blocked with "I'm sorry, I can't respond to that."
+
+**Root Cause:** When `self_check_input` action executes, NeMo calls `model: 'gpt-oss-20b'` (main model) instead of the guard model `ibm-granite/granite-guardian-4.1-8b`, causing the main model to incorrectly flag everything as a jailbreak attempt.
+
+**Workaround:** Disable self-check flows in `chart/values-*.yaml` config and rely on keyword-based guardrails:
+```yaml
+rails:
+  input:
+    flows:
+      # DISABLED: self check input - has bug calling wrong model
+      # - self check input
+      - check message length
+      - check jailbreak         # Keyword-based (works correctly)
+      - check malicious scripts # Keyword-based (works correctly)
+```
+
+The keyword-based guardrails in `chart/nemo-configs/01-actions.py` provide effective protection against jailbreaks and malicious requests without this bug.
+
 ## 📖 Documentation
 
 - **[JAILBREAK_PROTECTION.md](./JAILBREAK_PROTECTION.md)** - Comprehensive guide to jailbreak and prompt injection prevention using Granite Guardian

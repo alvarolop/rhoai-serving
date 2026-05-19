@@ -35,11 +35,30 @@ set -e
 #
 # ============================================================================
 
-# Configuration
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=_lib.sh
-source "${SCRIPT_DIR}/_lib.sh"
+# Helper function to resolve model name
+resolve_api_model_name() {
+  local deployment_name=$1
+  local namespace=$2
+  local override=${3:-}
 
+  if [[ -n "${override}" ]]; then
+    echo "${override}"
+    return 0
+  fi
+
+  local model
+  model=$(oc get LLMInferenceService "${deployment_name}" -n "${namespace}" \
+    -o jsonpath='{.spec.model.name}' 2>/dev/null || true)
+  if [[ -n "${model}" ]]; then
+    echo "${model}"
+    return 0
+  fi
+
+  echo "Warning: could not read spec.model.name for LLMInferenceService '${deployment_name}' in '${namespace}'; using deployment name as model id." >&2
+  echo "${deployment_name}"
+}
+
+# Configuration
 DEPLOYMENT_NAME="${1:-gpt-oss-20b}"
 NAMESPACE="${2:-model-gpt-oss}"
 MODEL_NAME="$(resolve_api_model_name "${DEPLOYMENT_NAME}" "${NAMESPACE}" "${3:-}")"

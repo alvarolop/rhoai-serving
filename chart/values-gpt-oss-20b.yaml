@@ -92,7 +92,8 @@ guardrails:
       input:
         flows:
           # === LLM-Based Semantic Validation (Granite Guardian) ===
-          - self check input        # Primary jailbreak/prompt injection detection via guard LLM
+          # DISABLED: self check input - has bug calling wrong model
+          # - self check input        # Primary jailbreak/prompt injection detection via guard LLM
           # === Keyword-Based Pattern Matching (Fallback) ===
           - check message length    # Deterministic length validation
           - check jailbreak         # Keyword-based jailbreak detection (backup)
@@ -100,7 +101,8 @@ guardrails:
       output:
         flows:
           # === LLM-Based Semantic Validation (Granite Guardian) ===
-          - self check output       # Primary output validation via guard LLM
+          # DISABLED: self check output - has bug calling wrong model
+          # - self check output       # Primary output validation via guard LLM
           # === Content Pattern Matching (Fallback) ===
           - check script in output  # Prevent script tags in responses (backup)
 
