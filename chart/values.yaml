@@ -104,7 +104,7 @@ model:
   name: ""
   # -- Dashboard connection Secret configuration
   connection:
-    # -- Connection protocol: "auto", "uri", "oci", or "s3". Auto detects from model.uri prefix.
+    # -- Connection protocol: "auto", "uri", "oci", or "s3". Auto detects from model.uri prefix. Dashboard built-in types: "s3" and "uri". OCI uses "uri" protocol annotation for dashboard compatibility.
     protocol: auto
     # -- OCI registry connection settings
     oci:
