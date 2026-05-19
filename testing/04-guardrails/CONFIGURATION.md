@@ -59,9 +59,9 @@ Three production-ready guardrails are **active by default** for all models:
 
 ---
 
-## Optional: LLM-Based Self-Check Guardrails
+## LLM-Based Self-Check Guardrails (Active)
 
-For enhanced semantic detection, you can enable a **separate guard model** for self-check flows.
+**Current configuration uses the main model (GPT-OSS-20B) for self-check** - no separate guard model needed.
 
 ### What is Self-Check?
 
@@ -69,59 +69,90 @@ Self-check uses an LLM to evaluate whether:
 - **Input** contains jailbreak attempts, policy violations, or harmful content
 - **Output** meets safety and moderation policies
 
-### Why Use a Separate Guard Model?
+### Two Approaches
 
-Red Hat OpenShift AI supports using **different models** for self-check than for response generation:
+| Approach | Speed | Pros | Cons | Status |
+|----------|-------|------|------|--------|
+| **Main model self-check** | ~2-3s/call | Simple setup, one model | Uses main LLM cycles | ✅ **Active** |
+| **Separate guard model** | Varies | Specialized, isolated | Extra deployment, slower if reasoning model | ⚪ Optional |
+| **Keyword-only** | <1ms | Very fast | Misses novel attacks | ✅ **Active fallback** |
 
-| Aspect | Keyword-based (Default) | LLM Self-Check (Optional) |
-|--------|-------------------------|---------------------------|
-| **Detection** | Pattern matching | Semantic understanding |
-| **Speed** | Very fast (< 1ms) | Slower (LLM inference) |
-| **Accuracy** | Good for known patterns | Better for novel attacks |
-| **Resource** | Minimal overhead | Requires guard model deployment |
-| **Use Case** | Basic protection | High-security environments |
+**Current setup:** Hybrid defense-in-depth
+1. Main model self-check (semantic understanding)
+2. Keyword-based patterns (fast fallback)
+3. PII detection (Presidio)
 
-**Recommended:** Use **both** keyword-based (fast) and LLM-based (accurate) for defense-in-depth.
+### How Main Model Self-Check Works
 
-### Enabling Guard LLM (Example: Granite Guardian)
-
-**1. Deploy a guard model** (e.g., Granite Guardian):
-
-```bash
-helm install granite-guardian chart/ \
-  -f chart/values-granite-guardian.yaml
+```
+┌─────────────────┐
+│  User Input     │
+└────────┬────────┘
+         │
+         ▼
+┌──────────────────────────────────┐
+│ GPT-OSS-20B (self_check_input)   │ ← "Should this be blocked? Yes/No"
+│ Prompt: Policy compliance check  │    (~2-3 seconds)
+└────────┬─────────────────────────┘
+         │ "No" (allowed)
+         ▼
+┌──────────────────────────────────┐
+│ KEYWORD CHECKS (fallback)        │ ← Fast pattern matching
+│ - check jailbreak                │    (<1ms)
+│ - check malicious scripts        │
+└────────┬─────────────────────────┘
+         │ All pass
+         ▼
+┌──────────────────────────────────┐
+│ GPT-OSS-20B (main)               │ ← Generate response
+│ Generate helpful response        │    (~2-3 seconds)
+└────────┬─────────────────────────┘
+         │
+         ▼
+┌──────────────────────────────────┐
+│ GPT-OSS-20B (self_check_output)  │ ← "Block this? Yes/No"
+│ Prompt: Safety policy check      │    (~2-3 seconds)
+└────────┬─────────────────────────┘
+         │ "No" (safe)
+         ▼
+┌─────────────────┐
+│  Return to User │
+└─────────────────┘
 ```
 
-**2. Enable in model values file** (`chart/values-gpt-oss-20b.yaml`):
+**Expected latency:** ~6-9 seconds per request (3 LLM calls)
+
+### Optional: Using a Separate Guard Model
+
+**Note:** Granite Guardian (reasoning model) is too slow (15s/call) and blocks everything. Use faster dedicated safety models instead.
+
+**Alternative guard models:**
+- **Llama Guard 3** - Meta's dedicated content safety model
+- **Content Safety NIM** - NVIDIA Nemotron content safety
+- **ShieldGemma** - Google's safety model
+
+**To use a separate guard model:**
+
+1. Deploy the guard model
+2. Enable in `chart/values-gpt-oss-20b.yaml`:
 
 ```yaml
 guardrails:
-  enabled: true
   guardLlm:
     enabled: true
-    modelName: "ibm-granite/granite-guardian-4.1-8b"
-    name: "granite-guardian-4-1-8b"
-    namespace: "model-granite-guardian"
-    token: ""  # Pass via --set at deploy time
+    modelName: "meta-llama/Llama-Guard-3-8B"
+    name: "llama-guard-3-8b"
+    namespace: "model-llama-guard"
+    token: ""  # Pass via --set
 
-  config: |
-    rails:
-      input:
-        flows:
-          - self check input        # LLM semantic detection (NEW)
-          - check jailbreak         # Keyword fallback
-          - check malicious scripts
-      output:
-        flows:
-          - self check output       # LLM validation (NEW)
-          - check script in output
+  # Self-check flows automatically route to guard model when guardLlm.enabled: true
 ```
 
-**3. Deploy with guard token:**
+3. Deploy with guard token:
 
 ```bash
-GUARD_TOKEN=$(oc get secret granite-guardian-4-1-8b-sa-token \
-  -n model-granite-guardian \
+GUARD_TOKEN=$(oc get secret llama-guard-3-8b-sa-token \
+  -n model-llama-guard \
   -o jsonpath='{.data.token}' | base64 -d)
 
 helm upgrade gpt-oss-20b chart/ \
@@ -130,13 +161,26 @@ helm upgrade gpt-oss-20b chart/ \
   --set guardrails.guardLlm.token="$GUARD_TOKEN"
 ```
 
-### How It Works
+### Current Configuration (Main Model Self-Check)
 
-```
-┌─────────────────┐
-│  User Input     │
-└────────┬────────┘
-         │
+```yaml
+# chart/values-gpt-oss-20b.yaml
+guardrails:
+  enabled: true
+  guardLlm:
+    enabled: false  # No separate guard model
+
+  config: |
+    rails:
+      input:
+        flows:
+          - self check input           # Uses main model (GPT-OSS-20B)
+          - check jailbreak            # Keyword fallback
+          - check malicious scripts
+      output:
+        flows:
+          - self check output          # Uses main model (GPT-OSS-20B)
+          - check script in output
          ▼
 ┌─────────────────────────────────────┐
 │ GRANITE GUARDIAN (self_check_input) │ ← Semantic jailbreak detection

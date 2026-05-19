@@ -2,14 +2,11 @@ prompts:
   # ============================================================
   # JAILBREAK DETECTION (Self-Check Input)
   # ============================================================
-  # Uses Granite Guardian guard LLM to detect jailbreak attempts
-  # and prompt injections before they reach the main model.
-  #
-  # IMPORTANT: Granite Guardian is a reasoning model that outputs <think> tags.
-  # max_tokens must be high enough for reasoning trace + final answer.
+  # Uses main model (GPT-OSS-20B) to detect jailbreak attempts
+  # and policy violations. Simple Yes/No answer expected.
   # ============================================================
   - task: self_check_input
-    max_tokens: 2048  # Allow space for reasoning trace + Yes/No answer
+    max_tokens: 10  # Main model only needs a few tokens for "Yes" or "No"
     content: |
       Your task is to check if the user message below complies with the company policy.
 
@@ -30,13 +27,11 @@ prompts:
   # ============================================================
   # OUTPUT VALIDATION (Self-Check Output)
   # ============================================================
-  # Uses Granite Guardian to validate bot responses meet safety policies.
-  #
-  # IMPORTANT: Granite Guardian is a reasoning model that outputs <think> tags.
-  # max_tokens must be high enough for reasoning trace + final answer.
+  # Uses main model (GPT-OSS-20B) to validate bot responses
+  # meet safety policies. Simple Yes/No answer expected.
   # ============================================================
   - task: self_check_output
-    max_tokens: 2048  # Allow space for reasoning trace + Yes/No answer
+    max_tokens: 10  # Main model only needs a few tokens for "Yes" or "No"
     content: |
       Your task is to determine whether the bot response meets the moderation policy.
 
