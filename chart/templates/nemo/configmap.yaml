@@ -17,29 +17,6 @@
     {{- $modelUrl = printf "https://%s.%s.svc.cluster.local:8000" $workloadSvc $modelNs -}}
   {{- end }}
 {{- end }}
-{{- /* Auto-generate guard LLM URL if enabled and not provided */ -}}
-{{- $guardUrl := "" -}}
-{{- $guardModelName := "" -}}
-{{- if .Values.guardrails.guardLlm.enabled }}
-  {{- $guardUrl = .Values.guardrails.guardLlm.url | default "" | toString | trim -}}
-  {{- $guardModelName = .Values.guardrails.guardLlm.modelName | required "guardrails.guardLlm.modelName is required when guardLlm.enabled is true" -}}
-  {{- if not $guardUrl }}
-    {{- $guardName := .Values.guardrails.guardLlm.name | required "guardrails.guardLlm.name is required when guardLlm.url is empty" -}}
-    {{- $guardNs := .Values.guardrails.guardLlm.namespace | required "guardrails.guardLlm.namespace is required when guardLlm.url is empty" -}}
-    {{- if .Values.routerGatewayRefs }}
-      {{- /* Use internal gateway if routerGatewayRefs is configured */ -}}
-      {{- $gateway := index .Values.routerGatewayRefs 0 -}}
-      {{- $gwName := $gateway.name -}}
-      {{- $gwNs := $gateway.namespace -}}
-      {{- $gwSvc := printf "%s-%s" $gwName $gwName -}}
-      {{- $guardUrl = printf "https://%s.%s.svc.cluster.local/%s/%s/v1" $gwSvc $gwNs $guardNs $guardName -}}
-    {{- else }}
-      {{- /* Default: use internal workload service (HTTPS) */ -}}
-      {{- $guardWorkloadSvc := printf "%s-kserve-workload-svc" $guardName -}}
-      {{- $guardUrl = printf "https://%s.%s.svc.cluster.local:8000" $guardWorkloadSvc $guardNs -}}
-    {{- end }}
-  {{- end }}
-{{- end }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -50,7 +27,7 @@ metadata:
     app: {{ .Values.name }}-nemo-guardrails
 data:
   config.yaml: |
-{{ tpl (.Files.Get "nemo-configs/00-config.yaml.tpl") (merge (dict "modelUrl" $modelUrl "guardUrl" $guardUrl "guardModelName" $guardModelName) .) | nindent 4 }}
+{{ tpl (.Files.Get "nemo-configs/00-config.yaml.tpl") (merge (dict "modelUrl" $modelUrl) .) | nindent 4 }}
 
   rails.co: |
 {{ .Files.Get "nemo-configs/02-rails.co" | nindent 4 }}

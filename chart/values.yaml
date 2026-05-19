@@ -176,18 +176,17 @@ guardrails:
   # -- LLM model endpoint URL. Leave empty to auto-generate: If routerGatewayRefs exists, uses internal gateway (https://<gateway-svc>/<namespace>/<model>/v1). Otherwise, uses direct workload service (https://<model>-kserve-workload-svc:8000).
   modelUrl: ""
 
-  # -- Guard LLM configuration for semantic matching (jailbreak detection, topic control)
-  guardLlm:
-    # -- Enable guard LLM for NeMo Guardrails self-check and semantic validation
-    enabled: false
-    # -- Guard model endpoint URL. Leave empty to auto-generate from name/namespace.
-    url: ""
-    # -- Guard model name for API calls (e.g., "ibm-granite/granite-guardian-4.1-8b")
-    modelName: ""
-    # -- Guard model deployment name for auto-generating URL (e.g., "granite-guardian-4-1-8b")
-    name: ""
-    # -- Guard model namespace for auto-generating URL (e.g., "model-granite-guardian")
-    namespace: ""
+  # EXPERIMENTAL: Guard LLM Configuration (Not Currently Working)
+  # According to official NeMo Guardrails documentation, self-check flows use the main model.
+  # There is no support for separate guard models in NeMo v0.21.0 self-check system.
+  # Keep this commented for reference if NeMo adds dedicated safety model support in future versions.
+  # guardLlm:
+  #   enabled: false
+  #   url: ""
+  #   modelName: ""
+  #   name: ""
+  #   namespace: ""
+  #   token: ""
 
   # -- OpenTelemetry tracing configuration
   otel:
@@ -199,39 +198,43 @@ guardrails:
 
   # -- NeMo Guardrails config.yaml content. This controls which guardrails are active.
   # The model connection (openai_api_base, model_name) is auto-injected by the template.
-  # Customize per model to enable/disable specific flows, PII detection, etc.
-  # @default -- Basic configuration with message length and topic control
+  # Default configuration includes three core guardrails:
+  #   1. Jailbreak detection (keyword-based)
+  #   2. Malicious script blocking
+  #   3. PII detection (Presidio)
+  # Override in model-specific values files to customize entities, thresholds, or disable flows.
+  # @default -- Jailbreak + script blocking + PII detection
   config: |
-    # PII Detection Configuration (regex-based, no model needed)
-    # Uncomment to enable sensitive data detection
-    # sensitive_data_detection:
-    #   input:
-    #     entities:
-    #       - EMAIL_ADDRESS
-    #       - PHONE_NUMBER
-    #       - CREDIT_CARD
-    #   output:
-    #     entities:
-    #       - PERSON
+    # Presidio-based PII Detection
+    # Detects sensitive data in user input and bot output
+    # For full entity list: https://microsoft.github.io/presidio/supported_entities/
+    sensitive_data_detection:
+      input:
+        score_threshold: 0.6  # Minimum confidence (0.0-1.0) to reduce false positives
+        entities:
+          - EMAIL_ADDRESS
+          - PHONE_NUMBER
+          - CREDIT_CARD
+          - US_SSN
+      output:
+        score_threshold: 0.6
+        entities:
+          - EMAIL_ADDRESS
+          - PHONE_NUMBER
+          - CREDIT_CARD
 
-    # Guardrails activation - controls which flows from rails.co actually run
-    # NOTE: Only input message length validation works currently.
-    # - LLM-based flows (jailbreak, topic control) don't work in input rails
-    # - Output rails don't work ($bot_message is NoneType when flow executes)
+    # Active guardrails flows
     rails:
       input:
         flows:
-          - check message length
-          # LLM-based flows (commented out - not working in input rails context):
-          # - check jailbreak
-          # - check forbidden topics
-          # Uncomment to enable additional deterministic input rails:
-          # - check rate limit
-          # - check profanity
-      # Output rails disabled - don't work as expected in NeMo
-      # output:
-      #   flows:
-      #     - check output length
+          - check message length           # Block messages over 2000 chars
+          - check jailbreak                # Detect jailbreak attempts (keyword patterns)
+          - check malicious scripts        # Block requests for exploits/malware
+          - mask sensitive data on input   # Presidio PII masking
+      output:
+        flows:
+          - check script in output         # Prevent script tags in responses
+          - mask sensitive data on output  # Presidio PII masking
 
 # @section -- Resources Configuration
 

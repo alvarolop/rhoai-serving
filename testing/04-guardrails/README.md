@@ -2,29 +2,29 @@
 
 Test scripts for validating NeMo Guardrails integration with model deployments.
 
-## ⚠️ Known Issues
+## Known Limitations
 
-### NeMo Self-Check Bug (v0.21.0)
+### Self-Check Flows Use Main Model Only
 
-**Issue:** NeMo's built-in `self check input` and `self check output` flows have a bug where they call the main model instead of the guard model (configured with `type: self_check`).
+**Official Behavior:**
+According to NeMo Guardrails documentation, `self check input` and `self check output` flows use the main LLM model with custom prompts. There is no support for separate guard models in the self-check system.
 
-**Symptoms:** All requests (including benign ones like "Hello, how are you?") get blocked with "I'm sorry, I can't respond to that."
+**Implication:**
+- Cannot use a dedicated safety model (like Granite Guardian) for semantic jailbreak detection
+- Self-check performance depends on the main model's ability to follow safety prompts
+- For models that don't reliably follow self-check prompts, NeMo recommends purpose-built alternatives:
+  - Content Safety (Nemotron)
+  - Llama Guard 3
+  - ShieldGemma
 
-**Root Cause:** When `self_check_input` action executes, NeMo calls `model: 'gpt-oss-20b'` (main model) instead of the guard model `ibm-granite/granite-guardian-4.1-8b`, causing the main model to incorrectly flag everything as a jailbreak attempt.
+**Current Implementation:**
+- Self-check flows are disabled in `values-gpt-oss-20b.yaml`
+- Using keyword-based guardrails instead (jailbreak patterns, malicious scripts, message length)
+- Keyword-based approach provides fast, deterministic protection without LLM calls
 
-**Workaround:** Disable self-check flows in `chart/values-*.yaml` config and rely on keyword-based guardrails:
-```yaml
-rails:
-  input:
-    flows:
-      # DISABLED: self check input - has bug calling wrong model
-      # - self check input
-      - check message length
-      - check jailbreak         # Keyword-based (works correctly)
-      - check malicious scripts # Keyword-based (works correctly)
-```
-
-The keyword-based guardrails in `chart/nemo-configs/01-actions.py` provide effective protection against jailbreaks and malicious requests without this bug.
+**Reference:**
+- [NeMo Self-Check Documentation](../../nemo-guardrails-docs/configure-rails/guardrail-catalog/self-check.md)
+- [Configuration Reference](../../nemo-guardrails-docs/configure-rails/configuration-reference.md)
 
 ## 📖 Documentation
 
