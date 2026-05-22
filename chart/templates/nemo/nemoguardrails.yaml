@@ -1,4 +1,22 @@
 {{- if and (eq .Values.serving.type "generative") .Values.guardrails.enabled }}
+{{- /* Auto-generate main model URL if not provided */ -}}
+{{- $modelUrl := .Values.guardrails.modelUrl | default "" | toString | trim -}}
+{{- if not $modelUrl }}
+  {{- $modelNs := include "rhoai-serving.namespaceName" . -}}
+  {{- $modelName := .Values.name -}}
+  {{- if .Values.routerGatewayRefs }}
+    {{- /* Use internal gateway if routerGatewayRefs is configured */ -}}
+    {{- $gateway := index .Values.routerGatewayRefs 0 -}}
+    {{- $gwName := $gateway.name | required "routerGatewayRefs[0].name is required" -}}
+    {{- $gwNs := $gateway.namespace | required "routerGatewayRefs[0].namespace is required" -}}
+    {{- $gwSvc := printf "%s-%s" $gwName $gwName -}}
+    {{- $modelUrl = printf "https://%s.%s.svc.cluster.local/%s/%s/v1" $gwSvc $gwNs $modelNs $modelName -}}
+  {{- else }}
+    {{- /* Default: use internal workload service (HTTPS) */ -}}
+    {{- $workloadSvc := printf "%s-kserve-workload-svc" $modelName -}}
+    {{- $modelUrl = printf "https://%s.%s.svc.cluster.local:8000" $workloadSvc $modelNs -}}
+  {{- end }}
+{{- end }}
 ---
 apiVersion: trustyai.opendatahub.io/v1alpha1
 kind: NemoGuardrails
@@ -15,6 +33,8 @@ spec:
       configMaps:
         - {{ .Values.name }}-nemo-config
   env:
+    - name: "MAIN_MODEL_BASE_URL"
+      value: "{{ $modelUrl }}"
     - name: "OPENAI_API_KEY"
       valueFrom:
         secretKeyRef:
