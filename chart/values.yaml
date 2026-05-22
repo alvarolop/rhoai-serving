@@ -112,6 +112,8 @@ model:
   uri: ""
   # -- Model name for serving requests
   name: ""
+  # -- Model criticality level for KServe scheduling and prioritization (Critical, High, Medium, Low)
+  criticality: Critical
   # -- OCI registry connection settings (only used when uri starts with oci://)
   oci:
     # -- Docker config JSON for private registries (base64 encoded). Leave empty for public registries.
@@ -239,15 +241,19 @@ guardrails:
 
 # @section -- Parallelism Configuration
 
-# -- Multi-node distributed workload parallelism for generative models (LLMInferenceService only). Enables tensor and data parallelism across multiple GPUs/nodes. Leave empty {} for single-replica workloads.
+# -- Multi-node distributed workload parallelism for generative models (LLMInferenceService only). Enables tensor parallelism (TP), data parallelism (DP), and expert parallelism (EP) across multiple GPUs/nodes. Leave empty {} for single-replica workloads.
 # @default -- {} (single-replica, no parallelism)
 parallelism: {}
-  # -- Tensor parallelism: number of GPUs to split model weights across (model sharding)
+  # -- Tensor parallelism: number of GPUs to split model layers across (intra-node model sharding)
   # tensor: 4
-  # -- Data parallelism: total number of replica groups for distributed serving
+  # -- Data parallelism: total number of replica groups for distributed serving (throughput scaling)
   # data: 8
-  # -- Data-local parallelism: replicas within each node before scaling to additional nodes
+  # -- Data-local parallelism: replicas within each node before scaling to additional nodes (GPUs per node)
   # dataLocal: 4
+  # -- Expert parallelism: enable for Mixture-of-Experts (MoE) models (e.g., Mixtral, DeepSeek-R1)
+  # expert: true
+  # -- Data RPC port: port number for data parallelism communication between replicas
+  # dataRPCPort: 29550
 
 # @section -- Container Configuration
 

@@ -38,7 +38,7 @@ spec:
     uri: {{ $uri | quote }}
     {{- end }}
     name: {{ .Values.model.name | required "model.name is required" | quote }}
-    criticality: Critical
+    criticality: {{ .Values.model.criticality | default "Critical" }}
 
   router:
     {{- if .Values.serving.routerGatewayRefs }}
