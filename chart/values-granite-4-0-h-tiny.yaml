@@ -16,9 +16,6 @@ namespace:
 model:
   uri: oci://registry.redhat.io/rhai/modelcar-granite-4-0-h-tiny-fp8-dynamic:3.0
   name: granite-4-0-h-tiny-fp8-dynamic
-  connection:
-    protocol: oci
-
 serving:
   hardwareProfile:
     name: gpu-profile
@@ -28,16 +25,17 @@ mainContainer:
   extraArgs:
     - "--disable-uvicorn-access-log"
 
-resources:
-  limits:
-    cpu: "4"
-    memory: "32Gi"
-    nvidia.com/gpu: "1"
-  requests:
-    cpu: "1"
-    memory: "8Gi"
-    nvidia.com/gpu: "1"
-
+mainContainer:
+  resources:
+    limits:
+      cpu: "4"
+      memory: "32Gi"
+      nvidia.com/gpu: "1"
+    requests:
+      cpu: "1"
+      memory: "8Gi"
+      nvidia.com/gpu: "1"
+  
 # For Model-as-a-Service (MaaS) routing, uncomment and configure:
 # routerGatewayRefs:
 #   - name: maas-default-gateway

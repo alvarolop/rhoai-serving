@@ -21,11 +21,4 @@ models:
     parameters:
       openai_api_base: {{ .guardUrl }}
 {{- end }}
-{{- if .Values.guardrails.otel.enabled }}
-# OpenTelemetry Tracing
-tracing:
-  enabled: true
-  adapters:
-    - name: OpenTelemetry
-{{- end }}
 {{ .Values.guardrails.config | nindent 0 }}

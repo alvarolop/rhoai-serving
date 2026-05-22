@@ -9,9 +9,6 @@ namespace:
 model:
   uri: hf://Qwen/Qwen3.5-35B-A3B-GPTQ-Int4
   name: Qwen/Qwen3.5-35B-A3B-GPTQ-Int4
-  connection:
-    protocol: uri
-
 serving:
   hardwareProfile:
     name: gpu-profile
@@ -21,16 +18,17 @@ mainContainer:
   extraArgs:
     - "--disable-uvicorn-access-log"
 
-resources:
-  limits:
-    cpu: "8"
-    memory: "128Gi"
-    nvidia.com/gpu: "4"
-  requests:
-    cpu: "4"
-    memory: "64Gi"
-    nvidia.com/gpu: "4"
-
+mainContainer:
+  resources:
+    limits:
+      cpu: "8"
+      memory: "128Gi"
+      nvidia.com/gpu: "4"
+    requests:
+      cpu: "4"
+      memory: "64Gi"
+      nvidia.com/gpu: "4"
+  
 # For Model-as-a-Service (MaaS) routing, uncomment and configure:
 # routerGatewayRefs:
 #   - name: maas-default-gateway

@@ -30,16 +30,19 @@ namespace:
 model:
   uri: oci://quay.io/alopezme/modelcar-gemma-4-31b-fp8:latest
   name: RedHatAI/gemma-4-31B-it-FP8-Dynamic
-  connection:
-    protocol: oci
-    oci:
-      # Optional: add dockerconfigjson if using private registry
-      dockerconfigjson: ""
-
+  oci:
+    # Optional: add dockerconfigjson if using private registry
+    dockerconfigjson: ""
 serving:
   hardwareProfile:
     name: gpu-profile
     namespace: redhat-ods-applications
+  # For Model-as-a-Service (MaaS) routing
+  # When defined, NeMo Guardrails automatically uses internal gateway URL
+  # Comment out to use direct workload service instead
+  routerGatewayRefs:
+    - name: maas-default-gateway
+      namespace: openshift-ingress
 
 # Use OpenShift AI default vLLM image (supports FP8 natively)
 # Or specify a version if needed: vllm/vllm-openai:v0.13.0+
@@ -75,16 +78,17 @@ mainContainer:
     # - "--max-num-seqs"
     # - "128"  # Override above value if needed
 
-resources:
-  limits:
-    cpu: "8"
-    memory: "64Gi"
-    nvidia.com/gpu: "1"  # Single H100 recommended
-  requests:
-    cpu: "2"
-    memory: "16Gi"
-    nvidia.com/gpu: "1"
-
+mainContainer:
+  resources:
+    limits:
+      cpu: "8"
+      memory: "64Gi"
+      nvidia.com/gpu: "1"  # Single H100 recommended
+    requests:
+      cpu: "2"
+      memory: "16Gi"
+      nvidia.com/gpu: "1"
+  
 # Troubleshooting OOM during CUDA graph capture on H100:
 #
 # Symptom: "torch.OutOfMemoryError" during "Capturing CUDA graphs" phase
@@ -120,16 +124,9 @@ trustyai:
 guardrails:
   enabled: true
   # Leave empty to auto-generate based on routerGatewayRefs
-  # If routerGatewayRefs exists (below), uses internal gateway
+  # If routerGatewayRefs exists (under serving above), uses internal gateway
   # Otherwise, uses direct workload service
   modelUrl: ""
-
-# For Model-as-a-Service (MaaS) routing
-# When defined, NeMo Guardrails automatically uses internal gateway URL
-# Comment out to use direct workload service instead
-routerGatewayRefs:
-  - name: maas-default-gateway
-    namespace: openshift-ingress
 
 # If the model lacks a chat template, enable custom template:
 # Uncomment to fix "/chat/completions" errors on models without built-in templates

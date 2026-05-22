@@ -4,9 +4,9 @@
 {{- if not $modelUrl }}
   {{- $modelNs := include "rhoai-serving.namespaceName" . -}}
   {{- $modelName := .Values.name -}}
-  {{- if .Values.routerGatewayRefs }}
+  {{- if .Values.serving.routerGatewayRefs }}
     {{- /* Use internal gateway if routerGatewayRefs is configured */ -}}
-    {{- $gateway := index .Values.routerGatewayRefs 0 -}}
+    {{- $gateway := index .Values.serving.routerGatewayRefs 0 -}}
     {{- $gwName := $gateway.name | required "routerGatewayRefs[0].name is required" -}}
     {{- $gwNs := $gateway.namespace | required "routerGatewayRefs[0].namespace is required" -}}
     {{- $gwSvc := printf "%s-%s" $gwName $gwName -}}

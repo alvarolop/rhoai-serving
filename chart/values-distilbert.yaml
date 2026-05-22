@@ -48,20 +48,18 @@ scaling:
 model:
   uri: oci://quay.io/redhattraining/models/distilbert:2.25
   name: distilbert
-  connection:
-    protocol: oci
-
-resources:
-  limits:
-    cpu: "1000m"
-    memory: "2Gi"
-    # Override merged base defaults so CPU predictive does not inherit nvidia.com/gpu: "1"
-    nvidia.com/gpu: null
-  requests:
-    cpu: "100m"
-    memory: "512Mi"
-    nvidia.com/gpu: null
-
+mainContainer:
+  resources:
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
+      # Override merged base defaults so CPU predictive does not inherit nvidia.com/gpu: "1"
+      nvidia.com/gpu: null
+    requests:
+      cpu: "100m"
+      memory: "512Mi"
+      nvidia.com/gpu: null
+  
 mainContainer:
   extraArgs:
     - --nireq=10

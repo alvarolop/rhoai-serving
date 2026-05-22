@@ -41,10 +41,10 @@ spec:
     criticality: Critical
 
   router:
-    {{- if .Values.routerGatewayRefs }}
+    {{- if .Values.serving.routerGatewayRefs }}
     gateway:
       refs:
-        {{- toYaml .Values.routerGatewayRefs | nindent 8 }}
+        {{- toYaml .Values.serving.routerGatewayRefs | nindent 8 }}
     {{- else }}
     gateway: {}
     {{- end }}

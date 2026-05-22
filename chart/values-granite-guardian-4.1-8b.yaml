@@ -27,9 +27,6 @@ dashboard:
 model:
   uri: oci://quay.io/alopezme/modelcar-granite-guardian-4.1-8b:latest
   name: ibm-granite/granite-guardian-4.1-8b
-  connection:
-    protocol: oci
-
 serving:
   hardwareProfile:
     name: gpu-profile
@@ -44,16 +41,17 @@ mainContainer:
     - --max-model-len=8192
     - --disable-uvicorn-access-log
 
-resources:
-  limits:
-    cpu: "8"
-    memory: "32Gi"
-    nvidia.com/gpu: "1"
-  requests:
-    cpu: "2"
-    memory: "16Gi"
-    nvidia.com/gpu: "1"
-
+mainContainer:
+  resources:
+    limits:
+      cpu: "8"
+      memory: "32Gi"
+      nvidia.com/gpu: "1"
+    requests:
+      cpu: "2"
+      memory: "16Gi"
+      nvidia.com/gpu: "1"
+  
 # For Model-as-a-Service (MaaS) routing, uncomment and configure:
 # routerGatewayRefs:
 #   - name: maas-default-gateway

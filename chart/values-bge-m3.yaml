@@ -21,9 +21,6 @@ dashboard:
 model:
   uri: hf://BAAI/bge-m3
   name: BAAI/bge-m3
-  connection:
-    protocol: uri
-
 serving:
   hardwareProfile:
     name: gpu-profile
@@ -39,16 +36,17 @@ mainContainer:
     - "8192"
     - "--disable-uvicorn-access-log"
 
-resources:
-  limits:
-    cpu: "6"
-    memory: "24Gi"
-    nvidia.com/gpu: "1"
-  requests:
-    cpu: "2"
-    memory: "8Gi"
-    nvidia.com/gpu: "1"
-
+mainContainer:
+  resources:
+    limits:
+      cpu: "6"
+      memory: "24Gi"
+      nvidia.com/gpu: "1"
+    requests:
+      cpu: "2"
+      memory: "8Gi"
+      nvidia.com/gpu: "1"
+  
 trustyai:
   enabled: false
 

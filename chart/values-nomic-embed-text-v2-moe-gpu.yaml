@@ -29,9 +29,6 @@ dashboard:
 model:
   uri: hf://nomic-ai/nomic-embed-text-v2-moe
   name: nomic-ai/nomic-embed-text-v2-moe
-  connection:
-    protocol: uri
-
 serving:
   hardwareProfile:
     name: gpu-profile
@@ -53,16 +50,17 @@ mainContainer:
     - name: TRANSFORMERS_OFFLINE
       value: "0"
 
-resources:
-  limits:
-    cpu: "6"
-    memory: "24Gi"
-    nvidia.com/gpu: "1"
-  requests:
-    cpu: "2"
-    memory: "12Gi"
-    nvidia.com/gpu: "1"
-
+mainContainer:
+  resources:
+    limits:
+      cpu: "6"
+      memory: "24Gi"
+      nvidia.com/gpu: "1"
+    requests:
+      cpu: "2"
+      memory: "12Gi"
+      nvidia.com/gpu: "1"
+  
 trustyai:
   enabled: false
 

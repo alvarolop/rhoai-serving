@@ -61,6 +61,9 @@ serving:
     # -- HardwareProfile namespace
     # @default -- redhat-ods-applications
     namespace: redhat-ods-applications
+  # -- Gateway API refs for spec.router.gateway. Default empty for standard llm-d + Route. Set for MaaS deployments.
+  # @default -- []
+  routerGatewayRefs: []
 
 # @section -- Scaling Configuration
 
@@ -109,30 +112,26 @@ model:
   uri: ""
   # -- Model name for serving requests
   name: ""
-  # -- Dashboard connection Secret configuration
-  connection:
-    # -- Connection protocol: "auto", "uri", "oci", or "s3". Auto detects from model.uri prefix. Dashboard built-in types: "s3" and "uri". OCI uses "uri" protocol annotation for dashboard compatibility.
-    protocol: auto
-    # -- OCI registry connection settings
-    oci:
-      # -- Docker config JSON for private registries (base64 encoded). Leave empty for public registries.
-      dockerconfigjson: ""
-    # -- S3-compatible storage configuration
-    s3:
-      # -- S3 endpoint URL (e.g., http://minio.minio.svc.cluster.local:9000)
-      endpoint: ""
-      # -- S3 bucket name
-      bucket: ""
-      # -- S3 access key ID
-      accessKeyId: ""
-      # -- S3 secret access key
-      secretAccessKey: ""
-      # -- S3 region
-      region: ""
-      # -- Object prefix/path inside the bucket (opendatahub.io/connection-path annotation)
-      path: ""
-      # -- OpenShift Data Foundation ObjectBucketClaim name. When set, credentials are read from ODF-generated Secret/ConfigMap instead of manual fields above.
-      objectBucketClaim: ""
+  # -- OCI registry connection settings (only used when uri starts with oci://)
+  oci:
+    # -- Docker config JSON for private registries (base64 encoded). Leave empty for public registries.
+    dockerconfigjson: ""
+  # -- S3-compatible storage configuration (only used when uri starts with s3://)
+  s3:
+    # -- S3 endpoint URL (e.g., http://minio.minio.svc.cluster.local:9000)
+    endpoint: ""
+    # -- S3 bucket name
+    bucket: ""
+    # -- S3 access key ID
+    accessKeyId: ""
+    # -- S3 secret access key
+    secretAccessKey: ""
+    # -- S3 region
+    region: ""
+    # -- Object prefix/path inside the bucket (opendatahub.io/connection-path annotation)
+    path: ""
+    # -- OpenShift Data Foundation ObjectBucketClaim name. When set, credentials are read from ODF-generated Secret/ConfigMap instead of manual fields above.
+    objectBucketClaim: ""
 
 # @section -- Authentication and Secrets
 
@@ -238,12 +237,6 @@ guardrails:
           - check script in output         # Prevent script tags in responses
           - mask sensitive data on output  # Presidio PII masking
 
-# @section -- Resources Configuration
-
-# -- Container resource limits and requests. Override in values-<model>.yaml files per model requirements.
-# @default -- {} (set in model-specific values files)
-resources: {}
-
 # @section -- Parallelism Configuration
 
 # -- Multi-node distributed workload parallelism for generative models (LLMInferenceService only). Enables tensor and data parallelism across multiple GPUs/nodes. Leave empty {} for single-replica workloads.
@@ -256,7 +249,7 @@ parallelism: {}
   # -- Data-local parallelism: replicas within each node before scaling to additional nodes
   # dataLocal: 4
 
-# @section -- Main Container Configuration
+# @section -- Container Configuration
 
 # -- Main container configuration for LLMInferenceService/InferenceService pods
 mainContainer:
@@ -270,18 +263,15 @@ mainContainer:
   extraArgs: []
   # -- Extra environment variables in standard Kubernetes env var format
   env: []
+  # -- Container resource limits and requests. Override in values-<model>.yaml files per model requirements.
+  # @default -- {} (set in model-specific values files)
+  resources: {}
   # -- Startup probe configuration (useful for large models with slow load times >2min)
   startupProbe: {}
   # -- Liveness probe configuration
   livenessProbe: {}
   # -- Readiness probe configuration
   readinessProbe: {}
-
-# @section -- Router Configuration
-
-# -- Gateway API refs for spec.router.gateway. Default empty for standard llm-d + Route. Set for MaaS deployments.
-# @default -- []
-routerGatewayRefs: []
 
 # @section -- Predictive Runtime Configuration
 

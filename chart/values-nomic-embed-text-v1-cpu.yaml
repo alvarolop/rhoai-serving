@@ -28,9 +28,6 @@ dashboard:
 model:
   uri: hf://nomic-ai/nomic-embed-text-v1
   name: nomic-ai/nomic-embed-text-v1
-  connection:
-    protocol: uri
-
 serving:
   hardwareProfile:
     name: cpu-profile
@@ -54,14 +51,15 @@ mainContainer:
       value: "0"
 
 # CPU resources for embedding inference
-resources:
-  limits:
-    cpu: "8"
-    memory: "16Gi"
-  requests:
-    cpu: "4"
-    memory: "8Gi"
-
+mainContainer:
+  resources:
+    limits:
+      cpu: "8"
+      memory: "16Gi"
+    requests:
+      cpu: "4"
+      memory: "8Gi"
+  
 trustyai:
   enabled: false
 

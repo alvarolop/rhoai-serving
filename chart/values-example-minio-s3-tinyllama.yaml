@@ -12,16 +12,13 @@ model:
   # KServe / initializer typically resolve s3://… into the pod (often under /mnt/models); keep in sync with .connection.s3.
   uri: s3://rhoai-demo-models/tinyllama-1.1b
   name: tinyllama-s3-minio
-  connection:
-    protocol: s3
-    s3:
-      endpoint: "http://minio.minio.svc.cluster.local:9000"
-      bucket: "rhoai-demo-models"
-      accessKeyId: "minio"
-      secretAccessKey: "minio123"
-      region: "us-east-1"
-      path: "tinyllama-1.1b"
-
+  s3:
+    endpoint: "http://minio.minio.svc.cluster.local:9000"
+    bucket: "rhoai-demo-models"
+    accessKeyId: "minio"
+    secretAccessKey: "minio123"
+    region: "us-east-1"
+    path: "tinyllama-1.1b"
 serving:
   hardwareProfile:
     name: cpu-profile
@@ -48,14 +45,15 @@ mainContainer:
     - /var/run/kserve/tls/tls.key
     - --disable-uvicorn-access-log
 
-resources:
-  limits:
-    cpu: "8"
-    memory: "8Gi"
-  requests:
-    cpu: "2"
-    memory: "4Gi"
-
+mainContainer:
+  resources:
+    limits:
+      cpu: "8"
+      memory: "8Gi"
+    requests:
+      cpu: "2"
+      memory: "4Gi"
+  
 # For Model-as-a-Service (MaaS) routing, uncomment and configure:
 # routerGatewayRefs:
 #   - name: maas-default-gateway

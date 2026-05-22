@@ -33,31 +33,29 @@ model:
   # The bucket name will be read from the OBC ConfigMap
   uri: s3://my-model-bucket/models/tinyllama
   name: TinyLlama/TinyLlama-1.1B-Chat-v1.0
-  connection:
-    protocol: s3
-    s3:
-      # Point to the ObjectBucketClaim name
-      # The chart will assume the OBC Secret/ConfigMap exists with this name
-      objectBucketClaim: "my-model-bucket"
-      # All other s3 fields (endpoint, bucket, accessKeyId, etc.) are ignored
-      # when objectBucketClaim is set - values come from OBC
-
-      # Optional: path prefix within the bucket (if model is under a subdirectory)
-      path: "models/tinyllama"
+  s3:
+    # Point to the ObjectBucketClaim name
+    # The chart will assume the OBC Secret/ConfigMap exists with this name
+    objectBucketClaim: "my-model-bucket"
+    # All other s3 fields (endpoint, bucket, accessKeyId, etc.) are ignored
+    # when objectBucketClaim is set - values come from OBC
+    # Optional: path prefix within the bucket (if model is under a subdirectory)
+    path: "models/tinyllama"
 
 serving:
   hardwareProfile:
     name: cpu-profile
     namespace: redhat-ods-applications
 
-resources:
-  limits:
-    cpu: "4"
-    memory: "8Gi"
-  requests:
-    cpu: "2"
-    memory: "4Gi"
-
+mainContainer:
+  resources:
+    limits:
+      cpu: "4"
+      memory: "8Gi"
+    requests:
+      cpu: "2"
+      memory: "4Gi"
+  
 mainContainer:
   extraArgs:
     - "--max-model-len"

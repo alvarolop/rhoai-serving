@@ -32,7 +32,7 @@ kserveModelResources (Helm deep-merge can still leave stale GPU keys from anothe
 false
 {{- else -}}
 {{- $k := "nvidia.com/gpu" -}}
-{{- $res := .Values.resources | default dict -}}
+{{- $res := .Values.mainContainer.resources | default dict -}}
 {{- $lim := $res.limits | default dict -}}
 {{- $req := $res.requests | default dict -}}
 {{- $v := "" -}}
@@ -49,7 +49,7 @@ Strip nvidia.com/gpu from limits/requests when neither side requests a GPU, so H
 does not leave stale GPU keys on CPU-only overlays.
 */}}
 {{- define "rhoai-serving.kserveModelResources" -}}
-{{- $res := .Values.resources | default dict -}}
+{{- $res := .Values.mainContainer.resources | default dict -}}
 {{- if eq (include "rhoai-serving.hasNvidiaGpu" . | trim) "true" -}}
 {{- toYaml $res -}}
 {{- else -}}
@@ -65,24 +65,16 @@ OpenShift AI connections API protocol (opendatahub.io/connection-type-protocol o
 
 - uri: Opaque, data.URI (base64), annotations connection-type-protocol uri + connection-type-ref uri-v1.
 - oci: Opaque, annotations connection-type-protocol oci + connection-type-ref oci-v1, data.OCI_HOST = base64(model.uri);
-  optional data .dockerconfigjson when model.connection.oci.dockerconfigjson is set (private registry).
+  optional data .dockerconfigjson when model.oci.dockerconfigjson is set (private registry).
 - s3: Opaque, data AWS_* keys (base64), labels dashboard + managed, annotations connection-type + protocol + ref s3.
 
-protocol in values: auto | uri | oci | s3. Auto: oci when model.uri starts with oci://; otherwise uri (s3 is never inferred — set protocol: s3).
+Protocol auto-detected from model.uri prefix: oci:// → oci, s3:// → s3, otherwise → uri.
 */}}
 {{- define "rhoai-serving.modelConnectionProtocol" -}}
-{{- $mc := .Values.model.connection | default dict -}}
-{{- $proto := $mc.protocol | default "auto" | toString | trim | lower -}}
-{{- if eq $proto "uri" -}}uri
-{{- else if eq $proto "oci" -}}oci
-{{- else if eq $proto "s3" -}}s3
-{{- else if eq $proto "auto" -}}
 {{- $uri := .Values.model.uri | default "" | toString | trim -}}
 {{- if hasPrefix "oci://" $uri -}}oci
+{{- else if hasPrefix "s3://" $uri -}}s3
 {{- else -}}uri
-{{- end -}}
-{{- else -}}
-{{- fail (printf "model.connection.protocol must be auto, uri, oci, or s3 (got %q)" $proto) -}}
 {{- end -}}
 {{- end -}}
 
@@ -90,8 +82,7 @@ protocol in values: auto | uri | oci | s3. Auto: oci when model.uri starts with 
 Non-empty bucket path for S3 connections (opendatahub.io/connection-path). Trims slashes.
 */}}
 {{- define "rhoai-serving.modelConnectionS3Path" -}}
-{{- $mc := .Values.model.connection | default dict -}}
-{{- $s3 := $mc.s3 | default dict -}}
+{{- $s3 := .Values.model.s3 | default dict -}}
 {{- $p := $s3.path | default "" | toString | trim -}}
 {{- $p | trimPrefix "/" | trimSuffix "/" -}}
 {{- end -}}

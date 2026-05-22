@@ -13,9 +13,6 @@ namespace:
 model:
   uri: oci://quay.io/rh-aiservices-bu/tinyllama:1.0
   name: tinyllama-1b
-  connection:
-    protocol: oci
-
 serving:
   hardwareProfile:
     name: cpu-profile
@@ -42,14 +39,15 @@ mainContainer:
     - /var/run/kserve/tls/tls.key
     - --disable-uvicorn-access-log
 
-resources:
-  limits:
-    cpu: "8"
-    memory: "8Gi"
-  requests:
-    cpu: "2"
-    memory: "4Gi"
-
+mainContainer:
+  resources:
+    limits:
+      cpu: "8"
+      memory: "8Gi"
+    requests:
+      cpu: "2"
+      memory: "4Gi"
+  
 # For Model-as-a-Service (MaaS) routing, uncomment and configure:
 # routerGatewayRefs:
 #   - name: maas-default-gateway
