@@ -68,8 +68,7 @@ OpenShift AI connections API protocol (opendatahub.io/connection-type-protocol o
   optional data .dockerconfigjson when model.connection.oci.dockerconfigjson is set (private registry).
 - s3: Opaque, data AWS_* keys (base64), labels dashboard + managed, annotations connection-type + protocol + ref s3.
 
-protocol in values: auto | uri | oci | s3. Auto: oci when model.uri starts with oci://, or when legacy
-  .oci.dockerconfigjson and .oci.host are both set; otherwise uri (s3 is never inferred — set protocol: s3).
+protocol in values: auto | uri | oci | s3. Auto: oci when model.uri starts with oci://; otherwise uri (s3 is never inferred — set protocol: s3).
 */}}
 {{- define "rhoai-serving.modelConnectionProtocol" -}}
 {{- $mc := .Values.model.connection | default dict -}}
@@ -78,11 +77,8 @@ protocol in values: auto | uri | oci | s3. Auto: oci when model.uri starts with 
 {{- else if eq $proto "oci" -}}oci
 {{- else if eq $proto "s3" -}}s3
 {{- else if eq $proto "auto" -}}
-{{- $oci := $mc.oci | default dict -}}
-{{- $dc := $oci.dockerconfigjson | default "" | toString | trim -}}
-{{- $host := $oci.host | default "" | toString | trim -}}
 {{- $uri := .Values.model.uri | default "" | toString | trim -}}
-{{- if or (and $dc $host) (hasPrefix "oci://" $uri) -}}oci
+{{- if hasPrefix "oci://" $uri -}}oci
 {{- else -}}uri
 {{- end -}}
 {{- else -}}

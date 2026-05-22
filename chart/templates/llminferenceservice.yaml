@@ -51,11 +51,13 @@ spec:
     route: {}
     scheduler: {}
 
-  # Multi-node workload with data parallelism
-  # parallelism:
-  #   tensor: 4
-  #   data: 8
-  #   dataLocal: 4
+  {{- if .Values.parallelism }}
+  {{- with .Values.parallelism }}
+  # Multi-node distributed workload parallelism
+  parallelism:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- end }}
 
   # Decode workload (main)
   replicas: {{ .Values.scaling.replicas }}

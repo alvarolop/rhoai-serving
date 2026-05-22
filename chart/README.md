@@ -169,6 +169,28 @@ See `values-distilbert.yaml` for all configuration examples (HPA and KEDA blocks
 - You need more sophisticated scaling triggers
 - You already have KEDA deployed in your cluster
 
+## Distributed Multi-GPU Parallelism
+
+For large models that require multiple GPUs, configure tensor and/or data parallelism in your values file:
+
+```yaml
+# Tensor Parallelism: Split model weights across 4 GPUs (single node)
+parallelism:
+  tensor: 4
+
+# Combined Tensor + Data Parallelism: 8 total replicas with 4-way tensor parallelism
+parallelism:
+  tensor: 4     # Split model across 4 GPUs
+  data: 8       # Total replica groups
+  dataLocal: 4  # Replicas per node before scaling to additional nodes
+```
+
+**Examples:**
+- **Llama 3.1 70B** (`values-llama-3.1-70b.yaml`): Uses `tensor: 4` to split the model across 4 GPUs on a single node
+- **Future multi-node deployments**: Combine `tensor`, `data`, and `dataLocal` for distributed serving
+
+Only applies to generative models (`LLMInferenceService`). Predictive models use replica-based scaling instead.
+
 ## Health Probes
 
 For large models with slow startup times (>2min), configure health probes to prevent premature restarts:
@@ -232,6 +254,8 @@ Deploys a TrustyAIService CR and required CA bundle ConfigMap. See `values-disti
 | hfToken | string | "" (pass via --set-file hfToken=.hf_token) | Hugging Face token for gated/private models. Chart creates hf-secret when model.uri starts with hf:// and this is non-empty. |
 | kueue | object | `{"localQueueName":"default"}` | Kueue LocalQueue configuration |
 | kueue.localQueueName | string | `"default"` | LocalQueue name used as label kueue.x-k8s.io/queue-name on serving CRs. Must match a LocalQueue in the model namespace. |
+| monitoring | object | `{"userWorkloadDisabled":false}` | OpenShift monitoring configuration for predictive models with KEDA autoscaling |
+| monitoring.userWorkloadDisabled | bool | `false` | Disable user workload monitoring (use cluster monitoring instead). When true, sets openshift.io/cluster-monitoring label on namespace for KEDA metrics access. Only applies to predictive models with scaling.mode: keda. |
 | mainContainer | object | `{"args":[],"command":[],"env":[],"extraArgs":[],"image":"","livenessProbe":{},"readinessProbe":{},"startupProbe":{}}` | Main container configuration for LLMInferenceService/InferenceService pods |
 | mainContainer.args | list | `[]` | Container args override |
 | mainContainer.command | list | `[]` | Container command override |
@@ -241,11 +265,10 @@ Deploys a TrustyAIService CR and required CA bundle ConfigMap. See `values-disti
 | mainContainer.livenessProbe | object | `{}` | Liveness probe configuration |
 | mainContainer.readinessProbe | object | `{}` | Readiness probe configuration |
 | mainContainer.startupProbe | object | `{}` | Startup probe configuration (useful for large models with slow load times >2min) |
-| model | object | `{"connection":{"oci":{"dockerconfigjson":"","host":""},"protocol":"auto","s3":{"accessKeyId":"","bucket":"","endpoint":"","objectBucketClaim":"","path":"","region":"","secretAccessKey":""}},"name":"","uri":""}` | Model source configuration (KServe/OpenShift AI storage URI). Supported schemes: hf://, s3://, pvc://, oci:// |
-| model.connection | object | `{"oci":{"dockerconfigjson":"","host":""},"protocol":"auto","s3":{"accessKeyId":"","bucket":"","endpoint":"","objectBucketClaim":"","path":"","region":"","secretAccessKey":""}}` | Dashboard connection Secret configuration |
-| model.connection.oci | object | `{"dockerconfigjson":"","host":""}` | OCI registry connection settings |
+| model | object | `{"connection":{"oci":{"dockerconfigjson":""},"protocol":"auto","s3":{"accessKeyId":"","bucket":"","endpoint":"","objectBucketClaim":"","path":"","region":"","secretAccessKey":""}},"name":"","uri":""}` | Model source configuration (KServe/OpenShift AI storage URI). Supported schemes: hf://, s3://, pvc://, oci:// |
+| model.connection | object | `{"oci":{"dockerconfigjson":""},"protocol":"auto","s3":{"accessKeyId":"","bucket":"","endpoint":"","objectBucketClaim":"","path":"","region":"","secretAccessKey":""}}` | Dashboard connection Secret configuration |
+| model.connection.oci | object | `{"dockerconfigjson":""}` | OCI registry connection settings |
 | model.connection.oci.dockerconfigjson | string | `""` | Docker config JSON for private registries (base64 encoded). Leave empty for public registries. |
-| model.connection.oci.host | string | `""` | Legacy OCI host field (deprecated, use model.uri) |
 | model.connection.protocol | string | `"auto"` | Connection protocol: "auto", "uri", "oci", or "s3". Auto detects from model.uri prefix. |
 | model.connection.s3 | object | `{"accessKeyId":"","bucket":"","endpoint":"","objectBucketClaim":"","path":"","region":"","secretAccessKey":""}` | S3-compatible storage configuration |
 | model.connection.s3.accessKeyId | string | `""` | S3 access key ID |
@@ -259,6 +282,7 @@ Deploys a TrustyAIService CR and required CA bundle ConfigMap. See `values-disti
 | model.uri | string | `""` | Model URI (e.g., hf://RedHatAI/Qwen3-8B-FP8-dynamic, oci://registry.redhat.io/rhelai1/modelcar-qwen3-8b-fp8-dynamic:1.5) |
 | name | string | `"model-server"` | Resource identity name for the model serving deployment |
 | namespace | object | `{"create":true,"description":"","displayName":"","kueueManaged":true,"name":"model-serving"}` | Target namespace configuration for all chart resources |
+| parallelism | object | `{}` | Multi-node distributed workload parallelism for generative models (LLMInferenceService only). Enables tensor and data parallelism across multiple GPUs/nodes. Leave empty {} for single-replica workloads. |
 | namespace.create | bool | `true` | Create the namespace if it doesn't exist |
 | namespace.description | string | `""` | OpenShift console description annotation (optional) |
 | namespace.displayName | string | `""` | OpenShift console display name (defaults to .name if empty) |

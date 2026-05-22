@@ -20,6 +20,10 @@ mainContainer:
   extraArgs:
     - "--disable-uvicorn-access-log"
 
+# Tensor parallelism: split model across 4 GPUs on a single node
+parallelism:
+  tensor: 4
+
 resources:
   limits:
     cpu: "8"

@@ -39,6 +39,13 @@ kueue:
   # -- LocalQueue name used as label kueue.x-k8s.io/queue-name on serving CRs. Must match a LocalQueue in the model namespace.
   localQueueName: default
 
+# @section -- Monitoring Configuration
+
+# -- OpenShift monitoring configuration for predictive models with KEDA autoscaling
+monitoring:
+  # -- Disable user workload monitoring (use cluster monitoring instead). When true, sets openshift.io/cluster-monitoring label on namespace for KEDA metrics access. Only applies to predictive models with scaling.mode: keda.
+  userWorkloadDisabled: false
+
 # @section -- Serving Configuration
 
 # -- Model serving configuration. Determines whether to deploy generative (LLMInferenceService) or predictive (InferenceService) models.
@@ -110,8 +117,6 @@ model:
     oci:
       # -- Docker config JSON for private registries (base64 encoded). Leave empty for public registries.
       dockerconfigjson: ""
-      # -- Legacy OCI host field (deprecated, use model.uri)
-      host: ""
     # -- S3-compatible storage configuration
     s3:
       # -- S3 endpoint URL (e.g., http://minio.minio.svc.cluster.local:9000)
@@ -246,6 +251,18 @@ guardrails:
 # -- Container resource limits and requests. Override in values-<model>.yaml files per model requirements.
 # @default -- {} (set in model-specific values files)
 resources: {}
+
+# @section -- Parallelism Configuration
+
+# -- Multi-node distributed workload parallelism for generative models (LLMInferenceService only). Enables tensor and data parallelism across multiple GPUs/nodes. Leave empty {} for single-replica workloads.
+# @default -- {} (single-replica, no parallelism)
+parallelism: {}
+  # -- Tensor parallelism: number of GPUs to split model weights across (model sharding)
+  # tensor: 4
+  # -- Data parallelism: total number of replica groups for distributed serving
+  # data: 8
+  # -- Data-local parallelism: replicas within each node before scaling to additional nodes
+  # dataLocal: 4
 
 # @section -- Main Container Configuration
 

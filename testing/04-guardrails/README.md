@@ -23,8 +23,9 @@ According to NeMo Guardrails documentation, `self check input` and `self check o
 - Keyword-based approach provides fast, deterministic protection without LLM calls
 
 **Reference:**
-- [NeMo Self-Check Documentation](../../nemo-guardrails-docs/configure-rails/guardrail-catalog/self-check.md)
-- [Configuration Reference](../../nemo-guardrails-docs/configure-rails/configuration-reference.md)
+- [NeMo Guardrails Documentation](https://docs.nvidia.com/nemo/guardrails/)
+- [NeMo Self-Check Documentation](https://docs.nvidia.com/nemo/guardrails/configure-rails/guardrail-catalog/self-check.html)
+- [Configuration Reference](https://docs.nvidia.com/nemo/guardrails/configure-rails/configuration-reference.html)
 
 ## 📖 Documentation
 

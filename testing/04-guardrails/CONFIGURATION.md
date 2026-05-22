@@ -459,10 +459,10 @@ curl -X POST "https://<nemo-url>/v1/chat/completions" \
 
 ## References
 
-- [Official NeMo Guardrails Docs](../../nemo-guardrails-docs/)
-- [Presidio PII Detection](../../nemo-guardrails-docs/configure-rails/guardrail-catalog/pii-detection.md)
+- [NeMo Guardrails Documentation](https://docs.nvidia.com/nemo/guardrails/)
+- [Presidio PII Detection](https://docs.nvidia.com/nemo/guardrails/configure-rails/guardrail-catalog/pii-detection.html)
 - [Presidio Supported Entities](https://microsoft.github.io/presidio/supported_entities/)
-- [Configuration Reference](../../nemo-guardrails-docs/configure-rails/configuration-reference.md)
+- [Configuration Reference](https://docs.nvidia.com/nemo/guardrails/configure-rails/configuration-reference.html)
 - [Test Scripts](./test-all-guardrails.sh)
 
 ---
