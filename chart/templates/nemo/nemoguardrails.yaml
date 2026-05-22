@@ -51,15 +51,4 @@ spec:
     # Use OpenShift service CA bundle for internal gateway HTTPS
     - name: "SSL_CERT_FILE"
       value: "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
-{{- if .Values.guardrails.otel.enabled }}
-    # OpenTelemetry environment variables
-    - name: "OTEL_SERVICE_NAME"
-      value: "{{ .Values.name }}-nemo-guardrails"
-    - name: "OTEL_EXPORTER_OTLP_PROTOCOL"
-      value: "grpc"
-    - name: "OTEL_EXPORTER_OTLP_INSECURE"
-      value: "true"
-    - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
-      value: "{{ .Values.guardrails.otel.endpoint }}"
-{{- end }}
 {{- end }}

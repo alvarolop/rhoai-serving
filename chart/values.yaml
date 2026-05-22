@@ -198,14 +198,6 @@ guardrails:
     # -- Guard model ServiceAccount token (pass via --set guardrails.guardLlm.token=$(oc get secret <guard-sa-token> -n <namespace> -o jsonpath='{.data.token}' | base64 -d))
     token: ""
 
-  # -- OpenTelemetry tracing configuration
-  otel:
-    # -- Enable OpenTelemetry tracing for observability (exports traces to configured OTEL collector)
-    enabled: false
-    # -- OTEL collector endpoint (gRPC). Override if your collector is in a different namespace/cluster.
-    # @default -- "http://opentelemetry-collector.opentelemetry.svc.cluster.local:4317"
-    endpoint: "http://opentelemetry-collector.opentelemetry.svc.cluster.local:4317"
-
   # -- NeMo Guardrails config.yaml content. This controls which guardrails are active.
   # The model connection (openai_api_base, model_name) is auto-injected by the template.
   # Default configuration includes three core guardrails:
