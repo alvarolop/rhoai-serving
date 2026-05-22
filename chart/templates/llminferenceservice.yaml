@@ -48,8 +48,20 @@ spec:
     {{- else }}
     gateway: {}
     {{- end }}
+    {{- $requestTimeout := .Values.serving.router.route.requestTimeout | default "" | toString | trim -}}
+    {{- if $requestTimeout }}
+    route:
+      http:
+        spec:
+          rules:
+            - timeouts:
+                request: {{ $requestTimeout | quote }}
+    {{- else }}
     route: {}
+    {{- end }}
+    {{- if .Values.serving.router.intelligentRouting.enabled }}
     scheduler: {}
+    {{- end }}
 
   {{- if .Values.parallelism }}
   {{- with .Values.parallelism }}

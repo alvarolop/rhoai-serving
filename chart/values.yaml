@@ -64,6 +64,15 @@ serving:
   # -- Gateway API refs for spec.router.gateway. Default empty for standard llm-d + Route. Set for MaaS deployments.
   # @default -- []
   routerGatewayRefs: []
+  # -- Router configuration for intelligent routing and HTTPRoute settings
+  router:
+    # -- Enable intelligent routing with EPP scheduler (prefix-aware, KV cache-aware routing). When enabled, KServe automatically creates InferencePool and EPP for intelligent request routing based on KV cache, queue depth, and prefix matching. When disabled, uses basic round-robin load balancing.
+    intelligentRouting:
+      enabled: true
+    # -- HTTPRoute configuration for request timeouts and URL rewriting
+    route:
+      # -- Request timeout for long-running inference (e.g., "300s", "5m"). Leave empty for default Gateway timeout.
+      requestTimeout: ""
 
 # @section -- Scaling Configuration
 
