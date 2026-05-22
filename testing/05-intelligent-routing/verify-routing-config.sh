@@ -80,7 +80,9 @@ fi
 
 # Check 5: Model replicas
 echo "5️⃣  Checking model replicas..."
-PODS=($(oc get pods -n "${NAMESPACE}" -l serving.kserve.io/llminferenceservice="${DEPLOYMENT_NAME}" -o jsonpath='{.items[*].metadata.name}'))
+PODS=($(oc get pods -n "${NAMESPACE}" \
+  -l "app.kubernetes.io/name=${DEPLOYMENT_NAME},app.kubernetes.io/component=llminferenceservice-workload" \
+  -o jsonpath='{.items[*].metadata.name}'))
 if [ ${#PODS[@]} -eq 0 ]; then
   echo "❌ No vLLM pods found"
   exit 1

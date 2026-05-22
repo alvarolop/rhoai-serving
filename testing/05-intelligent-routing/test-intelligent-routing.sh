@@ -40,14 +40,33 @@ echo "Namespace: ${NAMESPACE}"
 echo "========================================="
 echo ""
 
-# Get model route
-echo "📡 Getting model route..."
-MODEL_ROUTE=$(oc get route "${DEPLOYMENT_NAME}" -n "${NAMESPACE}" -o jsonpath='{.spec.host}' 2>/dev/null)
-if [ -z "$MODEL_ROUTE" ]; then
-  echo "❌ ERROR: Route ${DEPLOYMENT_NAME} not found in namespace ${NAMESPACE}"
+# Get model endpoint URL via MaaS gateway
+echo "📡 Getting model endpoint via gateway..."
+
+# Get gateway reference from LLMInferenceService
+GATEWAY_REF=$(oc get LLMInferenceService "${DEPLOYMENT_NAME}" -n "${NAMESPACE}" \
+  -o jsonpath='{.spec.router.gateway.refs[0].name}' 2>/dev/null || echo "")
+
+if [ -z "$GATEWAY_REF" ]; then
+  echo "❌ ERROR: No gateway reference found in LLMInferenceService ${DEPLOYMENT_NAME}"
+  echo "   Check spec.router.gateway.refs in the LLMInferenceService"
   exit 1
 fi
-MODEL_URL="https://${MODEL_ROUTE}"
+
+GATEWAY_NAMESPACE=$(oc get LLMInferenceService "${DEPLOYMENT_NAME}" -n "${NAMESPACE}" \
+  -o jsonpath='{.spec.router.gateway.refs[0].namespace}' 2>/dev/null || echo "openshift-ingress")
+
+echo "   Gateway: ${GATEWAY_REF} (namespace: ${GATEWAY_NAMESPACE})"
+
+# Get gateway external route
+GATEWAY_ROUTE=$(oc get route "${GATEWAY_REF}" -n "${GATEWAY_NAMESPACE}" -o jsonpath='{.spec.host}' 2>/dev/null)
+if [ -z "$GATEWAY_ROUTE" ]; then
+  echo "❌ ERROR: Gateway route ${GATEWAY_REF} not found in namespace ${GATEWAY_NAMESPACE}"
+  exit 1
+fi
+
+# MaaS URL pattern: https://{gateway-host}/{namespace}/{model}/v1/...
+MODEL_URL="https://${GATEWAY_ROUTE}/${NAMESPACE}/${DEPLOYMENT_NAME}/v1"
 echo "✅ Model URL: ${MODEL_URL}"
 echo ""
 
@@ -63,7 +82,9 @@ echo ""
 
 # Get vLLM pods
 echo "🔍 Finding vLLM pods..."
-PODS=($(oc get pods -n "${NAMESPACE}" -l serving.kserve.io/llminferenceservice="${DEPLOYMENT_NAME}" -o jsonpath='{.items[*].metadata.name}'))
+PODS=($(oc get pods -n "${NAMESPACE}" \
+  -l "app.kubernetes.io/name=${DEPLOYMENT_NAME},app.kubernetes.io/component=llminferenceservice-workload" \
+  -o jsonpath='{.items[*].metadata.name}'))
 if [ ${#PODS[@]} -eq 0 ]; then
   echo "❌ ERROR: No pods found for LLMInferenceService ${DEPLOYMENT_NAME}"
   exit 1
@@ -197,9 +218,13 @@ echo ""
 
 echo "📈 TTFT Comparison:"
 echo "  Request 1a (Paris):              ${TTFT1A}ms"
-echo "  Request 1b (Paris + history):    ${TTFT1B}ms ($(((TTFT1A - TTFT1B) * 100 / TTFT1A))% ${TTFT1B} < ${TTFT1A} && echo 'faster ✓' || echo 'slower')"
+IMPROVEMENT1=$((100 * (TTFT1A - TTFT1B) / TTFT1A))
+[ ${TTFT1B} -lt ${TTFT1A} ] && STATUS1="faster ✓" || STATUS1="slower ✗"
+echo "  Request 1b (Paris + history):    ${TTFT1B}ms (${IMPROVEMENT1}% ${STATUS1})"
 echo "  Request 2a (London):             ${TTFT2A}ms"
-echo "  Request 2b (London + culture):   ${TTFT2B}ms ($(((TTFT2A - TTFT2B) * 100 / TTFT2A))% ${TTFT2B} < ${TTFT2A} && echo 'faster ✓' || echo 'slower')"
+IMPROVEMENT2=$((100 * (TTFT2A - TTFT2B) / TTFT2A))
+[ ${TTFT2B} -lt ${TTFT2A} ] && STATUS2="faster ✓" || STATUS2="slower ✗"
+echo "  Request 2b (London + culture):   ${TTFT2B}ms (${IMPROVEMENT2}% ${STATUS2})"
 echo ""
 
 echo "📊 Cache Metrics Per Pod:"

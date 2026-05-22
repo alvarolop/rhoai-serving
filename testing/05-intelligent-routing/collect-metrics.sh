@@ -17,7 +17,9 @@ echo ""
 
 # Get vLLM pods
 echo "🔍 Finding vLLM pods..."
-PODS=($(oc get pods -n "${NAMESPACE}" -l serving.kserve.io/llminferenceservice="${DEPLOYMENT_NAME}" -o jsonpath='{.items[*].metadata.name}'))
+PODS=($(oc get pods -n "${NAMESPACE}" \
+  -l "app.kubernetes.io/name=${DEPLOYMENT_NAME},app.kubernetes.io/component=llminferenceservice-workload" \
+  -o jsonpath='{.items[*].metadata.name}'))
 if [ ${#PODS[@]} -eq 0 ]; then
   echo "❌ ERROR: No pods found for LLMInferenceService ${DEPLOYMENT_NAME}"
   exit 1
