@@ -47,6 +47,10 @@ serving:
   hardwareProfile:
     name: cpu-profile
     namespace: redhat-ods-applications
+# # For Model-as-a-Service (MaaS) routing, uncomment and configure:
+#   routerGatewayRefs:
+#     - name: maas-default-gateway
+#       namespace: openshift-ingress
 
 mainContainer:
   resources:
@@ -57,7 +61,6 @@ mainContainer:
       cpu: "2"
       memory: "4Gi"
   
-mainContainer:
   extraArgs:
     - "--max-model-len"
     - "2048"
@@ -65,8 +68,3 @@ mainContainer:
 
 trustyai:
   enabled: false
-
-# For Model-as-a-Service (MaaS) routing, uncomment and configure:
-# routerGatewayRefs:
-#   - name: maas-default-gateway
-#     namespace: openshift-ingress

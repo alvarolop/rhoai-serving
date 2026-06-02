@@ -61,7 +61,6 @@ mainContainer:
       memory: "512Mi"
       nvidia.com/gpu: null
   
-mainContainer:
   extraArgs:
     - --nireq=10
     - --plugin_config={"PERFORMANCE_HINT":"THROUGHPUT"}
@@ -76,8 +75,3 @@ runtime:
 
 trustyai:
   enabled: true
-
-# For Model-as-a-Service (MaaS) routing, uncomment and configure:
-# routerGatewayRefs:
-#   - name: maas-default-gateway
-#     namespace: openshift-ingress

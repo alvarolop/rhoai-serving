@@ -18,22 +18,47 @@ serving:
   hardwareProfile:
     name: cpu-profile
     namespace: redhat-ods-applications
+  # For Model-as-a-Service (MaaS) routing, uncomment and configure:
+  routerGatewayRefs:
+    - name: maas-default-gateway
+      namespace: openshift-ingress
 
 mainContainer:
   image: "docker.io/vllm/vllm-openai-cpu:v0.22.0"
   extraArgs:
     - "--enforce-eager"
-    - "--gpu-memory-utilization"
-    - "0.5"
+    - "--kv-cache-memory-bytes"
+    - "10737418240" # 10GB (leaving 6GB for model + runtime in 16GB limit)
   resources:
     limits:
       cpu: "8"
-      memory: "8Gi"
+      memory: "16Gi"
     requests:
       cpu: "2"
-      memory: "4Gi"
-  
-# For Model-as-a-Service (MaaS) routing, uncomment and configure:
-routerGatewayRefs:
-  - name: maas-default-gateway
-    namespace: openshift-ingress
+      memory: "16Gi"
+  # Health probes tuned for CPU backend warmup (~40s)
+  startupProbe:
+    httpGet:
+      path: /health
+      port: 8000
+      scheme: HTTPS
+    initialDelaySeconds: 45
+    periodSeconds: 10
+    failureThreshold: 12  # 45s + (12 × 10s) = 165s max startup time
+    timeoutSeconds: 5
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+      scheme: HTTPS
+    periodSeconds: 30
+    failureThreshold: 2  # 2 × 30s = 60s to recover
+    timeoutSeconds: 10
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+      scheme: HTTPS
+    periodSeconds: 10
+    failureThreshold: 3
+    timeoutSeconds: 5

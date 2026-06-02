@@ -14,12 +14,14 @@ serving:
   hardwareProfile:
     name: gpu-profile
     namespace: redhat-ods-applications
+# # For Model-as-a-Service (MaaS) routing, uncomment and configure:
+#   routerGatewayRefs:
+#     - name: maas-default-gateway
+#       namespace: openshift-ingress
 
 mainContainer:
   extraArgs:
     - "--disable-uvicorn-access-log"
-
-mainContainer:
   resources:
     limits:
       cpu: "8"
@@ -29,8 +31,3 @@ mainContainer:
       cpu: "4"
       memory: "64Gi"
       nvidia.com/gpu: "4"
-  
-# For Model-as-a-Service (MaaS) routing, uncomment and configure:
-# routerGatewayRefs:
-#   - name: maas-default-gateway
-#     namespace: openshift-ingress

@@ -34,6 +34,10 @@ serving:
   hardwareProfile:
     name: gpu-profile
     namespace: redhat-ods-applications
+# # For Model-as-a-Service (MaaS) routing, uncomment and configure:
+#   routerGatewayRefs:
+#     - name: maas-default-gateway
+#       namespace: openshift-ingress
 
 # GPU resources for MoE embedding inference
 # Uses OpenShift AI default vLLM GPU image (no override)
@@ -51,7 +55,6 @@ mainContainer:
     - name: TRANSFORMERS_OFFLINE
       value: "0"
 
-mainContainer:
   resources:
     limits:
       cpu: "6"
@@ -61,11 +64,3 @@ mainContainer:
       cpu: "2"
       memory: "12Gi"
       nvidia.com/gpu: "1"
-  
-trustyai:
-  enabled: false
-
-# For Model-as-a-Service (MaaS) routing, uncomment and configure:
-# routerGatewayRefs:
-#   - name: maas-default-gateway
-#     namespace: openshift-ingress

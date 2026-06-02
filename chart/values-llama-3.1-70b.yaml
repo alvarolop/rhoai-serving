@@ -13,16 +13,19 @@ serving:
   hardwareProfile:
     name: gpu-profile
     namespace: redhat-ods-applications
-
-mainContainer:
-  extraArgs:
-    - "--disable-uvicorn-access-log"
+# # For Model-as-a-Service (MaaS) routing, uncomment and configure:
+#   routerGatewayRefs:
+#     - name: maas-default-gateway
+#       namespace: openshift-ingress
 
 # Tensor parallelism: split model across 4 GPUs on a single node
 parallelism:
   tensor: 4
 
 mainContainer:
+  extraArgs:
+    - "--disable-uvicorn-access-log"
+
   resources:
     limits:
       cpu: "8"
@@ -32,8 +35,4 @@ mainContainer:
       cpu: "4"
       memory: "64Gi"
       nvidia.com/gpu: "4"
-  
-# For Model-as-a-Service (MaaS) routing, uncomment and configure:
-# routerGatewayRefs:
-#   - name: maas-default-gateway
-#     namespace: openshift-ingress
+

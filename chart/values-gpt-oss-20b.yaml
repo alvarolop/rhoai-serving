@@ -15,10 +15,9 @@ serving:
   hardwareProfile:
     name: gpu-profile
     namespace: redhat-ods-applications
-  # For Model-as-a-Service (MaaS) routing
-  # When defined, NeMo Guardrails automatically uses internal gateway URL
+# For Model-as-a-Service (MaaS) routing, uncomment and configure:
   routerGatewayRefs:
-    - name: openshift-ai-inference
+    - name: maas-default-gateway
       namespace: openshift-ingress
 
 scaling:
@@ -62,7 +61,6 @@ mainContainer:
     failureThreshold: 3
     timeoutSeconds: 5
 
-mainContainer:
   resources:
     limits:
       cpu: "8"

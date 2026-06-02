@@ -32,6 +32,10 @@ serving:
   hardwareProfile:
     name: gpu-profile
     namespace: redhat-ods-applications
+# # For Model-as-a-Service (MaaS) routing, uncomment and configure:
+#   routerGatewayRefs:
+#     - name: maas-default-gateway
+#       namespace: openshift-ingress
 
 scaling:
   mode: fixed
@@ -42,7 +46,6 @@ mainContainer:
     - --max-model-len=8192
     - --disable-uvicorn-access-log
 
-mainContainer:
   resources:
     limits:
       cpu: "8"
@@ -52,11 +55,6 @@ mainContainer:
       cpu: "2"
       memory: "16Gi"
       nvidia.com/gpu: "1"
-  
-# For Model-as-a-Service (MaaS) routing, uncomment and configure:
-# routerGatewayRefs:
-#   - name: maas-default-gateway
-#     namespace: openshift-ingress
 
 # -- Custom chat template for generative models (vLLM). Use when model lacks built-in template.
 chatTemplate:

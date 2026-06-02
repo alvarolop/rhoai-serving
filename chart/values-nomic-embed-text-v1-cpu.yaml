@@ -33,6 +33,10 @@ serving:
   hardwareProfile:
     name: cpu-profile
     namespace: redhat-ods-applications
+# # For Model-as-a-Service (MaaS) routing, uncomment and configure:
+#   routerGatewayRefs:
+#     - name: maas-default-gateway
+#       namespace: openshift-ingress
 
 # Use official Red Hat AI Inference Services vLLM CPU image
 # vLLM 0.13.0+ supports NomicBertModelC architecture
@@ -52,7 +56,6 @@ mainContainer:
       value: "0"
 
 # CPU resources for embedding inference
-mainContainer:
   resources:
     limits:
       cpu: "8"
@@ -60,11 +63,3 @@ mainContainer:
     requests:
       cpu: "4"
       memory: "8Gi"
-  
-trustyai:
-  enabled: false
-
-# For Model-as-a-Service (MaaS) routing, uncomment and configure:
-# routerGatewayRefs:
-#   - name: maas-default-gateway
-#     namespace: openshift-ingress
