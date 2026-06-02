@@ -1,0 +1,66 @@
+# TinyLlama 1B - CPU-only generative model (no GPU required).
+#
+# Non–Model-as-a-Service: leaves spec.router.gateway empty so OpenShift AI wires llm-d and a
+# normal Route. Uses a CPU-oriented vLLM image (mainContainer) instead of the default CUDA worker.
+#
+# Usage:
+#   helm template tinyllama chart/ -f chart/values.yaml -f chart/values-tinyllama-1b-cpu.yaml
+
+name: granite-3-3-2b-instruct
+namespace:
+  create: false
+  name: rhoai-maas
+
+model:
+  uri: oci://quay.io/redhat-ai-services/modelcar-catalog:granite-3.3-2b-instruct
+  name: granite-3.3-2b-instruct
+serving:
+  hardwareProfile:
+    name: cpu-profile
+    namespace: redhat-ods-applications
+  # For Model-as-a-Service (MaaS) routing, uncomment and configure:
+  routerGatewayRefs:
+    - name: maas-default-gateway
+      namespace: openshift-ingress
+
+mainContainer:
+  image: "docker.io/vllm/vllm-openai-cpu:v0.22.0"
+  extraArgs:
+    - "--enforce-eager"
+    - "--max-model-len"
+    - "32768" # Reduce from default 131K to fit in 8GB KV cache
+    - "--kv-cache-memory-bytes"
+    - "8589934592" # 8GB (leaving 8GB for 4.7GB model + runtime in 16GB limit)
+  resources:
+    limits:
+      cpu: "8"
+      memory: "16Gi"
+    requests:
+      cpu: "2"
+      memory: "16Gi"
+  # Health probes tuned for CPU backend warmup (~90s for 4.7GB model)
+  startupProbe:
+    httpGet:
+      path: /health
+      port: 8000
+      scheme: HTTPS
+    initialDelaySeconds: 60
+    periodSeconds: 10
+    failureThreshold: 18  # 60s + (18 × 10s) = 240s max startup time
+    timeoutSeconds: 5
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+      scheme: HTTPS
+    periodSeconds: 30
+    failureThreshold: 2  # 2 × 30s = 60s to recover
+    timeoutSeconds: 10
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+      scheme: HTTPS
+    periodSeconds: 10
+    failureThreshold: 3
+    timeoutSeconds: 5
