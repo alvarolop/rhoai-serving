@@ -3,7 +3,8 @@
 
 name: qwen3-8b
 namespace:
-  name: model-qwen
+  create: false
+  name: rhoai-maas
 
 model:
   uri: oci://registry.redhat.io/rhelai1/modelcar-qwen3-8b-fp8-dynamic:1.5

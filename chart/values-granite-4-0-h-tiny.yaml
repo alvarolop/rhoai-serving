@@ -11,7 +11,8 @@
 
 name: granite-4-0-h-tiny
 namespace:
-  name: model-granite
+  create: false
+  name: rhoai-maas
 
 model:
   uri: oci://registry.redhat.io/rhai/modelcar-granite-4-0-h-tiny-fp8-dynamic:3.0

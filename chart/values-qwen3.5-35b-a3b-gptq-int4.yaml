@@ -4,7 +4,8 @@
 
 name: qwen3-5-35b-a3b-gptq-int4
 namespace:
-  name: model-qwen
+  create: false
+  name: rhoai-maas
 
 model:
   uri: hf://Qwen/Qwen3.5-35B-A3B-GPTQ-Int4

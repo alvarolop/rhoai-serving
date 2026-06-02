@@ -25,7 +25,8 @@
 
 name: gemma-4-31b-it-fp8-dynamic
 namespace:
-  name: model-gemma4-fp8
+  create: false
+  name: rhoai-maas
 
 model:
   uri: oci://quay.io/alopezme/modelcar-gemma-4-31b-fp8:latest

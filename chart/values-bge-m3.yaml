@@ -12,7 +12,8 @@
 
 name: bge-m3
 namespace:
-  name: model-bge-m3
+  create: false
+  name: rhoai-maas
 
 dashboard:
   genaiUseCase: embedding

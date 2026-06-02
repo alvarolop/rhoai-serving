@@ -24,7 +24,7 @@ namespace:
   # -- Create the namespace if it doesn't exist
   create: true
   # -- Namespace name
-  name: model-serving
+  name: rhoai-maas
   # -- OpenShift console display name (defaults to "Model - <name>" if empty)
   displayName: ""
   # -- OpenShift console description (defaults to "Serving model <name>" if empty)

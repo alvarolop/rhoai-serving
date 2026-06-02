@@ -97,8 +97,8 @@ get_pod_metrics() {
   local pod=$1
   local namespace=$2
 
-  # Get metrics from vLLM /metrics endpoint
-  oc exec -n "${namespace}" "${pod}" -c kserve-container -- curl -s http://localhost:8000/metrics 2>/dev/null || echo ""
+  # Get metrics from vLLM /metrics endpoint (HTTPS with self-signed cert)
+  oc exec -n "${namespace}" "${pod}" -c main -- curl -k -s https://localhost:8000/metrics 2>/dev/null || echo ""
 }
 
 # Function to extract cache hit rate from metrics
@@ -258,7 +258,7 @@ echo "========================================="
 echo "To verify intelligent routing, check vLLM metrics on each pod:"
 echo ""
 for pod in "${PODS[@]}"; do
-  echo "oc exec -n ${NAMESPACE} ${pod} -c kserve-container -- curl -s http://localhost:8000/metrics | grep -E 'cache|prefix'"
+  echo "oc exec -n ${NAMESPACE} ${pod} -c main -- curl -k -s https://localhost:8000/metrics | grep -E 'cache|prefix'"
 done
 echo ""
 

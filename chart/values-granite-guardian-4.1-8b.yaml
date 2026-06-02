@@ -18,7 +18,8 @@
 
 name: granite-guardian-4-1-8b
 namespace:
-  name: model-granite-guardian
+  create: false
+  name: rhoai-maas
 
 dashboard:
   genaiUseCase: moderation

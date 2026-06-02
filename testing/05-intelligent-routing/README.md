@@ -152,10 +152,10 @@ gpt-oss-20b-epp   1/1     1            1           10m
 View cache metrics from a specific pod:
 
 ```bash
-POD=$(oc get pods -n model-gpt-oss -l serving.kserve.io/llminferenceservice=gpt-oss-20b -o jsonpath='{.items[0].metadata.name}')
+POD=$(oc get pods -n model-gpt-oss -l "app.kubernetes.io/name=gpt-oss-20b,app.kubernetes.io/component=llminferenceservice-workload" -o jsonpath='{.items[0].metadata.name}')
 
-oc exec -n model-gpt-oss ${POD} -c kserve-container -- \
-  curl -s http://localhost:8000/metrics | grep -E 'cache|prefix'
+oc exec -n model-gpt-oss ${POD} -c main -- \
+  curl -k -s https://localhost:8000/metrics | grep -E 'cache|prefix'
 ```
 
 **Look for metrics like:**

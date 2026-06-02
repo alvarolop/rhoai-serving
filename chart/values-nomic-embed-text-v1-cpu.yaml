@@ -19,7 +19,8 @@
 
 name: nomic-embed-text-v1-cpu
 namespace:
-  name: model-nomic-embed-cpu
+  create: false
+  name: rhoai-maas
 
 dashboard:
   genaiUseCase: embedding

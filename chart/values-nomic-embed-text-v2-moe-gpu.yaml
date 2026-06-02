@@ -20,7 +20,8 @@
 
 name: nomic-embed-text-v2-moe
 namespace:
-  name: model-nomic-embed-v2
+  create: false
+  name: rhoai-maas
 
 dashboard:
   genaiUseCase: embedding

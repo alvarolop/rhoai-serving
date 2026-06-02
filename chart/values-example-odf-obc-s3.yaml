@@ -7,7 +7,7 @@
 #    kind: ObjectBucketClaim
 #    metadata:
 #      name: my-model-bucket
-#      namespace: model-example-obc
+#      namespace: rhoai-maas
 #    spec:
 #      generateBucketName: my-model-bucket
 #      storageClassName: openshift-storage.noobaa.io
@@ -25,7 +25,8 @@
 
 name: example-obc-model
 namespace:
-  name: model-example-obc
+  create: false
+  name: rhoai-maas
 
 model:
   # S3 path to model within the bucket

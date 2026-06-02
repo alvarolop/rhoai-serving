@@ -6,7 +6,8 @@
 
 name: tinyllama-s3-minio
 namespace:
-  name: model-tinyllama-s3
+  create: false
+  name: rhoai-maas
 
 model:
   # KServe / initializer typically resolve s3://… into the pod (often under /mnt/models); keep in sync with .connection.s3.

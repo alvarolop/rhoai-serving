@@ -6,7 +6,8 @@
 
 name: distilbert
 namespace:
-  name: model-distilbert
+  create: false
+  name: rhoai-maas
 
 monitoring:
   userWorkloadDisabled: true
@@ -42,7 +43,7 @@ scaling:
     maxReplicas: 3
     pollingInterval: 5
     prometheus:
-      query: 'sum(rate(ovms_requests_success{namespace="model-distilbert", method="ModelInfer"}[1m]))'
+      query: 'sum(rate(ovms_requests_success{namespace="rhoai-maas", method="ModelInfer"}[1m]))'
       threshold: 10
 
 model:

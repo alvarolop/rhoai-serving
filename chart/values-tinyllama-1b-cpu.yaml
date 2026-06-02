@@ -8,7 +8,8 @@
 
 name: tinyllama-1b
 namespace:
-  name: model-tinyllama
+  create: false
+  name: rhoai-maas
 
 model:
   uri: oci://quay.io/rh-aiservices-bu/tinyllama:1.0

@@ -46,16 +46,16 @@ for i in "${!PODS[@]}"; do
   # Get full metrics
   echo "📊 Full vLLM Metrics:"
   echo "---"
-  oc exec -n "${NAMESPACE}" "${pod}" -c kserve-container -- \
-    curl -s http://localhost:8000/metrics 2>/dev/null || echo "❌ Failed to retrieve metrics"
+  oc exec -n "${NAMESPACE}" "${pod}" -c main -- \
+    curl -k -s https://localhost:8000/metrics 2>/dev/null || echo "❌ Failed to retrieve metrics"
   echo ""
   echo ""
 
   # Extract key metrics
   echo "🎯 Key Metrics:"
   echo "---"
-  METRICS=$(oc exec -n "${NAMESPACE}" "${pod}" -c kserve-container -- \
-    curl -s http://localhost:8000/metrics 2>/dev/null || echo "")
+  METRICS=$(oc exec -n "${NAMESPACE}" "${pod}" -c main -- \
+    curl -k -s https://localhost:8000/metrics 2>/dev/null || echo "")
 
   # Cache-related metrics
   echo "Cache Metrics:"
