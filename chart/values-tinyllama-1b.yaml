@@ -20,27 +20,11 @@ serving:
     namespace: redhat-ods-applications
 
 mainContainer:
-  image: quay.io/rh-aiservices-bu/vllm-cpu-openai-ubi9:0.3
-  command:
-    - python
-    - -m
-    - vllm.entrypoints.openai.api_server
-  args:
-    - --model
-    - /mnt/models
-    - --port
-    - "8000"
-    - --max-model-len
-    - "2048"
-    - --served-model-name
-    - tinyllama-1b
-    - --ssl-certfile
-    - /var/run/kserve/tls/tls.crt
-    - --ssl-keyfile
-    - /var/run/kserve/tls/tls.key
-    - --disable-uvicorn-access-log
-
-mainContainer:
+  image: "docker.io/vllm/vllm-openai-cpu:v0.22.0"
+  extraArgs:
+    - "--enforce-eager"
+    - "--gpu-memory-utilization"
+    - "0.5"
   resources:
     limits:
       cpu: "8"
@@ -50,6 +34,6 @@ mainContainer:
       memory: "4Gi"
   
 # For Model-as-a-Service (MaaS) routing, uncomment and configure:
-# routerGatewayRefs:
-#   - name: maas-default-gateway
-#     namespace: openshift-ingress
+routerGatewayRefs:
+  - name: maas-default-gateway
+    namespace: openshift-ingress
