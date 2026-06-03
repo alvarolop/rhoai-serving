@@ -1,0 +1,27 @@
+{{- if .Values.serving.maas.enabled }}
+apiVersion: maas.opendatahub.io/v1alpha1
+kind: MaaSModelRef
+metadata:
+  name: {{ .Values.name }}
+  namespace: {{ .Values.namespace.name }}
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+    {{- if .Values.namespace.displayName }}
+    openshift.io/display-name: {{ .Values.namespace.displayName | quote }}
+    {{- else }}
+    openshift.io/display-name: {{ printf "Model - %s" .Values.name | quote }}
+    {{- end }}
+    {{- if .Values.namespace.description }}
+    openshift.io/description: {{ .Values.namespace.description | quote }}
+    {{- else }}
+    openshift.io/description: {{ printf "Serving model %s" .Values.name | quote }}
+    {{- end }}
+    opendatahub.io/genai-use-case: {{ .Values.model.metadata.useCase | quote }}
+    {{- if .Values.model.maxModelLen }}
+    opendatahub.io/context-window: {{ .Values.model.maxModelLen | quote }}
+    {{- end }}
+spec:
+  modelRef:
+    kind: LLMInferenceService
+    name: {{ .Values.name }}
+{{- end }}

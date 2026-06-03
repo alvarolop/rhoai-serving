@@ -13,6 +13,9 @@ model:
   # KServe / initializer typically resolve s3://… into the pod (often under /mnt/models); keep in sync with .connection.s3.
   uri: s3://rhoai-demo-models/tinyllama-1.1b
   name: tinyllama-s3-minio
+  metadata:
+    useCase: chat
+    type: generative
   s3:
     endpoint: "http://minio.minio.svc.cluster.local:9000"
     bucket: "rhoai-demo-models"

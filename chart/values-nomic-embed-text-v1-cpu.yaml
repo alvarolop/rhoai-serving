@@ -22,13 +22,12 @@ namespace:
   create: false
   name: rhoai-maas
 
-dashboard:
-  genaiUseCase: embedding
-  modelType: generative
-
 model:
   uri: hf://nomic-ai/nomic-embed-text-v1
   name: nomic-ai/nomic-embed-text-v1
+  metadata:
+    useCase: embedding
+    type: generative
 serving:
   hardwareProfile:
     name: cpu-profile

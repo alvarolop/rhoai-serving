@@ -32,13 +32,6 @@ namespace:
   # -- Enable Kueue management label for queue enforcement (Red Hat OpenShift AI workload scheduling)
   kueueManaged: true
 
-# @section -- Kueue Configuration
-
-# -- Kueue LocalQueue configuration
-kueue:
-  # -- LocalQueue name used as label kueue.x-k8s.io/queue-name on serving CRs. Must match a LocalQueue in the model namespace.
-  localQueueName: default
-
 # @section -- Monitoring Configuration
 
 # -- OpenShift monitoring configuration for predictive models with KEDA autoscaling
@@ -52,8 +45,6 @@ monitoring:
 serving:
   # -- Serving type: "generative" for vLLM-based LLMs, "predictive" for OpenVINO/ONNX runtimes
   type: generative
-  # -- Enable GPU pod tolerations when resources request nvidia.com/gpu. Matches Kueue ResourceFlavor tolerations.
-  gpuPodTolerations: true
   # -- OpenShift AI HardwareProfile reference
   hardwareProfile:
     # -- HardwareProfile name (cpu-profile for CPU-only, gpu-profile for GPU models)
@@ -73,6 +64,10 @@ serving:
     route:
       # -- Request timeout for long-running inference (e.g., "300s", "5m"). Leave empty for default Gateway timeout.
       requestTimeout: ""
+  # -- MaaS (Models-as-a-Service) catalog integration. Creates MaaSModelRef CR using namespace.displayName, namespace.description, and dashboard.genaiUseCase.
+  maas:
+    # -- Enable MaaSModelRef creation for MaaS catalog
+    enabled: false
 
 # @section -- Scaling Configuration
 
@@ -123,6 +118,14 @@ model:
   name: ""
   # -- Model criticality level for KServe scheduling and prioritization (Critical, High, Medium, Low)
   criticality: Critical
+  # -- Maximum model sequence length (context window). Optional - only set when using --max-model-len vLLM arg or for MaaSModelRef annotation.
+  maxModelLen: ""
+  # -- Model metadata annotations for OpenShift AI dashboard and MaaS catalog
+  metadata:
+    # -- Use case type: "chat", "embedding", "moderation"
+    useCase: chat
+    # -- Model type: "generative", "predictive"
+    type: generative
   # -- OCI registry connection settings (only used when uri starts with oci://)
   oci:
     # -- Docker config JSON for private registries (base64 encoded). Leave empty for public registries.
@@ -154,15 +157,6 @@ hfToken: ""
 auth:
   # -- Enable authentication for the inference service
   enabled: true
-
-# @section -- Dashboard Configuration
-
-# -- OpenShift AI dashboard annotations (generative models only)
-dashboard:
-  # -- Gen AI use case type: "chat", "embedding", "moderation"
-  genaiUseCase: chat
-  # -- Model type annotation
-  modelType: generative
 
 # @section -- Chat Template Configuration
 

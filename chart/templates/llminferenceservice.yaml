@@ -13,9 +13,9 @@ metadata:
     {{- if and (eq $connProto "s3") $s3path }}
     opendatahub.io/connection-path: {{ $s3path | quote }}
     {{- end }}
-    opendatahub.io/genai-use-case: {{ .Values.dashboard.genaiUseCase | quote }}
+    opendatahub.io/genai-use-case: {{ .Values.model.metadata.useCase | quote }}
     security.opendatahub.io/enable-auth: '{{ .Values.auth.enabled }}'
-    opendatahub.io/model-type: {{ .Values.dashboard.modelType | quote }}
+    opendatahub.io/model-type: {{ .Values.model.metadata.type | quote }}
     {{- if .Values.serving.hardwareProfile.name }}
     opendatahub.io/hardware-profile-name: {{ .Values.serving.hardwareProfile.name | quote }}
     opendatahub.io/hardware-profile-namespace: {{ .Values.serving.hardwareProfile.namespace | quote }}
@@ -23,9 +23,7 @@ metadata:
   labels:
     opendatahub.io/dashboard: "true"
     opendatahub.io/genai-asset: "true"
-    {{- if .Values.kueue.localQueueName }}
-    kueue.x-k8s.io/queue-name: {{ .Values.kueue.localQueueName | quote }}
-    {{- end }}
+    kueue.x-k8s.io/queue-name: "default"
 
 spec:
 
@@ -136,12 +134,5 @@ spec:
       - name: chat-template-volume
         configMap:
           name: {{ .Values.name }}-chat-template
-    {{- end }}
-    {{- if and (eq (include "rhoai-serving.hasNvidiaGpu" . | trim) "true") .Values.serving.gpuPodTolerations }}
-    tolerations:
-      # Match Kueue gpu-flavor (operator Exists) or unsuspend Pod updates can fail.
-      - effect: NoSchedule
-        key: nvidia.com/gpu
-        operator: Exists
     {{- end }}
 {{- end }}

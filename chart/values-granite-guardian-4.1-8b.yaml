@@ -21,13 +21,12 @@ namespace:
   create: false
   name: rhoai-maas
 
-dashboard:
-  genaiUseCase: moderation
-  modelType: generative
-
 model:
   uri: oci://quay.io/alopezme/modelcar-granite-guardian-4.1-8b:latest
   name: ibm-granite/granite-guardian-4.1-8b
+  metadata:
+    useCase: moderation
+    type: generative
 serving:
   hardwareProfile:
     name: gpu-profile

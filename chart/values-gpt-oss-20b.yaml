@@ -11,6 +11,9 @@ namespace:
 model:
   uri: oci://registry.redhat.io/rhelai1/modelcar-gpt-oss-20b:1.5
   name: gpt-oss-20b
+  metadata:
+    useCase: chat
+    type: generative
 serving:
   hardwareProfile:
     name: gpu-profile
@@ -105,16 +108,16 @@ guardrails:
     rails:
       input:
         flows:
-          - self check input           # LLM-based semantic check (uses main model)
           - check message length       # Deterministic length check
           - check jailbreak            # Keyword-based fallback
           - check malicious scripts    # Malicious code detection
           - mask sensitive data on input  # Presidio PII masking
+          - self check input           # LLM-based semantic check (uses main model)
       output:
         flows:
-          - self check output          # LLM-based output validation (uses main model)
           - check script in output     # Script tag filtering
           - mask sensitive data on output  # Presidio PII masking
+          - self check output          # LLM-based output validation (uses main model)
 
 # -- Custom chat template for generative models (vLLM). Use when model lacks built-in template.
 chatTemplate:

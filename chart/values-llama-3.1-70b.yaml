@@ -9,6 +9,9 @@ namespace:
 model:
   uri: hf://RedHatAI/Llama-3.1-70B-Instruct-FP8-dynamic
   name: llama-3-1-70b-instruct
+  metadata:
+    useCase: chat
+    type: generative
 serving:
   hardwareProfile:
     name: gpu-profile

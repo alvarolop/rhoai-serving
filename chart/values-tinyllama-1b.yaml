@@ -14,6 +14,9 @@ namespace:
 model:
   uri: oci://quay.io/rh-aiservices-bu/tinyllama:1.0
   name: tinyllama-1b
+  metadata:
+    useCase: chat
+    type: generative
 serving:
   hardwareProfile:
     name: cpu-profile

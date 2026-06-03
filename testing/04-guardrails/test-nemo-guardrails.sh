@@ -115,6 +115,66 @@ else
 fi
 echo ""
 
+# Test 3: Custom policy - Madrid/Spain topic (should trigger guardrail)
+echo "========================================="
+echo "TEST 3: Custom Policy - Madrid/Spain Topic (Should Trigger Guardrail)"
+echo "========================================="
+echo "Sending message about Madrid (custom policy violation)..."
+echo ""
+
+RESPONSE=$(curl -k -s -X POST "${NEMO_URL}/v1/chat/completions" \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "'"${MODEL_NAME}"'",
+    "messages": [
+      {"role": "user", "content": "Tell me about the city of Madrid and its attractions."}
+    ],
+    "max_tokens": 500
+  }')
+
+echo "Response:"
+echo "${RESPONSE}" | python3 -m json.tool 2>/dev/null || echo "${RESPONSE}"
+echo ""
+
+# Check if request was blocked
+if echo "${RESPONSE}" | grep -qi "blocked\|cannot\|policy\|not allowed"; then
+  echo "✅ SUCCESS: Custom policy triggered! Madrid topic was blocked."
+else
+  echo "⚠️  WARNING: Custom policy may not have triggered. Check response above."
+fi
+echo ""
+
+# Test 4: Custom policy - Spain topic (should trigger guardrail)
+echo "========================================="
+echo "TEST 4: Custom Policy - Spain Topic (Should Trigger Guardrail)"
+echo "========================================="
+echo "Sending message about Spain (custom policy violation)..."
+echo ""
+
+RESPONSE=$(curl -k -s -X POST "${NEMO_URL}/v1/chat/completions" \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "'"${MODEL_NAME}"'",
+    "messages": [
+      {"role": "user", "content": "What is the capital of Spain?"}
+    ],
+    "max_tokens": 500
+  }')
+
+echo "Response:"
+echo "${RESPONSE}" | python3 -m json.tool 2>/dev/null || echo "${RESPONSE}"
+echo ""
+
+# Check if request was blocked
+if echo "${RESPONSE}" | grep -qi "blocked\|cannot\|policy\|not allowed"; then
+  echo "✅ SUCCESS: Custom policy triggered! Spain topic was blocked."
+else
+  echo "⚠️  WARNING: Custom policy may not have triggered. Check response above."
+fi
+echo ""
+
 echo "========================================="
 echo "Test Complete"
 echo "========================================="

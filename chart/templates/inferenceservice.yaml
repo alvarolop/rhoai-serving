@@ -27,9 +27,7 @@ metadata:
   labels:
     opendatahub.io/dashboard: "true"
     networking.kserve.io/visibility: exposed
-    {{- if .Values.kueue.localQueueName }}
-    kueue.x-k8s.io/queue-name: {{ .Values.kueue.localQueueName | quote }}
-    {{- end }}
+    kueue.x-k8s.io/queue-name: "default"
 spec:
   predictor:
     automountServiceAccountToken: false
@@ -48,12 +46,6 @@ spec:
     {{- else if eq .Values.scaling.mode "keda" }}
     minReplicas: {{ .Values.scaling.keda.minReplicas }}
     maxReplicas: {{ .Values.scaling.keda.maxReplicas }}
-    {{- end }}
-    {{- if and (eq (include "rhoai-serving.hasNvidiaGpu" . | trim) "true") .Values.serving.gpuPodTolerations }}
-    tolerations:
-      - effect: NoSchedule
-        key: nvidia.com/gpu
-        operator: Exists
     {{- end }}
     model:
       modelFormat:

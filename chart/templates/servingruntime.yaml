@@ -15,9 +15,7 @@ metadata:
     openshift.io/display-name: {{ .Values.runtime.displayName }}
   labels:
     opendatahub.io/dashboard: "true"
-    {{- if .Values.kueue.localQueueName }}
-    kueue.x-k8s.io/queue-name: {{ .Values.kueue.localQueueName | quote }}
-    {{- end }}
+    kueue.x-k8s.io/queue-name: "default"
 spec:
   annotations:
     prometheus.io/port: "8888"

@@ -31,6 +31,9 @@ namespace:
 model:
   uri: oci://quay.io/alopezme/modelcar-gemma-4-31b-fp8:latest
   name: RedHatAI/gemma-4-31B-it-FP8-Dynamic
+  metadata:
+    useCase: chat
+    type: generative
   oci:
     # Optional: add dockerconfigjson if using private registry
     dockerconfigjson: ""

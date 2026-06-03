@@ -34,6 +34,9 @@ model:
   # The bucket name will be read from the OBC ConfigMap
   uri: s3://my-model-bucket/models/tinyllama
   name: TinyLlama/TinyLlama-1.1B-Chat-v1.0
+  metadata:
+    useCase: chat
+    type: generative
   s3:
     # Point to the ObjectBucketClaim name
     # The chart will assume the OBC Secret/ConfigMap exists with this name

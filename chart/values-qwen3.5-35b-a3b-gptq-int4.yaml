@@ -10,6 +10,9 @@ namespace:
 model:
   uri: hf://Qwen/Qwen3.5-35B-A3B-GPTQ-Int4
   name: Qwen/Qwen3.5-35B-A3B-GPTQ-Int4
+  metadata:
+    useCase: chat
+    type: generative
 serving:
   hardwareProfile:
     name: gpu-profile

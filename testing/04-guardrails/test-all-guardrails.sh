@@ -60,7 +60,7 @@ resolve_api_model_name() {
 
 # Configuration
 DEPLOYMENT_NAME="${1:-gpt-oss-20b}"
-NAMESPACE="${2:-model-gpt-oss}"
+NAMESPACE="${2:-rhoai-maas}"
 MODEL_NAME="$(resolve_api_model_name "${DEPLOYMENT_NAME}" "${NAMESPACE}" "${3:-}")"
 
 echo ""
