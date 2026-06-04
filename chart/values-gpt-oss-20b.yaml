@@ -6,7 +6,7 @@
 name: gpt-oss-20b
 namespace:
   create: false
-  name: rhoai-maas
+  name: models-as-a-service
 
 model:
   uri: oci://registry.redhat.io/rhelai1/modelcar-gpt-oss-20b:1.5

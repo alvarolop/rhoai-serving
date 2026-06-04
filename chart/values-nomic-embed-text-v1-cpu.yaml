@@ -20,7 +20,7 @@
 name: nomic-embed-text-v1-cpu
 namespace:
   create: false
-  name: rhoai-maas
+  name: models-as-a-service
 
 model:
   uri: hf://nomic-ai/nomic-embed-text-v1

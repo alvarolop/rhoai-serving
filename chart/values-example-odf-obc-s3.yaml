@@ -26,7 +26,7 @@
 name: example-obc-model
 namespace:
   create: false
-  name: rhoai-maas
+  name: models-as-a-service
 
 model:
   # S3 path to model within the bucket

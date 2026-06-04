@@ -24,7 +24,7 @@ namespace:
   # -- Create the namespace if it doesn't exist
   create: true
   # -- Namespace name
-  name: rhoai-maas
+  name: models-as-a-service
   # -- OpenShift console display name (defaults to "Model - <name>" if empty)
   displayName: ""
   # -- OpenShift console description (defaults to "Serving model <name>" if empty)
@@ -67,7 +67,7 @@ serving:
   # -- MaaS (Models-as-a-Service) catalog integration. Creates MaaSModelRef CR using namespace.displayName, namespace.description, and dashboard.genaiUseCase.
   maas:
     # -- Enable MaaSModelRef creation for MaaS catalog
-    enabled: false
+    enabled: true
 
 # @section -- Scaling Configuration
 

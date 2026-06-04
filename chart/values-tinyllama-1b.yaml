@@ -9,7 +9,7 @@
 name: tinyllama-1b
 namespace:
   create: false
-  name: rhoai-maas
+  name: models-as-a-service
 
 model:
   uri: oci://quay.io/rh-aiservices-bu/tinyllama:1.0

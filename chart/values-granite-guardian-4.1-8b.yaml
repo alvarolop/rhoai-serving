@@ -19,7 +19,7 @@
 name: granite-guardian-4-1-8b
 namespace:
   create: false
-  name: rhoai-maas
+  name: models-as-a-service
 
 model:
   uri: oci://quay.io/alopezme/modelcar-granite-guardian-4.1-8b:latest

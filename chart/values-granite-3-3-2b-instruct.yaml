@@ -9,7 +9,7 @@
 name: granite-3-3-2b-instruct
 namespace:
   create: false
-  name: rhoai-maas
+  name: models-as-a-service
 
 model:
   uri: oci://quay.io/redhat-ai-services/modelcar-catalog:granite-3.3-2b-instruct

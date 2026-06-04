@@ -7,7 +7,7 @@
 name: distilbert
 namespace:
   create: false
-  name: rhoai-maas
+  name: models-as-a-service
 
 monitoring:
   userWorkloadDisabled: true

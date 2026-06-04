@@ -13,7 +13,7 @@
 name: bge-m3
 namespace:
   create: false
-  name: rhoai-maas
+  name: models-as-a-service
 
 model:
   uri: hf://BAAI/bge-m3
