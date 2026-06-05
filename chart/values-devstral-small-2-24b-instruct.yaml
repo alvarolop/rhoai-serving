@@ -27,7 +27,7 @@ namespace:
   name: models-as-a-service
 
 model:
-  uri: hf://mistralai/Devstral-Small-2-24B-Instruct-2512
+  uri: oci://quay.io/alopezme/modelcar-devstral-small-2-24b:latest
   name: mistralai/Devstral-Small-2-24B-Instruct-2512
   # 256k context window - reduce if memory constrained
   maxModelLen: 262144
@@ -40,9 +40,9 @@ serving:
     name: gpu-profile
     namespace: redhat-ods-applications
   # For Model-as-a-Service (MaaS) routing, uncomment and configure:
-  # routerGatewayRefs:
-  #   - name: maas-default-gateway
-  #     namespace: openshift-ingress
+  routerGatewayRefs:
+    - name: maas-default-gateway
+      namespace: openshift-ingress
 
 scaling:
   mode: fixed
@@ -79,10 +79,6 @@ mainContainer:
       cpu: "2"
       memory: "16Gi"
       nvidia.com/gpu: "1"
-
-# Optional: Enable for bias and data drift monitoring
-trustyai:
-  enabled: false
 
 # Optional: Enable NeMo Guardrails for content safety
 guardrails:

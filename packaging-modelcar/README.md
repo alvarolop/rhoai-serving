@@ -92,9 +92,23 @@ podman build --platform linux/amd64 \
 
 - 📦 **Image size:** Matches model size (~5-60GB depending on model)
 - ⏱️ **Build time:** Depends on download speed (HuggingFace → ~10-30min for large models)
-- 🔐 **Private registry:** Add `.dockerconfigjson` to `model.connection.oci` in values file
+- 🔐 **Private registry:** Add `.dockerconfigjson` to `model.oci.dockerconfigjson` in values file
 - 🐛 **Symlink fix:** `download_model.py` uses `local_dir_use_symlinks=False` (see docs/009-modelcar-symlinks-huggingface-blobs.md)
 - 📦 **Layer splitting:** Dockerfile splits large models into multiple layers (~4 files per chunk) to avoid Quay's 20GB layer limit. If you still hit limits, increase `MAXIMUM_LAYER_SIZE` in Quay config.yaml ([KCS #7088073](https://access.redhat.com/solutions/7088073))
+- ⚡ **Mistral models:** Automatically excludes `consolidated*.safetensors` (Mistral's native format) and downloads only `model-*.safetensors` (standard HuggingFace format) since vLLM uses the HF format by default. This **cuts image size in half** (~48GB → ~24GB for Devstral).
+
+## Safetensors Format (Mistral Models)
+
+Mistral models on HuggingFace include **two copies** of weights:
+- `consolidated-*.safetensors` - Mistral's native format (requires `--load-format mistral` in vLLM)
+- `model-*.safetensors` - Standard HuggingFace format (vLLM default)
+
+**Our download script excludes consolidated format** to avoid duplicate weights. If you need the Mistral format, override:
+```bash
+podman build \
+  --build-arg HF_IGNORE_PATTERNS="" \
+  ...
+```
 
 ## Reference
 
