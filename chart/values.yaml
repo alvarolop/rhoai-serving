@@ -57,13 +57,36 @@ serving:
   routerGatewayRefs: []
   # -- Router configuration for intelligent routing and HTTPRoute settings
   router:
-    # -- Enable intelligent routing with EPP scheduler (prefix-aware, KV cache-aware routing). When enabled, KServe automatically creates InferencePool and EPP for intelligent request routing based on KV cache, queue depth, and prefix matching. When disabled, uses basic round-robin load balancing.
-    intelligentRouting:
-      enabled: true
     # -- HTTPRoute configuration for request timeouts and URL rewriting
     route:
       # -- Request timeout for long-running inference (e.g., "300s", "5m"). Leave empty for default Gateway timeout.
       requestTimeout: ""
+    # -- Scheduler configuration (llm-d EPP). Always enabled in RHOAI 3.4+ for intelligent routing.
+    scheduler:
+      # -- Custom EndpointPickerConfig for advanced scheduler tuning. Leave empty for defaults (prefix-cache-scorer, queue-scorer, kv-utilization-scorer with standard weights).
+      # @default -- {} (uses default EPP configuration)
+      endpointPickerConfig: {}
+      # Example: Tune prefix cache and queue weights for better performance
+      # endpointPickerConfig:
+      #   apiVersion: inference.networking.x-k8s.io/v1alpha1
+      #   kind: EndpointPickerConfig
+      #   plugins:
+      #     - type: prefix-cache-scorer
+      #       parameters:
+      #         blockSizeTokens: 5
+      #         maxPrefixBlocksToMatch: 256
+      #     - type: queue-scorer
+      #     - type: kv-cache-utilization-scorer
+      #     - type: max-score-picker
+      #   schedulingProfiles:
+      #     - name: default
+      #       plugins:
+      #         - pluginRef: prefix-cache-scorer
+      #           weight: 60  # Increase for more cache affinity
+      #         - pluginRef: queue-scorer
+      #           weight: 30  # Queue depth impact
+      #         - pluginRef: kv-cache-utilization-scorer
+      #           weight: 10  # KV utilization impact
   # -- MaaS (Models-as-a-Service) catalog integration. Creates MaaSModelRef CR using namespace.displayName, namespace.description, and dashboard.genaiUseCase.
   maas:
     # -- Enable MaaSModelRef creation for MaaS catalog

@@ -1,0 +1,232 @@
+# EndpointPickerConfig Tuning Examples for Performance Testing
+#
+# Test different scheduler configurations and measure improvements in Grafana.
+# Apply these as overlays on top of your model values file.
+#
+# Metrics to monitor in Grafana:
+# - TTFT (Time to First Token) - should improve with better cache affinity
+# - Cache hit rate - should increase with prefix-cache-scorer weight
+# - Queue depth - should balance better with queue-scorer
+# - Request latency variance - should decrease with better routing
+#
+# Usage:
+#   helm template model chart/ \
+#     -f chart/values.yaml \
+#     -f chart/values-<model>.yaml \
+#     -f chart/values-scheduler-tuning-examples.yaml
+
+# =============================================================================
+# EXAMPLE 1: Default Configuration (Baseline)
+# =============================================================================
+# Leave scheduler.endpointPickerConfig empty to use RHOAI defaults.
+# Good starting point for baseline metrics.
+#
+# serving:
+#   router:
+#     scheduler:
+#       endpointPickerConfig: {}
+
+# =============================================================================
+# EXAMPLE 2: Cache-Optimized (Best for conversational workloads)
+# =============================================================================
+# Heavily weights prefix cache affinity to maximize cache hits.
+# Use when:
+# - Multi-turn conversations
+# - Repeated prefixes (system prompts, RAG contexts)
+# - Workloads benefit from cache reuse
+#
+# Expected improvements in Grafana:
+# - 30-50% TTFT reduction on cache hits
+# - 2-3x cache hit rate increase
+#
+# serving:
+#   router:
+#     scheduler:
+#       endpointPickerConfig:
+#         apiVersion: inference.networking.x-k8s.io/v1alpha1
+#         kind: EndpointPickerConfig
+#         plugins:
+#           - type: prefix-cache-scorer
+#             parameters:
+#               blockSizeTokens: 5
+#               maxPrefixBlocksToMatch: 256
+#               lruCapacityPerServer: 31250
+#           - type: queue-scorer
+#           - type: kv-cache-utilization-scorer
+#           - type: max-score-picker
+#         schedulingProfiles:
+#           - name: default
+#             plugins:
+#               - pluginRef: prefix-cache-scorer
+#                 weight: 70  # High cache affinity
+#               - pluginRef: queue-scorer
+#                 weight: 20
+#               - pluginRef: kv-cache-utilization-scorer
+#                 weight: 10
+
+# =============================================================================
+# EXAMPLE 3: Load-Balanced (Best for varied workloads)
+# =============================================================================
+# Balances queue depth, cache affinity, and KV utilization.
+# Use when:
+# - Mixed workload types
+# - Variable request sizes
+# - Need to avoid pod saturation
+#
+# Expected improvements in Grafana:
+# - More even request distribution across pods
+# - Lower max queue depth
+# - Reduced latency variance (p95/p99)
+#
+# serving:
+#   router:
+#     scheduler:
+#       endpointPickerConfig:
+#         apiVersion: inference.networking.x-k8s.io/v1alpha1
+#         kind: EndpointPickerConfig
+#         plugins:
+#           - type: prefix-cache-scorer
+#             parameters:
+#               blockSizeTokens: 5
+#               maxPrefixBlocksToMatch: 256
+#           - type: queue-scorer
+#           - type: kv-cache-utilization-scorer
+#           - type: max-score-picker
+#         schedulingProfiles:
+#           - name: default
+#             plugins:
+#               - pluginRef: prefix-cache-scorer
+#                 weight: 33  # Equal weights for balanced routing
+#               - pluginRef: queue-scorer
+#                 weight: 33
+#               - pluginRef: kv-cache-utilization-scorer
+#                 weight: 34
+
+# =============================================================================
+# EXAMPLE 4: Queue-First (Best for high throughput)
+# =============================================================================
+# Prioritizes queue depth to maximize throughput.
+# Use when:
+# - High request volume
+# - Need to minimize queuing delays
+# - Throughput > latency priority
+#
+# Expected improvements in Grafana:
+# - Lower average queue depth
+# - Higher throughput (requests/sec)
+# - More predictable latency
+#
+# serving:
+#   router:
+#     scheduler:
+#       endpointPickerConfig:
+#         apiVersion: inference.networking.x-k8s.io/v1alpha1
+#         kind: EndpointPickerConfig
+#         plugins:
+#           - type: prefix-cache-scorer
+#             parameters:
+#               blockSizeTokens: 5
+#           - type: queue-scorer
+#           - type: kv-cache-utilization-scorer
+#           - type: max-score-picker
+#         schedulingProfiles:
+#           - name: default
+#             plugins:
+#               - pluginRef: queue-scorer
+#                 weight: 60  # Prioritize queue depth
+#               - pluginRef: prefix-cache-scorer
+#                 weight: 25
+#               - pluginRef: kv-cache-utilization-scorer
+#                 weight: 15
+
+# =============================================================================
+# EXAMPLE 5: Memory-Aware (Best for large context windows)
+# =============================================================================
+# Heavily weights KV cache utilization to avoid OOM.
+# Use when:
+# - Large context windows (128k+)
+# - Memory-constrained GPUs
+# - Need to prevent pod crashes
+#
+# Expected improvements in Grafana:
+# - Lower KV cache utilization peaks
+# - Fewer OOM errors
+# - Better memory distribution
+#
+serving:
+  router:
+    scheduler:
+      endpointPickerConfig:
+        apiVersion: inference.networking.x-k8s.io/v1alpha1
+        kind: EndpointPickerConfig
+        plugins:
+          - type: prefix-cache-scorer
+            parameters:
+              blockSizeTokens: 5
+          - type: queue-scorer
+          - type: kv-cache-utilization-scorer
+          - type: max-score-picker
+        schedulingProfiles:
+          - name: default
+            plugins:
+              - pluginRef: kv-cache-utilization-scorer
+                weight: 60  # Avoid memory-saturated pods
+              - pluginRef: queue-scorer
+                weight: 25
+              - pluginRef: prefix-cache-scorer
+                weight: 15
+
+# =============================================================================
+# TESTING WORKFLOW
+# =============================================================================
+# 1. Deploy with baseline (Example 1 or defaults)
+# 2. Run load test and capture Grafana metrics
+# 3. Deploy with tuned config (Example 2-5)
+# 4. Run same load test
+# 5. Compare metrics in Grafana:
+#    - TTFT (time_to_first_token)
+#    - Cache hit rate (vllm_cache_hit_rate)
+#    - Queue depth (vllm_queue_depth)
+#    - KV cache utilization (vllm_kv_cache_usage_ratio)
+#    - Request latency p50/p95/p99
+#
+# 6. Iterate on weights to find optimal configuration for your workload
+#
+# Key Grafana queries:
+# - TTFT: histogram_quantile(0.5, rate(vllm_time_to_first_token_seconds_bucket[5m]))
+# - Cache hit: rate(vllm_cache_hit_total[5m]) / rate(vllm_cache_access_total[5m])
+# - Queue: avg(vllm_num_requests_waiting)
+# - KV util: avg(vllm_gpu_cache_usage_perc) / 100
+
+# =============================================================================
+# ADVANCED: Saturation Detection
+# =============================================================================
+# Prevent routing to overloaded pods
+#
+# serving:
+#   router:
+#     scheduler:
+#       endpointPickerConfig:
+#         apiVersion: inference.networking.x-k8s.io/v1alpha1
+#         kind: EndpointPickerConfig
+#         plugins:
+#           - type: prefix-cache-scorer
+#           - type: queue-scorer
+#           - type: kv-cache-utilization-scorer
+#           - type: max-score-picker
+#           - type: utilization-detector
+#             parameters:
+#               queueDepthThreshold: 8      # Max queue before "saturated"
+#               kvCacheUtilThreshold: 0.85  # Max KV util before "saturated"
+#               headroom: 0.15              # Safety margin
+#         saturationDetector:
+#           pluginRef: utilization-detector
+#         schedulingProfiles:
+#           - name: default
+#             plugins:
+#               - pluginRef: prefix-cache-scorer
+#                 weight: 40
+#               - pluginRef: queue-scorer
+#                 weight: 30
+#               - pluginRef: kv-cache-utilization-scorer
+#                 weight: 30

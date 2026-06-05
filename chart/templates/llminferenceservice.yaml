@@ -57,7 +57,11 @@ spec:
     {{- else }}
     route: {}
     {{- end }}
-    {{- if .Values.serving.router.intelligentRouting.enabled }}
+    {{- if .Values.serving.router.scheduler.endpointPickerConfig }}
+    scheduler:
+      endpointPickerConfig:
+        {{- toYaml .Values.serving.router.scheduler.endpointPickerConfig | nindent 8 }}
+    {{- else }}
     scheduler: {}
     {{- end }}
 
