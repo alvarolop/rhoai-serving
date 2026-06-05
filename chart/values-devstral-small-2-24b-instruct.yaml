@@ -24,7 +24,7 @@
 name: devstral-small-2-24b-instruct
 namespace:
   create: false
-  name: rhoai-maas
+  name: models-as-a-service
 
 model:
   uri: hf://mistralai/Devstral-Small-2-24B-Instruct-2512

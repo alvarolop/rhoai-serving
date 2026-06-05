@@ -71,6 +71,15 @@ podman build --platform linux/amd64 \
   -t quay.io/alopezme/modelcar-granite-guardian-4.1-8b:latest
 ```
 
+**Devstral Small 2 24B Instruct (agentic coding, 256k context):**
+```bash
+podman build --platform linux/amd64 \
+  -f packaging-modelcar/Dockerfile packaging-modelcar \
+  --build-arg MODEL_REPO=mistralai/Devstral-Small-2-24B-Instruct-2512 \
+  --build-arg HF_TOKEN=$(cat .hf_token) \
+  -t quay.io/alopezme/modelcar-devstral-small-2-24b:latest
+```
+
 ## Image Structure
 
 - **Base:** UBI 9 Python 3.12 (builder) → UBI Micro (runtime)
