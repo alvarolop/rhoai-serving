@@ -1,0 +1,98 @@
+# Devstral Small 2 24B Instruct — Mistral AI's agentic coding model
+#
+# Optimized for software engineering tasks with 256k context window.
+# Light enough to run on single RTX 4090 or H100 (24GB VRAM).
+#
+# Model card: https://huggingface.co/mistralai/Devstral-Small-2-24B-Instruct-2512
+#
+# Key features:
+# - 24B parameters (FP8 quantized)
+# - 256k token context window
+# - Vision support (can analyze images)
+# - Tool calling / function calling
+# - Multi-file editing capabilities
+# - SWE-bench Verified: 68.0%
+#
+# Recommended by Mistral for production deployment with vLLM.
+# Includes tool-calling parser and auto-tool-choice for agentic workflows.
+#
+# Usage:
+#   helm template devstral chart/ \
+#     -f chart/values.yaml \
+#     -f chart/values-devstral-small-2-24b-instruct.yaml | oc apply -f -
+
+name: devstral-small-2-24b-instruct
+namespace:
+  create: false
+  name: rhoai-maas
+
+model:
+  uri: hf://mistralai/Devstral-Small-2-24B-Instruct-2512
+  name: mistralai/Devstral-Small-2-24B-Instruct-2512
+  # 256k context window - reduce if memory constrained
+  maxModelLen: 262144
+  metadata:
+    useCase: chat
+    type: generative
+
+serving:
+  hardwareProfile:
+    name: gpu-profile
+    namespace: redhat-ods-applications
+  # For Model-as-a-Service (MaaS) routing, uncomment and configure:
+  # routerGatewayRefs:
+  #   - name: maas-default-gateway
+  #     namespace: openshift-ingress
+
+scaling:
+  mode: fixed
+  replicas: 1
+
+mainContainer:
+  extraArgs:
+    # Context window configuration (256k tokens)
+    - "--max-model-len"
+    - "262144"
+
+    # Tool calling support (required for agentic workflows)
+    - "--tool-call-parser"
+    - "mistral"
+    - "--enable-auto-tool-choice"
+
+    # Memory and performance tuning for 256k context
+    - "--gpu-memory-utilization"
+    - "0.90"
+
+    # Recommended for large context windows
+    - "--max-num-seqs"
+    - "128"
+
+    # Optional: reduce logging overhead
+    - "--disable-uvicorn-access-log"
+
+  resources:
+    limits:
+      cpu: "8"
+      memory: "64Gi"
+      nvidia.com/gpu: "1"  # Single H100/A100 (40GB+) or RTX 4090
+    requests:
+      cpu: "2"
+      memory: "16Gi"
+      nvidia.com/gpu: "1"
+
+# Optional: Enable for bias and data drift monitoring
+trustyai:
+  enabled: false
+
+# Optional: Enable NeMo Guardrails for content safety
+guardrails:
+  enabled: false
+
+# Notes:
+# - Model requires mistral_common >= 1.8.6 for proper tokenization
+# - Recommended temperature: 0.15 for code generation consistency
+# - For tensor parallelism across 2 GPUs, add to extraArgs:
+#   - "--tensor-parallel-size"
+#   - "2"
+# - Vision support is available but requires special prompt format
+# - Check https://huggingface.co/mistralai/Devstral-Small-2-24B-Instruct-2512 for latest updates
