@@ -123,11 +123,10 @@ else
   echo "  → No cache-aware routing"
   echo "  → No TTFT improvements on shared prefixes"
   echo ""
-  echo "To enable intelligent routing, update your values.yaml:"
-  echo "  serving:"
-  echo "    router:"
-  echo "      intelligentRouting:"
-  echo "        enabled: true"
+  echo "Intelligent routing is always enabled in RHOAI 3.4+."
+  echo "To customize scheduler weights, see:"
+  echo "  chart/values-scheduler-tuning-examples.yaml"
+  echo "  docs/scheduler-tuning-guide.md"
 fi
 echo ""
 

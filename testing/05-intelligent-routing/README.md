@@ -72,8 +72,10 @@ Request distribution: Random across pods
 ## Prerequisites
 
 - Deployed LLMInferenceService with **2+ replicas**
-- Intelligent routing enabled: `serving.router.intelligentRouting.enabled: true`
+- Intelligent routing (scheduler) enabled (default in RHOAI 3.4+)
 - Access to the OpenShift cluster with `oc` CLI
+
+> **Note**: Intelligent routing is always enabled in RHOAI 3.4+. To customize scheduler weights, see `chart/values-scheduler-tuning-examples.yaml` and `docs/scheduler-tuning-guide.md`.
 
 ## Usage
 
@@ -226,16 +228,19 @@ oc exec -n model-gpt-oss ${POD} -c kserve-container -- curl http://localhost:800
 
 ## Disable Intelligent Routing
 
-To test without intelligent routing, update your values file:
+To test different scheduler configurations (e.g., cache-heavy vs queue-heavy routing), use the tuning examples:
 
-```yaml
-serving:
-  router:
-    intelligentRouting:
-      enabled: false
+```bash
+# Cache-optimized (higher cache affinity)
+helm template model chart/ \
+  -f chart/values.yaml \
+  -f chart/values-<model>.yaml \
+  -f chart/values-scheduler-tuning-examples.yaml
+
+# Then run test to compare TTFT improvements
 ```
 
-Redeploy the model and run the test again to compare results.
+See `docs/scheduler-tuning-guide.md` for weight tuning options.
 
 ## Related Documentation
 
