@@ -23,20 +23,17 @@
 # - GPU: Optimized for H100 (80GB VRAM), can run on A100 with reduced context
 # - Context: --max-model-len up to 32768 recommended for H100
 
-name: gemma-4-31b-it-fp8-dynamic
+name: gemma-4-26b-a4b-fp8
 namespace:
   create: false
   name: models-as-a-service
 
 model:
-  uri: oci://quay.io/alopezme/modelcar-gemma-4-31b-fp8:latest
-  name: RedHatAI/gemma-4-31B-it-FP8-Dynamic
+  uri: oci://quay.io/alopezme/modelcar-gemma-4-26b-a4b-fp8:latest
+  name: RedHatAI/gemma-4-26B-A4B-it-FP8-Dynamic
   metadata:
     useCase: chat
     type: generative
-  oci:
-    # Optional: add dockerconfigjson if using private registry
-    dockerconfigjson: ""
 serving:
   hardwareProfile:
     name: gpu-profile
@@ -80,9 +77,3 @@ mainContainer:
       cpu: "2"
       memory: "16Gi"
       nvidia.com/gpu: "1"
-guardrails:
-  enabled: true
-  # Leave empty to auto-generate based on routerGatewayRefs
-  # If routerGatewayRefs exists (under serving above), uses internal gateway
-  # Otherwise, uses direct workload service
-  modelUrl: ""

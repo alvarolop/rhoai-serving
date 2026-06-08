@@ -1,7 +1,8 @@
 # Devstral Small 2 24B Instruct — Mistral AI's agentic coding model
 #
-# Optimized for software engineering tasks with 256k context window.
-# Light enough to run on single RTX 4090 or H100 (24GB VRAM).
+# Optimized for software engineering tasks.
+# Configured for 32k context on 22GB GPUs (L4/RTX 4090).
+# For 256k context, requires 40GB+ GPU (A100/H100).
 #
 # Model card: https://huggingface.co/mistralai/Devstral-Small-2-24B-Instruct-2512
 #
@@ -29,8 +30,8 @@ namespace:
 model:
   uri: oci://quay.io/alopezme/modelcar-devstral-small-2-24b:latest
   name: mistralai/Devstral-Small-2-24B-Instruct-2512
-  # 256k context window - reduce if memory constrained
-  maxModelLen: 262144
+  # 32k context for 22GB GPUs - increase to 256k with 40GB+ GPU
+  maxModelLen: 32768
   metadata:
     useCase: chat
     type: generative
@@ -49,26 +50,29 @@ scaling:
   replicas: 1
 
 mainContainer:
+  image: "docker.io/vllm/vllm-openai:v0.20.0"
+  env:
+    # Fix Mistral tokenizer regex pattern issue
+    # See: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84
+    - name: TRANSFORMERS_TOKENIZER_FIX_MISTRAL_REGEX
+      value: "true"
   extraArgs:
-    # Context window configuration (256k tokens)
+    # Minimal context for 22GB GPU - 24B FP8 model is at the limit
     - "--max-model-len"
-    - "262144"
+    - "16384"
 
     # Tool calling support (required for agentic workflows)
     - "--tool-call-parser"
     - "mistral"
     - "--enable-auto-tool-choice"
 
-    # Memory and performance tuning for 256k context
+    # Aggressive memory reduction for 22GB GPU
     - "--gpu-memory-utilization"
-    - "0.90"
+    - "0.70"
 
-    # Recommended for large context windows
+    # Minimal concurrent sequences
     - "--max-num-seqs"
-    - "128"
-
-    # # Optional: reduce logging overhead
-    # - "--disable-uvicorn-access-log"
+    - "32"
 
   resources:
     limits:
@@ -92,3 +96,132 @@ guardrails:
 #   - "2"
 # - Vision support is available but requires special prompt format
 # - Check https://huggingface.co/mistralai/Devstral-Small-2-24B-Instruct-2512 for latest updates
+
+# -- Custom chat template for generative models (vLLM). Use when model lacks built-in template.
+chatTemplate:
+  # -- Enable custom chat template via ConfigMap
+  enabled: true
+  # -- Jinja2 template content. Mounted at /etc/vllm/template.jinja and passed to vLLM via --chat-template
+  # @default -- "" (provide template in model-specific values file)
+  template: |
+    {#- Default system message if no system prompt is passed. #}
+    {%- set default_system_message = '' %}
+
+    {#- Begin of sequence token. #}
+    {{- bos_token }}
+
+    {#- Handle system prompt if it exists. #}
+    {#- System prompt supports text content or text chunks. #}
+    {%- if messages[0]['role'] == 'system' %}
+        {{- '[SYSTEM_PROMPT]' -}}
+        {%- if messages[0]['content'] is string %}
+            {{- messages[0]['content'] -}}
+        {%- else %}        
+            {%- for block in messages[0]['content'] %}
+                {%- if block['type'] == 'text' %}
+                    {{- block['text'] }}
+                {%- else %}
+                    {{- raise_exception('Only text chunks are supported in system message contents.') }}
+                {%- endif %}
+            {%- endfor %}
+        {%- endif %}
+        {{- '[/SYSTEM_PROMPT]' -}}
+        {%- set loop_messages = messages[1:] %}
+    {%- else %}
+        {%- set loop_messages = messages %}
+        {%- if default_system_message != '' %}
+            {{- '[SYSTEM_PROMPT]' + default_system_message + '[/SYSTEM_PROMPT]' }}
+        {%- endif %}
+    {%- endif %}
+
+
+    {#- Tools definition #}
+    {%- set tools_definition = '' %}
+    {%- set has_tools = false %}
+    {%- if tools is defined and tools is not none and tools|length > 0 %}
+        {%- set has_tools = true %}
+        {%- set tools_definition = '[AVAILABLE_TOOLS]' + (tools| tojson) + '[/AVAILABLE_TOOLS]' %}
+        {{- tools_definition }}
+    {%- endif %}
+
+    {#- Checks for alternating user/assistant messages. #}
+    {%- set ns = namespace(index=0) %}
+    {%- for message in loop_messages %}
+        {%- if message.role == 'user' or (message.role == 'assistant' and (message.tool_calls is not defined or message.tool_calls is none or message.tool_calls | length == 0)) %}
+            {%- if (message['role'] == 'user') != (ns.index % 2 == 0) %}
+                {{- raise_exception('After the optional system message, conversation roles must alternate user and assistant roles except for tool calls and results.') }}
+            {%- endif %}
+            {%- set ns.index = ns.index + 1 %}
+        {%- endif %}
+    {%- endfor %}
+
+    {#- Handle conversation messages. #}
+    {%- for message in loop_messages %}
+
+        {#- User messages supports text content or text and image chunks. #}
+        {%- if message['role'] == 'user' %}
+            {%- if message['content'] is string %}
+                {{- '[INST]' + message['content'] + '[/INST]' }}
+            {%- elif message['content'] | length > 0 %}
+                {{- '[INST]' }}
+                {%- if message['content'] | length == 2 %}
+                    {%- set blocks = message['content'] | sort(attribute='type') %}
+                {%- else %}
+                    {%- set blocks = message['content'] %}
+                {%- endif %}
+                {%- for block in blocks %}
+                    {%- if block['type'] == 'text' %}
+                        {{- block['text'] }}
+                    {%- elif block['type'] in ['image', 'image_url'] %}
+                        {{- '[IMG]' }}
+                    {%- else %}
+                        {{- raise_exception('Only text, image and image_url chunks are supported in user message content.') }}
+                    {%- endif %}
+                {%- endfor %}
+                {{- '[/INST]' }}
+            {%- else %}
+                {{- raise_exception('User message must have a string or a list of chunks in content') }}
+            {%- endif %}
+
+        {#- Assistant messages supports text content or text and image chunks. #}
+        {%- elif message['role'] == 'assistant' %}
+            {%- if (message['content'] is none or message['content'] == '' or message['content']|length == 0) and (message['tool_calls'] is not defined or message['tool_calls'] is none or message['tool_calls']|length == 0) %}
+                {{- raise_exception('Assistant message must have a string or a list of chunks in content or a list of tool calls.') }}
+            {%- endif %}
+
+            {%- if message['content'] is string %}
+                {{- message['content'] }}
+            {%- elif message['content'] | length > 0 %}
+                {%- for block in message['content'] %}
+                    {%- if block['type'] == 'text' %}
+                        {{- block['text'] }}
+                    {%- else %}
+                        {{- raise_exception('Only text chunks are supported in assistant message contents.') }}
+                    {%- endif %}
+                {%- endfor %}
+            {%- endif %}
+            
+            {%- if message['tool_calls'] is defined and message['tool_calls'] is not none and message['tool_calls']|length > 0 %}
+                {%- for tool in message['tool_calls'] %}
+                    {%- set arguments = tool['function']['arguments'] %}
+                    {%- if arguments is not string %}
+                        {%- set arguments = arguments|tojson|safe %}
+                    {%- elif arguments == '' %}
+                        {%- set arguments = '{}' %}
+                    {%- endif %}
+                    {{- '[TOOL_CALLS]' + tool['function']['name'] + '[ARGS]' + arguments }}
+                {%- endfor %}
+            {%- endif %}
+
+            {#- End of sequence token for each assistant messages. #}
+            {{- eos_token }}
+
+        {#- Tool messages only supports text content. #}
+        {%- elif message['role'] == 'tool' %}
+            {{- '[TOOL_RESULTS]' + message['content']|string + '[/TOOL_RESULTS]' }}
+
+        {#- Raise exception for unsupported roles. #}
+        {%- else %}
+            {{- raise_exception('Only user, assistant and tool roles are supported, got ' + message['role'] + '.') }}
+        {%- endif %}
+    {%- endfor %}
