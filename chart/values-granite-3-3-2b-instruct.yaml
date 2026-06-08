@@ -28,6 +28,8 @@ serving:
 
 mainContainer:
   image: "docker.io/vllm/vllm-openai-cpu:v0.22.0"
+  # https://catalog.redhat.com/en/software/containers/rhoai/odh-vllm-cpu-rhel9/68af11f44a00895806f9d8bc?image=6a056a5f6172291f580c7fa3&architecture=s390x#overview
+  # image: "registry.redhat.io/rhoai/odh-vllm-cpu-rhel9:v3.4"
   extraArgs:
     - "--enforce-eager"
     - "--max-model-len"
