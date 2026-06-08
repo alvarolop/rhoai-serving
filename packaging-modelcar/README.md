@@ -36,15 +36,6 @@ podman build --platform linux/amd64 \
   -t quay.io/alopezme/modelcar-gemma-4-31b-fp8:latest
 ```
 
-**Gemma 4 26B NVFP4 (tested on L4):**
-```bash
-podman build --platform linux/amd64 \
-  -f packaging-modelcar/Dockerfile packaging-modelcar \
-  --build-arg MODEL_REPO=RedHatAI/gemma-4-26B-A4B-it-NVFP4 \
-  --build-arg HF_TOKEN=$(cat .hf_token) \
-  -t quay.io/alopezme/modelcar-gemma-4-26b-nvfp4:latest
-```
-
 **TinyLlama (default, for testing):**
 ```bash
 podman build --platform linux/amd64 \
@@ -86,15 +77,12 @@ podman build --platform linux/amd64 \
 - **Model location:** `/models` in the image
 - **Runtime mount:** KServe mounts at `/mnt/models` in the pod
 - **Permissions:** World-readable (`a=rX`), runs as UID 1001
-- **Layer splitting:** Model files are copied in multiple layers (configs + 4 chunks of safetensors) to stay under Quay's 20GB per-layer limit. Small models use fewer layers automatically.
 
 ## Notes
 
 - 📦 **Image size:** Matches model size (~5-60GB depending on model)
 - ⏱️ **Build time:** Depends on download speed (HuggingFace → ~10-30min for large models)
 - 🔐 **Private registry:** Add `.dockerconfigjson` to `model.oci.dockerconfigjson` in values file
-- 🐛 **Symlink fix:** `download_model.py` uses `local_dir_use_symlinks=False` (see docs/009-modelcar-symlinks-huggingface-blobs.md)
-- 📦 **Layer splitting:** Dockerfile splits large models into multiple layers (~4 files per chunk) to avoid Quay's 20GB layer limit. If you still hit limits, increase `MAXIMUM_LAYER_SIZE` in Quay config.yaml ([KCS #7088073](https://access.redhat.com/solutions/7088073))
 - ⚡ **Mistral models:** Automatically excludes `consolidated*.safetensors` (Mistral's native format) and downloads only `model-*.safetensors` (standard HuggingFace format) since vLLM uses the HF format by default. This **cuts image size in half** (~48GB → ~24GB for Devstral).
 
 ## Safetensors Format (Mistral Models)

@@ -4,9 +4,6 @@
 #
 # Reference: https://developers.redhat.com/articles/2025/01/30/build-and-deploy-modelcar-container-openshift-ai
 #
-# Layer splitting: Multiple COPY commands create smaller layers to avoid Quay's 20GB limit.
-# See: https://access.redhat.com/solutions/7088073
-#
 # Default weights: TinyLlama-1.1B-Chat (small, public) — override at build time:
 #   podman build --platform linux/amd64 -f packaging-modelcar/Dockerfile packaging-modelcar \
 #     --build-arg MODEL_REPO=ibm-granite/granite-3.1-2b-instruct \
@@ -30,46 +27,91 @@ ENV MODEL_REPO=${MODEL_REPO}
 ENV HF_TOKEN=${HF_TOKEN}
 
 COPY download_model.py /tmp/download_model.py
-RUN python /tmp/download_model.py && rm -f /tmp/download_model.py
 
-# Split large models into chunks to create smaller layers (avoid Quay 20GB limit)
-# For models like Llama-70B with 15x 4GB shards = 60GB total
-# Split into: configs (<1MB) + 4 chunks of ~15GB each
+# Download + split in ONE layer to avoid duplication in builder
 RUN set -ex; \
+    python /tmp/download_model.py && rm -f /tmp/download_model.py; \
+    \
     cd /models; \
-    mkdir -p /models-config /models-chunk1 /models-chunk2 /models-chunk3 /models-chunk4; \
+    mkdir -p /models-other; \
     \
-    # Move config files
-    for ext in json txt model; do \
-      find . -maxdepth 1 -type f -name "*.$ext" -exec mv {} /models-config/ \; 2>/dev/null || true; \
-    done; \
+    # Create placeholder directories for all possible shards (1-50)
+    # This ensures COPY commands never fail, empty dirs add 0 bytes to final image
+    for i in $(seq 1 50); do mkdir -p /models-shard-${i}; done; \
     \
-    # Split safetensors shards: 4 files per chunk (~16GB each for typical 4GB shards)
-    i=0; \
-    for f in *-of-*.safetensors; do \
+    # Move actual safetensors files to numbered shard directories
+    i=1; \
+    for f in *.safetensors; do \
       [ -f "$f" ] || continue; \
-      chunk=$((i / 4 + 1)); \
-      mv "$f" /models-chunk${chunk}/ 2>/dev/null || true; \
+      mv "$f" /models-shard-${i}/; \
       i=$((i + 1)); \
     done; \
     \
-    # Everything else (single-file models, etc.) stays in /models
-    :
+    find . -maxdepth 1 -type f -exec mv {} /models-other/ \; 2>/dev/null || true; \
+    chmod -R a=rX /models-shard-* /models-other
 
 # Runtime image: only weights + minimal UBI micro base
 FROM registry.access.redhat.com/ubi9/ubi-micro:latest
 
 RUN mkdir -p /models
 
-# Each COPY creates one layer - split to stay under 20GB per layer
-COPY --from=downloader /models-config/ /models/
-COPY --from=downloader /models-chunk1/ /models/
-COPY --from=downloader /models-chunk2/ /models/
-COPY --from=downloader /models-chunk3/ /models/
-COPY --from=downloader /models-chunk4/ /models/
-COPY --from=downloader /models/ /models/
+# Copy each shard as a separate layer (one per safetensors file)
+# Supporting up to 50 shards - empty dirs add no size if model has fewer
+# Llama-3.1-405B has ~191 shards, but most production models have <50
+COPY --from=downloader --chown=1001:0 /models-other/ /models/
+COPY --from=downloader --chown=1001:0 /models-shard-1/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-2/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-3/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-4/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-5/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-6/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-7/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-8/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-9/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-10/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-7/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-8/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-9/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-10/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-11/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-12/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-13/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-14/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-15/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-16/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-17/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-18/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-19/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-20/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-21/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-22/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-23/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-24/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-25/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-26/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-27/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-28/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-29/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-30/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-31/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-32/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-33/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-34/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-35/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-36/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-37/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-38/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-39/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-40/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-41/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-42/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-43/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-44/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-45/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-46/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-47/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-48/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-49/ /models/
+# COPY --from=downloader --chown=1001:0 /models-shard-50/ /models/
 
-RUN chmod -R a=rX /models
-
-# Non-root default; OpenShift may still run as an arbitrary UID with root group — a+rX keeps reads safe.
 USER 1001
