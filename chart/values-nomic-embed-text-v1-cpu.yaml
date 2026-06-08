@@ -45,7 +45,7 @@ mainContainer:
     - "--trust-remote-code"
     - "--max-model-len"
     - "4096"
-    - "--disable-uvicorn-access-log"
+    # - "--disable-uvicorn-access-log"
   # Allow Transformers to resolve auto_map modules from HF Hub
   # (Nomic requires nomic-ai/nomic-bert-2048 modules)
   env:

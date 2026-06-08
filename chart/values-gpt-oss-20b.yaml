@@ -29,7 +29,7 @@ scaling:
 
 mainContainer:
   extraArgs:
-    - "--disable-uvicorn-access-log"
+    # - "--disable-uvicorn-access-log"
     # Context and generation limits for 4000+ character responses
     - "--max-model-len"
     - "8192"  # Total context window (input + output) - conservative for 20B on single GPU

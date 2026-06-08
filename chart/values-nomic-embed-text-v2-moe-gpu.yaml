@@ -46,7 +46,7 @@ mainContainer:
     - "--trust-remote-code"
     - "--max-model-len"
     - "512"  # Nomic v2-moe uses 512 max_position_embeddings
-    - "--disable-uvicorn-access-log"  # Reduce log verbosity (KServe router already logs requests)
+    # - "--disable-uvicorn-access-log"  # Reduce log verbosity (KServe router already logs requests)
   # Allow Transformers to resolve auto_map modules
   env:
     - name: HF_HUB_OFFLINE

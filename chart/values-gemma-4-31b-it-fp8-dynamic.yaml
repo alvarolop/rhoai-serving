@@ -55,7 +55,7 @@ mainContainer:
   # Passed as VLLM_ADDITIONAL_ARGS to KServe wrapper script
   # Configuration tuned for H100 80GB to avoid OOM during CUDA graph capture
   extraArgs:
-    - "--disable-uvicorn-access-log"
+    # - "--disable-uvicorn-access-log"
     - "--chat-template"
     - "/vllm-workspace/examples/tool_chat_template_gemma4.jinja"
     - "--limit-mm-per-prompt"

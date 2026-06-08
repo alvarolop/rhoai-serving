@@ -26,8 +26,8 @@ parallelism:
   tensor: 4
 
 mainContainer:
-  extraArgs:
-    - "--disable-uvicorn-access-log"
+  # extraArgs:
+  #   - "--disable-uvicorn-access-log"
 
   resources:
     limits:

@@ -23,8 +23,8 @@ serving:
 #       namespace: openshift-ingress
 
 mainContainer:
-  extraArgs:
-    - "--disable-uvicorn-access-log"
+  # extraArgs:
+  #   - "--disable-uvicorn-access-log"
   resources:
     limits:
       cpu: "8"

@@ -38,7 +38,7 @@ mainContainer:
   extraArgs:
     - "--max-model-len"
     - "8192"
-    - "--disable-uvicorn-access-log"
+    # - "--disable-uvicorn-access-log"
 
   resources:
     limits:

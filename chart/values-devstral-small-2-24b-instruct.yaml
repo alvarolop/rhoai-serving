@@ -67,8 +67,8 @@ mainContainer:
     - "--max-num-seqs"
     - "128"
 
-    # Optional: reduce logging overhead
-    - "--disable-uvicorn-access-log"
+    # # Optional: reduce logging overhead
+    # - "--disable-uvicorn-access-log"
 
   resources:
     limits:
