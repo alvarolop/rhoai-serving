@@ -4,7 +4,7 @@
 
 ### What the chart deploys
 
-The **`rhoai-serving`** Helm chart targets **OpenShift AI + KServe**. **`deploy-mode.sh`** runs **`helm template`** with **`chart/values.yaml`** plus a model-specific values file and pipes the result to **`oc apply`** (no Helm release object).
+The **`rhoai-serving`** Helm chart targets **OpenShift AI + KServe**. Models are deployed with **`helm template`** using **`chart/values.yaml`** plus a model-specific values file and piping the result to **`oc apply`** (no Helm release object).
 
 Rendered resources can include:
 

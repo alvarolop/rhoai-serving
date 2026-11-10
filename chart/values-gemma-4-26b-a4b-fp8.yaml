@@ -2,8 +2,7 @@
 # Hugging Face repo id: RedHatAI/gemma-4-31B-it-FP8-Dynamic
 #
 # Usage:
-#   helm template gemma4-fp8 chart/ -f chart/values.yaml -f chart/values-gemma-4-31b-it-fp8-dynamic.yaml
-#   ./deploy-model.sh chart/values-gemma-4-31b-it-fp8-dynamic.yaml
+#   helm template gemma4-fp8 chart/ -f chart/values.yaml -f chart/values-gemma-4-26b-a4b-fp8.yaml | oc apply -f -
 #
 # FP8-Dynamic vs NVFP4:
 # - FP8-Dynamic: Scaling factors recalculated dynamically during inference
