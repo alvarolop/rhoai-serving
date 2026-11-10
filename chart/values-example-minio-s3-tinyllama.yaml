@@ -33,7 +33,7 @@ serving:
 #       namespace: openshift-ingress
 
 mainContainer:
-  image: "docker.io/vllm/vllm-openai-cpu:v0.22.0"
+  image: "docker.io/vllm/vllm-openai-cpu:v0.33.0"
   extraArgs:
     - "--enforce-eager"
     - "--kv-cache-memory-bytes"
