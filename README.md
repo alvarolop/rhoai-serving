@@ -164,18 +164,6 @@ oc describe workload -n models-as-a-service | grep -A3 QuotaReserved   # e.g. "L
 cd chart/ && make docs
 ```
 
-### Dashboard connection secret
-
-The chart emits a **Secret** named **`name`**, matching **`opendatahub.io/connections`** on the serving CR. It follows the OpenShift AI **connections API** ([Using the connections API](https://docs.redhat.com/en/documentation/red_hat_openshift_ai_self-managed/3.2/html/working_on_projects/using-connections_projects)):
-
-| `model.connection.protocol` | When | Secret |
-|------------------------------|------|--------|
-| **`uri`** (or **`auto`** when **`model.uri`** does not start with **`oci://`** and legacy OCI fields below are not both set) | `hf://`, `http(s)://`, `pvc://`, or a single **`model.uri`** string the console treats as URI-shaped (including **`s3://…`** if you use that style) | **`type: Opaque`**, label **`opendatahub.io/dashboard`**, annotations **`opendatahub.io/connection-type-protocol: uri`**, **`data.URI`** = base64(**`model.uri`**). |
-| **`oci`** (or **`auto`** when **`model.uri`** starts with **`oci://`**, or legacy **`model.connection.oci.dockerconfigjson`** + **`host`** are both non-empty) | **`oci://`** ModelCar images | **`type: Opaque`**, label **`opendatahub.io/dashboard`**, annotation **`…-protocol: oci`**, **`data.OCI_HOST`** = base64(**`model.uri`**). Optional **`data[".dockerconfigjson"]`** when **`model.connection.oci.dockerconfigjson`** is set (private registry). |
-| **`s3`** (explicit only; **`auto`** does not infer S3) | Models stored in S3-compatible storage | **`type: Opaque`**, labels **`opendatahub.io/dashboard`** + **`opendatahub.io/managed`**, annotation **`opendatahub.io/connection-type-protocol: s3`**, **`data`** for **`AWS_S3_*`** / **`AWS_ACCESS_KEY_ID`** / **`AWS_SECRET_ACCESS_KEY`** (base64), optional **`AWS_DEFAULT_REGION`**. Set **`model.connection.s3.path`** for **`opendatahub.io/connection-path`** on the serving CR; **`model.uri`** may be omitted when the operator injects storage (see RHOAI *Using the connections API*). |
-
-Connection Secrets also set **`openshift.io/description`** and **`openshift.io/display-name`** to **`name`**, matching typical dashboard-created resources.
-
 ### Hugging Face token
 
 Gated or private **`hf://`** checkpoints need a token. Put it in **`.hf_token`** (git-ignored; see **`.hf_token.example`**) or export **`HF_TOKEN`**. The chart creates **`hf-secret`** and mounts **`HF_TOKEN`** only when **`model.uri`** starts with **`hf://`** and **`hfToken`** is non-empty at render time ([KServe / Hugging Face storage](https://kserve.github.io/website/docs/model-serving/storage/providers/hf)). Public **`hf://`** models in this repo (for example Nomic) can deploy without a token.
