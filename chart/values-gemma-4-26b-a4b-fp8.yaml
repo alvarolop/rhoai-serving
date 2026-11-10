@@ -44,10 +44,10 @@ serving:
     - name: maas-default-gateway
       namespace: openshift-ingress
 
-# Use OpenShift AI default vLLM image (supports FP8 natively)
-# Or specify a version if needed: vllm/vllm-openai:v0.13.0+
+# Uses the OpenShift AI default vLLM image (supports FP8 natively; Gemma 4 is supported since RHOAI 3.5).
+# Community image override, kept in case a newer vLLM is needed before it lands in RHOAI:
 mainContainer:
-  image: "docker.io/vllm/vllm-openai:v0.20.0"
+  # image: "docker.io/vllm/vllm-openai:v0.20.0"
   # Passed as VLLM_ADDITIONAL_ARGS to KServe wrapper script
   # Configuration tuned for H100 80GB to avoid OOM during CUDA graph capture
   extraArgs:

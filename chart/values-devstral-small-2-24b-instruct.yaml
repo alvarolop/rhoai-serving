@@ -49,8 +49,10 @@ scaling:
   mode: fixed
   replicas: 1
 
+# Uses the OpenShift AI default vLLM image (supported since RHOAI 3.5).
+# Community image override, kept in case a newer vLLM is needed before it lands in RHOAI:
 mainContainer:
-  image: "docker.io/vllm/vllm-openai:v0.20.0"
+  # image: "docker.io/vllm/vllm-openai:v0.20.0"
   env:
     # Fix Mistral tokenizer regex pattern issue
     # See: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84
