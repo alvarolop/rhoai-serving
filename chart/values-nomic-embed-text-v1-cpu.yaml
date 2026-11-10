@@ -9,7 +9,7 @@
 # **Hub / offline:** auto_map requires nomic-ai/nomic-bert-2048 modules.
 # extraEnv below allows Hub access when cluster permits egress.
 #
-# **Image:** Uses registry.redhat.io/rhaiis/vllm-cpu-rhel9:latest (vLLM 0.13.0+rhai11)
+# **Image:** Uses registry.redhat.io/rhaiis/vllm-cpu-rhel9:3.3 (vLLM 0.13.0+rhai11)
 # Note: rhaiis = Red Hat AI Inference Services
 #
 # Usage:
@@ -37,10 +37,10 @@ serving:
 #     - name: maas-default-gateway
 #       namespace: openshift-ingress
 
-# Use official Red Hat AI Inference Services vLLM CPU image
+# Red Hat AI Inference Server vLLM CPU image (amd64, AVX2). This repo has no "latest" tag: pin an explicit version (3.3 is the newest)
 # vLLM 0.13.0+ supports NomicBertModelC architecture
 mainContainer:
-  image: registry.redhat.io/rhaiis/vllm-cpu-rhel9:latest
+  image: registry.redhat.io/rhaiis/vllm-cpu-rhel9:3.3
   extraArgs:
     - "--trust-remote-code"
     - "--max-model-len"
