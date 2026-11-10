@@ -118,10 +118,10 @@ More tests (load, guardrails, routing, MaaS): [testing/README.md](testing/README
 
 ### Remove a model
 
-Same command with `oc delete`:
+Same command with `oc delete`. Add `--set kueue.createLocalQueue=false` so the `LocalQueue`, which is shared by every model in the namespace, is not deleted:
 
 ```bash
-helm template gpt-oss-20b chart/ -f chart/values.yaml -f chart/values-gpt-oss-20b.yaml | oc delete -f -
+helm template gpt-oss-20b chart/ -f chart/values.yaml -f chart/values-gpt-oss-20b.yaml --set kueue.createLocalQueue=false | oc delete -f -
 ```
 
 ### Namespace
@@ -137,21 +137,24 @@ namespace:
   kueueManaged: true    # label kueue.openshift.io/managed=true (serving runs under Kueue)
 ```
 
-If you use an existing namespace, make sure it has `kueue.openshift.io/managed=true`.
+If you use an existing namespace, make sure it has `kueue.openshift.io/managed=true`. See [Kueue queues](#kueue-queues).
 
-<details>
-<summary>Kueue: pods <code>Pending</code> with <code>SchedulingGated</code> (<code>kueue.x-k8s.io/topology</code>)</summary>
+### Kueue queues
 
-If the **Workload** is **Admitted** but pods stay **Pending** (gates **admission** + **topology**), Kueue Topology Aware Scheduling is waiting for a topology assignment because the **ResourceFlavor** has no `spec.topologyName`. **rhoai-gitops** (`rhoai-installation-chart`) ships a hostname-level `Topology` and sets `topologyName` on `cpu-flavor` and `gpu-flavor` when `distributedWorkloads.topologyAwareScheduling` is `true` (default). Sync that chart, then verify:
+The cluster uses the *reserved-spot* queues from [rhoai-gitops](https://github.com/alvarolop/rhoai-gitops#kueue-queues-reserved-spot): `serving-cq` owns the GPUs (models), `batch-cq` borrows idle ones, and `cluster-queue` serves CPU workloads. Queues are selected through the HardwareProfile, and the chart sets the matching `kueue.x-k8s.io/queue-name` label and creates the `LocalQueue` in the model namespace:
+
+| `serving.hardwareProfile.name` | LocalQueue | ClusterQueue |
+|---|---|---|
+| `gpu-profile` | `serving-lq` | `serving-cq` |
+| `gpu-batch-profile` | `batch-lq` | `batch-cq` |
+| `cpu-profile` | `default` | `cluster-queue` |
+
+Override with `kueue.localQueue` / `kueue.clusterQueue`, or skip the LocalQueue with `kueue.createLocalQueue=false`. If a pod stays `SchedulingGated`, check the Workload:
 
 ```bash
-oc get topology.kueue.x-k8s.io
-oc get resourceflavor.kueue.x-k8s.io gpu-flavor -o yaml | grep -E 'topologyName|nodeLabels' -A2
+oc get workload -n models-as-a-service
+oc describe workload -n models-as-a-service | grep -A3 QuotaReserved   # e.g. "LocalQueue serving-lq doesn't exist"
 ```
-
-If your GPU nodes lack `nvidia.com/gpu.deploy.device-plugin=true`, change the `nodeLabels` in `rhoai-installation-chart/templates/05-distributed-workloads/resourceflavor-gpu-flavor.yaml`.
-
-</details>
 
 ### Chart Documentation (helm-docs)
 

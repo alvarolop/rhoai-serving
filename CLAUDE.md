@@ -133,6 +133,7 @@ chart/
     servingruntime.yaml                # Predictive: ServingRuntime
     trustyai-service.yaml              # Optional: TrustyAI monitoring
     secret-hf-token.yaml               # Optional: HuggingFace token secret
+    localqueue.yaml                    # Kueue LocalQueue (serving-lq / batch-lq / default, derived from the HardwareProfile)
     namespace.yaml
     rbac.yaml
     secret-connection.yaml
