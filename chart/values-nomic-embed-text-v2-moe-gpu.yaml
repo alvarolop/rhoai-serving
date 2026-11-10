@@ -33,10 +33,10 @@ serving:
   hardwareProfile:
     name: gpu-profile
     namespace: redhat-ods-applications
-# # For Model-as-a-Service (MaaS) routing, uncomment and configure:
-#   routerGatewayRefs:
-#     - name: maas-default-gateway
-#       namespace: openshift-ingress
+# For Model-as-a-Service (MaaS) routing, uncomment and configure:
+  routerGatewayRefs:
+    - name: maas-default-gateway
+      namespace: openshift-ingress
 
 # GPU resources for MoE embedding inference
 # Uses OpenShift AI default vLLM GPU image (no override)
