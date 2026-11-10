@@ -1,4 +1,4 @@
-{{- if .Values.serving.maas.enabled }}
+{{- if and .Values.serving.maas.enabled (eq .Values.serving.type "generative") }}
 apiVersion: maas.opendatahub.io/v1alpha1
 kind: MaaSModelRef
 metadata:

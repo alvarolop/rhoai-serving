@@ -103,7 +103,7 @@ serving:
       #           weight: 10  # Spread requests with no cache hit (LRU)
   # -- MaaS (Models-as-a-Service) catalog integration. Creates MaaSModelRef CR using namespace.displayName, namespace.description, and dashboard.genaiUseCase.
   maas:
-    # -- Enable MaaSModelRef creation for MaaS catalog
+    # -- Enable MaaSModelRef creation for MaaS catalog (generative models only: MaaS supports LLMInferenceService, not InferenceService)
     enabled: true
 
 # @section -- Scaling Configuration
