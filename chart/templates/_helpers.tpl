@@ -98,3 +98,29 @@ schemes do not use this Secret even if hfToken is set by mistake.
 {{- else -}}false
 {{- end -}}
 {{- end -}}
+
+{{/*
+Kueue LocalQueue the workload is submitted to. It must match the HardwareProfile's
+spec.scheduling.kueue.localQueueName, so it is derived from serving.hardwareProfile.name
+(rhoai-gitops reserved-spot queues) unless kueue.localQueue is set.
+  gpu-profile       -> serving-lq (ClusterQueue serving-cq)
+  gpu-batch-profile -> batch-lq   (ClusterQueue batch-cq)
+  cpu-profile/other -> default    (ClusterQueue cluster-queue)
+*/}}
+{{- define "rhoai-serving.kueueLocalQueue" -}}
+{{- $hp := .Values.serving.hardwareProfile.name | default "" -}}
+{{- if .Values.kueue.localQueue -}}{{ .Values.kueue.localQueue }}
+{{- else if eq $hp "gpu-profile" -}}serving-lq
+{{- else if eq $hp "gpu-batch-profile" -}}batch-lq
+{{- else -}}default
+{{- end -}}
+{{- end -}}
+
+{{- define "rhoai-serving.kueueClusterQueue" -}}
+{{- $lq := include "rhoai-serving.kueueLocalQueue" . | trim -}}
+{{- if .Values.kueue.clusterQueue -}}{{ .Values.kueue.clusterQueue }}
+{{- else if eq $lq "serving-lq" -}}serving-cq
+{{- else if eq $lq "batch-lq" -}}batch-cq
+{{- else -}}cluster-queue
+{{- end -}}
+{{- end -}}

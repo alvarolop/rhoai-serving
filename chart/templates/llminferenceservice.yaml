@@ -23,7 +23,7 @@ metadata:
   labels:
     opendatahub.io/dashboard: "true"
     opendatahub.io/genai-asset: "true"
-    kueue.x-k8s.io/queue-name: "default"
+    kueue.x-k8s.io/queue-name: {{ include "rhoai-serving.kueueLocalQueue" . | quote }}
 
 spec:
 

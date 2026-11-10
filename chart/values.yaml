@@ -32,6 +32,19 @@ namespace:
   # -- Enable Kueue management label for queue enforcement (Red Hat OpenShift AI workload scheduling)
   kueueManaged: true
 
+# @section -- Kueue Configuration
+
+# -- Kueue queues (rhoai-gitops "reserved-spot": serving-cq owns the GPUs, batch-cq borrows them, cluster-queue for CPU)
+kueue:
+  # -- Create the LocalQueue in the model namespace (requires namespace.kueueManaged). RHOAI only creates "default" in dashboard projects, so GitOps namespaces need it.
+  createLocalQueue: true
+  # -- LocalQueue for the workload label. Empty = derive from serving.hardwareProfile.name (gpu-profile: serving-lq, gpu-batch-profile: batch-lq, otherwise default). Must match the HardwareProfile spec.scheduling.kueue.localQueueName.
+  # @default -- "" (derived)
+  localQueue: ""
+  # -- ClusterQueue the LocalQueue points to. Empty = derive from the LocalQueue (serving-lq: serving-cq, batch-lq: batch-cq, default: cluster-queue).
+  # @default -- "" (derived)
+  clusterQueue: ""
+
 # @section -- Monitoring Configuration
 
 # -- OpenShift monitoring configuration for predictive models with KEDA autoscaling
