@@ -326,7 +326,7 @@ runtime:
   # -- Runtime container image
   image: quay.io/opendatahub/openvino_model_server:stable
   # -- Runtime version
-  version: v2025.4
+  version: v2026.1.0
   # -- Model format specification
   modelFormat:
     # -- Model format name

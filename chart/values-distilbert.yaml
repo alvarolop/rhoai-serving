@@ -71,7 +71,7 @@ mainContainer:
 runtime:
   displayName: "OpenVINO Model Server"
   image: registry.redhat.io/rhoai/odh-openvino-model-server-rhel9:v3.5
-  version: v2025.4
+  version: v2026.1.0
   modelFormat:
     name: onnx
     version: "1"

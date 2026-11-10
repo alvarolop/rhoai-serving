@@ -290,13 +290,13 @@ Deploys a TrustyAIService CR and required CA bundle ConfigMap. See `values-disti
 | namespace.name | string | `"model-serving"` | Namespace name |
 | resources | object | {} (set in model-specific values files) | Container resource limits and requests. Override in values-<model>.yaml files per model requirements. |
 | routerGatewayRefs | list | [] | Gateway API refs for spec.router.gateway. Default empty for standard llm-d + Route. Set for MaaS deployments. |
-| runtime | object | `{"displayName":"OpenVINO Model Server","image":"quay.io/opendatahub/openvino_model_server:stable","modelFormat":{"name":"openvino_ir","version":"opset13"},"version":"v2025.4"}` | Predictive runtime configuration (only used when serving.type is "predictive") |
+| runtime | object | `{"displayName":"OpenVINO Model Server","image":"quay.io/opendatahub/openvino_model_server:stable","modelFormat":{"name":"openvino_ir","version":"opset13"},"version":"v2026.1.0"}` | Predictive runtime configuration (only used when serving.type is "predictive") |
 | runtime.displayName | string | `"OpenVINO Model Server"` | ServingRuntime display name |
 | runtime.image | string | `"quay.io/opendatahub/openvino_model_server:stable"` | Runtime container image |
 | runtime.modelFormat | object | `{"name":"openvino_ir","version":"opset13"}` | Model format specification |
 | runtime.modelFormat.name | string | `"openvino_ir"` | Model format name |
 | runtime.modelFormat.version | string | `"opset13"` | Model format version |
-| runtime.version | string | `"v2025.4"` | Runtime version |
+| runtime.version | string | `"v2026.1.0"` | Runtime version |
 | scaling | object | `{"hpa":{"maxReplicas":5,"minReplicas":1,"scaleMetric":"cpu","scaleTarget":80},"keda":{"maxReplicas":5,"minReplicas":1,"pollingInterval":5,"prometheus":{"authModes":"bearer","query":"","serverAddress":"https://thanos-querier.openshift-monitoring.svc.cluster.local:9092","threshold":2}},"mode":"fixed","replicas":1}` | Scaling configuration for model serving workloads |
 | scaling.hpa | object | `{"maxReplicas":5,"minReplicas":1,"scaleMetric":"cpu","scaleTarget":80}` | HPA autoscaling configuration (only used when mode is "hpa" for predictive models). Uses standard Kubernetes HPA with CPU/memory metrics. |
 | scaling.hpa.maxReplicas | int | `5` | Maximum number of replicas for autoscaling |
