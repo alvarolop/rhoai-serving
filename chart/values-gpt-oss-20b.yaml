@@ -75,7 +75,7 @@ mainContainer:
       nvidia.com/gpu: "1"
   
 guardrails:
-  enabled: true
+  enabled: false
   # Leave empty to auto-generate based on routerGatewayRefs
   # If routerGatewayRefs exists (below), uses internal gateway
   # Otherwise, uses direct workload service
