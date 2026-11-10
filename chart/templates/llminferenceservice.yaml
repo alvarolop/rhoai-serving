@@ -24,6 +24,9 @@ metadata:
     opendatahub.io/dashboard: "true"
     opendatahub.io/genai-asset: "true"
     kueue.x-k8s.io/queue-name: {{ include "rhoai-serving.kueueLocalQueue" . | quote }}
+    {{- with include "rhoai-serving.kueuePriorityClass" . | trim }}
+    kueue.x-k8s.io/priority-class: {{ . | quote }}
+    {{- end }}
 
 spec:
 

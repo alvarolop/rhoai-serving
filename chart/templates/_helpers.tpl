@@ -115,3 +115,18 @@ spec.scheduling.kueue.localQueueName, so it is derived from serving.hardwareProf
 {{- else -}}default
 {{- end -}}
 {{- end -}}
+
+{{/*
+Kueue WorkloadPriorityClass label value. RHOAI 3.5 does not apply the HardwareProfile priorityClass to an
+LLMInferenceService, so it is set on the workload itself. Derived from serving.hardwareProfile.name unless
+kueue.priorityClass is set; empty means no label.
+  gpu-profile       -> model-critical
+  gpu-batch-profile -> batch-nightly
+*/}}
+{{- define "rhoai-serving.kueuePriorityClass" -}}
+{{- $hp := .Values.serving.hardwareProfile.name | default "" -}}
+{{- if .Values.kueue.priorityClass -}}{{ .Values.kueue.priorityClass }}
+{{- else if eq $hp "gpu-profile" -}}model-critical
+{{- else if eq $hp "gpu-batch-profile" -}}batch-nightly
+{{- end -}}
+{{- end -}}

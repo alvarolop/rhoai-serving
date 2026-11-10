@@ -143,13 +143,13 @@ If you use an existing namespace, make sure it has `kueue.openshift.io/managed=t
 
 The cluster uses the *reserved-spot* queues from [rhoai-gitops](https://github.com/alvarolop/rhoai-gitops#kueue-queues-reserved-spot): `serving-cq` owns the GPUs (models), `batch-cq` borrows idle ones, and `cluster-queue` serves CPU workloads. Queues are selected through the HardwareProfile, and the chart only sets the matching `kueue.x-k8s.io/queue-name` label. The `ClusterQueue` and the `LocalQueue` objects (shared by every model in the namespace) are created by rhoai-gitops:
 
-| `serving.hardwareProfile.name` | LocalQueue (label) |
-|---|---|
-| `gpu-profile` | `serving-lq` |
-| `gpu-batch-profile` | `batch-lq` |
-| `cpu-profile` | `default` |
+| `serving.hardwareProfile.name` | LocalQueue (label) | Priority (label) |
+|---|---|---|
+| `gpu-profile` | `serving-lq` | `model-critical` |
+| `gpu-batch-profile` | `batch-lq` | `batch-nightly` |
+| `cpu-profile` | `default` | none |
 
-Override the label with `kueue.localQueue`. The LocalQueue must exist in the namespace. If a pod stays `SchedulingGated`, check the Workload:
+Override the labels with `kueue.localQueue` and `kueue.priorityClass` (for example `model-standard`). RHOAI 3.5 does not apply the HardwareProfile priority to an `LLMInferenceService`, hence the explicit label. The LocalQueue must exist in the namespace. If a pod stays `SchedulingGated`, check the Workload:
 
 ```bash
 oc get workload -n models-as-a-service

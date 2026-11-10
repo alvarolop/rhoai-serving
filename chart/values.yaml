@@ -34,11 +34,14 @@ namespace:
 
 # @section -- Kueue Configuration
 
-# -- Kueue queues (rhoai-gitops "reserved-spot"). The ClusterQueues and the LocalQueues are created by rhoai-gitops, not by this chart.
+# -- Kueue queues (rhoai-gitops "reserved-spot"). The ClusterQueues, LocalQueues and WorkloadPriorityClasses are created by rhoai-gitops, not by this chart.
 kueue:
   # -- LocalQueue for the workload label. Empty = derive from serving.hardwareProfile.name (gpu-profile: serving-lq, gpu-batch-profile: batch-lq, otherwise default). Must match the HardwareProfile spec.scheduling.kueue.localQueueName.
   # @default -- "" (derived)
   localQueue: ""
+  # -- WorkloadPriorityClass for the workload label kueue.x-k8s.io/priority-class (orders models inside serving-cq). Empty = derive from serving.hardwareProfile.name (gpu-profile: model-critical, gpu-batch-profile: batch-nightly, otherwise no label). Other classes: model-standard, batch-interactive.
+  # @default -- "" (derived)
+  priorityClass: ""
 
 # @section -- Monitoring Configuration
 
