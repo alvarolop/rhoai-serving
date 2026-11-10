@@ -2,7 +2,7 @@
 {{- $connProto := include "rhoai-serving.modelConnectionProtocol" . | trim -}}
 {{- $s3path := include "rhoai-serving.modelConnectionS3Path" . | trim -}}
 ---
-apiVersion: serving.kserve.io/v1alpha1
+apiVersion: serving.kserve.io/v1alpha2
 kind: LLMInferenceService
 metadata:
   name: {{ .Values.name }}
@@ -36,7 +36,6 @@ spec:
     uri: {{ $uri | quote }}
     {{- end }}
     name: {{ .Values.model.name | required "model.name is required" | quote }}
-    criticality: {{ .Values.model.criticality | default "Critical" }}
 
   router:
     {{- if .Values.serving.routerGatewayRefs }}
@@ -59,8 +58,10 @@ spec:
     {{- end }}
     {{- if .Values.serving.router.scheduler.endpointPickerConfig }}
     scheduler:
-      endpointPickerConfig:
-        {{- toYaml .Values.serving.router.scheduler.endpointPickerConfig | nindent 8 }}
+      config:
+        ref:
+          name: {{ .Values.name }}-epp-config
+          key: config.yaml
     {{- else }}
     scheduler: {}
     {{- end }}

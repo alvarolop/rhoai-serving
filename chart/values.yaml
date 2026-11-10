@@ -63,12 +63,12 @@ serving:
       requestTimeout: ""
     # -- Scheduler configuration (llm-d EPP). Always enabled in RHOAI 3.4+ for intelligent routing.
     scheduler:
-      # -- Custom EndpointPickerConfig for advanced scheduler tuning. Leave empty for defaults (prefix-cache-scorer, queue-scorer, kv-utilization-scorer with standard weights).
+      # -- Custom EndpointPickerConfig for advanced scheduler tuning. Rendered into a ConfigMap (<name>-epp-config) and referenced via router.scheduler.config.ref. Leave empty for defaults (queue-scorer, kv-cache-utilization-scorer, prefix-cache-scorer, no-hit-lru-scorer with weights 2:2:3:2).
       # @default -- {} (uses default EPP configuration)
       endpointPickerConfig: {}
       # Example: Tune prefix cache and queue weights for better performance
       # endpointPickerConfig:
-      #   apiVersion: inference.networking.x-k8s.io/v1alpha1
+      #   apiVersion: llm-d.ai/v1alpha1
       #   kind: EndpointPickerConfig
       #   plugins:
       #     - type: prefix-cache-scorer
@@ -77,6 +77,7 @@ serving:
       #         maxPrefixBlocksToMatch: 256
       #     - type: queue-scorer
       #     - type: kv-cache-utilization-scorer
+      #     - type: no-hit-lru-scorer
       #     - type: max-score-picker
       #   schedulingProfiles:
       #     - name: default
@@ -87,6 +88,8 @@ serving:
       #           weight: 30  # Queue depth impact
       #         - pluginRef: kv-cache-utilization-scorer
       #           weight: 10  # KV utilization impact
+      #         - pluginRef: no-hit-lru-scorer
+      #           weight: 10  # Spread requests with no cache hit (LRU)
   # -- MaaS (Models-as-a-Service) catalog integration. Creates MaaSModelRef CR using namespace.displayName, namespace.description, and dashboard.genaiUseCase.
   maas:
     # -- Enable MaaSModelRef creation for MaaS catalog
@@ -139,8 +142,6 @@ model:
   uri: ""
   # -- Model name for serving requests
   name: ""
-  # -- Model criticality level for KServe scheduling and prioritization (Critical, High, Medium, Low)
-  criticality: Critical
   # -- Maximum model sequence length (context window). Optional - only set when using --max-model-len vLLM arg or for MaaSModelRef annotation.
   maxModelLen: ""
   # -- Model metadata annotations for OpenShift AI dashboard and MaaS catalog

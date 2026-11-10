@@ -63,8 +63,8 @@ requests:
 {{/*
 OpenShift AI connections API protocol (opendatahub.io/connection-type-protocol on the Secret).
 
-- uri: Opaque, data.URI (base64), annotations connection-type-protocol uri + connection-type-ref uri-v1.
-- oci: Opaque, annotations connection-type-protocol oci + connection-type-ref oci-v1, data.OCI_HOST = base64(model.uri);
+- uri: Opaque, data.URI (base64), annotations connection-type-protocol uri.
+- oci: Opaque, annotations connection-type-protocol oci, data.OCI_HOST = base64(model.uri);
   optional data .dockerconfigjson when model.oci.dockerconfigjson is set (private registry).
 - s3: Opaque, data AWS_* keys (base64), labels dashboard + managed, annotations connection-type + protocol + ref s3.
 

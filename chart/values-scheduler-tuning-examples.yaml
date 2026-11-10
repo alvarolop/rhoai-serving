@@ -9,6 +9,9 @@
 # - Queue depth - should balance better with queue-scorer
 # - Request latency variance - should decrease with better routing
 #
+# Note: the config is rendered into a ConfigMap and referenced from the
+# LLMInferenceService (router.scheduler.config.ref). Restart the EPP pod after changes.
+#
 # Usage:
 #   helm template model chart/ \
 #     -f chart/values.yaml \
@@ -20,6 +23,9 @@
 # =============================================================================
 # Leave scheduler.endpointPickerConfig empty to use RHOAI defaults.
 # Good starting point for baseline metrics.
+# RHOAI 3.5 default: queue-scorer(2), kv-cache-utilization-scorer(2),
+# prefix-cache-scorer(3), no-hit-lru-scorer(2). Weights are relative.
+# (3.4 only used queue-scorer(2) + prefix-cache-scorer(3).)
 #
 # serving:
 #   router:
@@ -43,7 +49,7 @@
 #   router:
 #     scheduler:
 #       endpointPickerConfig:
-#         apiVersion: inference.networking.x-k8s.io/v1alpha1
+#         apiVersion: llm-d.ai/v1alpha1
 #         kind: EndpointPickerConfig
 #         plugins:
 #           - type: prefix-cache-scorer
@@ -53,6 +59,7 @@
 #               lruCapacityPerServer: 31250
 #           - type: queue-scorer
 #           - type: kv-cache-utilization-scorer
+#           - type: no-hit-lru-scorer
 #           - type: max-score-picker
 #         schedulingProfiles:
 #           - name: default
@@ -63,6 +70,8 @@
 #                 weight: 20
 #               - pluginRef: kv-cache-utilization-scorer
 #                 weight: 10
+#               - pluginRef: no-hit-lru-scorer
+#                 weight: 10  # Spread requests with no cache hit (LRU)
 
 # =============================================================================
 # EXAMPLE 3: Load-Balanced (Best for varied workloads)
@@ -82,7 +91,7 @@
 #   router:
 #     scheduler:
 #       endpointPickerConfig:
-#         apiVersion: inference.networking.x-k8s.io/v1alpha1
+#         apiVersion: llm-d.ai/v1alpha1
 #         kind: EndpointPickerConfig
 #         plugins:
 #           - type: prefix-cache-scorer
@@ -91,6 +100,7 @@
 #               maxPrefixBlocksToMatch: 256
 #           - type: queue-scorer
 #           - type: kv-cache-utilization-scorer
+#           - type: no-hit-lru-scorer
 #           - type: max-score-picker
 #         schedulingProfiles:
 #           - name: default
@@ -101,6 +111,8 @@
 #                 weight: 33
 #               - pluginRef: kv-cache-utilization-scorer
 #                 weight: 34
+#               - pluginRef: no-hit-lru-scorer
+#                 weight: 10  # Spread requests with no cache hit (LRU)
 
 # =============================================================================
 # EXAMPLE 4: Queue-First (Best for high throughput)
@@ -120,7 +132,7 @@
 #   router:
 #     scheduler:
 #       endpointPickerConfig:
-#         apiVersion: inference.networking.x-k8s.io/v1alpha1
+#         apiVersion: llm-d.ai/v1alpha1
 #         kind: EndpointPickerConfig
 #         plugins:
 #           - type: prefix-cache-scorer
@@ -128,6 +140,7 @@
 #               blockSizeTokens: 5
 #           - type: queue-scorer
 #           - type: kv-cache-utilization-scorer
+#           - type: no-hit-lru-scorer
 #           - type: max-score-picker
 #         schedulingProfiles:
 #           - name: default
@@ -138,6 +151,8 @@
 #                 weight: 25
 #               - pluginRef: kv-cache-utilization-scorer
 #                 weight: 15
+#               - pluginRef: no-hit-lru-scorer
+#                 weight: 10  # Spread requests with no cache hit (LRU)
 
 # =============================================================================
 # EXAMPLE 5: Memory-Aware (Best for large context windows)
@@ -157,7 +172,7 @@ serving:
   router:
     scheduler:
       endpointPickerConfig:
-        apiVersion: inference.networking.x-k8s.io/v1alpha1
+        apiVersion: llm-d.ai/v1alpha1
         kind: EndpointPickerConfig
         plugins:
           - type: prefix-cache-scorer
@@ -165,12 +180,15 @@ serving:
               blockSizeTokens: 5
           - type: queue-scorer
           - type: kv-cache-utilization-scorer
+          - type: no-hit-lru-scorer
           - type: max-score-picker
         schedulingProfiles:
           - name: default
             plugins:
               - pluginRef: kv-cache-utilization-scorer
                 weight: 60  # Avoid memory-saturated pods
+              - pluginRef: no-hit-lru-scorer
+                weight: 10  # Spread requests with no cache hit (LRU)
               - pluginRef: queue-scorer
                 weight: 25
               - pluginRef: prefix-cache-scorer
@@ -207,12 +225,13 @@ serving:
 #   router:
 #     scheduler:
 #       endpointPickerConfig:
-#         apiVersion: inference.networking.x-k8s.io/v1alpha1
+#         apiVersion: llm-d.ai/v1alpha1
 #         kind: EndpointPickerConfig
 #         plugins:
 #           - type: prefix-cache-scorer
 #           - type: queue-scorer
 #           - type: kv-cache-utilization-scorer
+#           - type: no-hit-lru-scorer
 #           - type: max-score-picker
 #           - type: utilization-detector
 #             parameters:
@@ -230,3 +249,5 @@ serving:
 #                 weight: 30
 #               - pluginRef: kv-cache-utilization-scorer
 #                 weight: 30
+#               - pluginRef: no-hit-lru-scorer
+#                 weight: 10  # Spread requests with no cache hit (LRU)

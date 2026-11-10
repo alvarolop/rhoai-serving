@@ -1,0 +1,11 @@
+{{- if and (eq .Values.serving.type "generative") .Values.serving.router.scheduler.endpointPickerConfig }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.name }}-epp-config
+  namespace: {{ include "rhoai-serving.namespaceName" . }}
+data:
+  config.yaml: |
+    {{- toYaml .Values.serving.router.scheduler.endpointPickerConfig | nindent 4 }}
+{{- end }}
