@@ -118,10 +118,10 @@ More tests (load, guardrails, routing, MaaS): [testing/README.md](testing/README
 
 ### Remove a model
 
-Same command with `oc delete`. Add `--set kueue.createLocalQueue=false` so the `LocalQueue`, which is shared by every model in the namespace, is not deleted:
+Same command with `oc delete`.:
 
 ```bash
-helm template gpt-oss-20b chart/ -f chart/values.yaml -f chart/values-gpt-oss-20b.yaml --set kueue.createLocalQueue=false | oc delete -f -
+helm template gpt-oss-20b chart/ -f chart/values.yaml -f chart/values-gpt-oss-20b.yaml | oc delete -f -
 ```
 
 ### Namespace
@@ -141,15 +141,15 @@ If you use an existing namespace, make sure it has `kueue.openshift.io/managed=t
 
 ### Kueue queues
 
-The cluster uses the *reserved-spot* queues from [rhoai-gitops](https://github.com/alvarolop/rhoai-gitops#kueue-queues-reserved-spot): `serving-cq` owns the GPUs (models), `batch-cq` borrows idle ones, and `cluster-queue` serves CPU workloads. Queues are selected through the HardwareProfile, and the chart sets the matching `kueue.x-k8s.io/queue-name` label and creates the `LocalQueue` in the model namespace:
+The cluster uses the *reserved-spot* queues from [rhoai-gitops](https://github.com/alvarolop/rhoai-gitops#kueue-queues-reserved-spot): `serving-cq` owns the GPUs (models), `batch-cq` borrows idle ones, and `cluster-queue` serves CPU workloads. Queues are selected through the HardwareProfile, and the chart only sets the matching `kueue.x-k8s.io/queue-name` label. The `ClusterQueue` and the `LocalQueue` objects (shared by every model in the namespace) are created by rhoai-gitops:
 
-| `serving.hardwareProfile.name` | LocalQueue | ClusterQueue |
-|---|---|---|
-| `gpu-profile` | `serving-lq` | `serving-cq` |
-| `gpu-batch-profile` | `batch-lq` | `batch-cq` |
-| `cpu-profile` | `default` | `cluster-queue` |
+| `serving.hardwareProfile.name` | LocalQueue (label) |
+|---|---|
+| `gpu-profile` | `serving-lq` |
+| `gpu-batch-profile` | `batch-lq` |
+| `cpu-profile` | `default` |
 
-Override with `kueue.localQueue` / `kueue.clusterQueue`, or skip the LocalQueue with `kueue.createLocalQueue=false`. If a pod stays `SchedulingGated`, check the Workload:
+Override the label with `kueue.localQueue`. The LocalQueue must exist in the namespace. If a pod stays `SchedulingGated`, check the Workload:
 
 ```bash
 oc get workload -n models-as-a-service

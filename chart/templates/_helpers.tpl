@@ -115,12 +115,3 @@ spec.scheduling.kueue.localQueueName, so it is derived from serving.hardwareProf
 {{- else -}}default
 {{- end -}}
 {{- end -}}
-
-{{- define "rhoai-serving.kueueClusterQueue" -}}
-{{- $lq := include "rhoai-serving.kueueLocalQueue" . | trim -}}
-{{- if .Values.kueue.clusterQueue -}}{{ .Values.kueue.clusterQueue }}
-{{- else if eq $lq "serving-lq" -}}serving-cq
-{{- else if eq $lq "batch-lq" -}}batch-cq
-{{- else -}}cluster-queue
-{{- end -}}
-{{- end -}}
