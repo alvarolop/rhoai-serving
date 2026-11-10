@@ -73,36 +73,44 @@ Run it from the repository root with `oc` logged in. All overlays deploy into th
 ### Deploy a model
 
 ```bash
+# ============================ GPU ============================
+
 # Generative (vLLM, 1 GPU)
 helm template qwen3-8b chart/ -f chart/values.yaml -f chart/values-qwen3-8b-fp8-dynamic.yaml | oc apply -f -
 helm template gpt-oss-20b chart/ -f chart/values.yaml -f chart/values-gpt-oss-20b.yaml | oc apply -f -
 helm template granite-4-0-h-tiny chart/ -f chart/values.yaml -f chart/values-granite-4-0-h-tiny.yaml | oc apply -f -
-helm template granite-3-3-2b-instruct chart/ -f chart/values.yaml -f chart/values-granite-3-3-2b-instruct.yaml | oc apply -f -
 helm template devstral-small-2-24b-instruct chart/ -f chart/values.yaml -f chart/values-devstral-small-2-24b-instruct.yaml | oc apply -f -
 helm template gemma-4-26b-a4b-fp8 chart/ -f chart/values.yaml -f chart/values-gemma-4-26b-a4b-fp8.yaml | oc apply -f -
-helm template tinyllama-1b chart/ -f chart/values.yaml -f chart/values-tinyllama-1b.yaml | oc apply -f -
 
-# Generative (vLLM, multi-GPU)
+# Generative (vLLM, multi-GPU: 4 GPUs)
 helm template llama-3-1-70b chart/ -f chart/values.yaml -f chart/values-llama-3.1-70b.yaml --set-file hfToken=.hf_token | oc apply -f -
 helm template qwen3-5-35b-a3b-gptq-int4 chart/ -f chart/values.yaml -f chart/values-qwen3.5-35b-a3b-gptq-int4.yaml | oc apply -f -
 
-# Guardrails
+# Guardrails (1 GPU)
 helm template granite-guardian-4-1-8b chart/ -f chart/values.yaml -f chart/values-granite-guardian-4.1-8b.yaml | oc apply -f -
 
-# Embeddings
+# Embeddings (1 GPU)
 helm template bge-m3 chart/ -f chart/values.yaml -f chart/values-bge-m3.yaml | oc apply -f -
-helm template nomic-embed-text-v1-cpu chart/ -f chart/values.yaml -f chart/values-nomic-embed-text-v1-cpu.yaml | oc apply -f -
 helm template nomic-embed-text-v2-moe chart/ -f chart/values.yaml -f chart/values-nomic-embed-text-v2-moe-gpu.yaml | oc apply -f -
+
+# Scheduler (EPP) tuning: add it as a third overlay on top of any generative model
+helm template gpt-oss-20b chart/ -f chart/values.yaml -f chart/values-gpt-oss-20b.yaml -f chart/values-scheduler-tuning-examples.yaml | oc apply -f -
+
+# ============================ CPU (no GPU needed) ============================
+
+# Generative (vLLM CPU image)
+helm template tinyllama-1b chart/ -f chart/values.yaml -f chart/values-tinyllama-1b.yaml | oc apply -f -
+helm template granite-3-3-2b-instruct chart/ -f chart/values.yaml -f chart/values-granite-3-3-2b-instruct.yaml | oc apply -f -
+
+# Embeddings (vLLM CPU image)
+helm template nomic-embed-text-v1-cpu chart/ -f chart/values.yaml -f chart/values-nomic-embed-text-v1-cpu.yaml | oc apply -f -
 
 # Predictive (OpenVINO + TrustyAI)
 helm template distilbert chart/ -f chart/values.yaml -f chart/values-distilbert.yaml | oc apply -f -
 
-# Model from S3 / MinIO / ODF (examples)
+# Model from S3 / MinIO / ODF (examples, CPU vLLM)
 helm template tinyllama-s3-minio chart/ -f chart/values.yaml -f chart/values-example-minio-s3-tinyllama.yaml | oc apply -f -
 helm template example-obc-model chart/ -f chart/values.yaml -f chart/values-example-odf-obc-s3.yaml | oc apply -f -
-
-# Scheduler (EPP) tuning: add it as a third overlay on top of any generative model
-helm template gpt-oss-20b chart/ -f chart/values.yaml -f chart/values-gpt-oss-20b.yaml -f chart/values-scheduler-tuning-examples.yaml | oc apply -f -
 ```
 
 Only `hf://` models that are gated (Llama) need `--set-file hfToken=.hf_token`. See [Hugging Face token](#hugging-face-token).
