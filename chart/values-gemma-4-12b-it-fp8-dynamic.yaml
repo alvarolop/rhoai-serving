@@ -1,0 +1,42 @@
+# Gemma 4 12B instruction-tuned, FP8-Dynamic (RedHatAI), 15 GB of weights (fits an L4, 23 GB)
+# Hugging Face repo id: RedHatAI/gemma-4-12B-it-FP8-Dynamic
+# Bigger sibling for H100: values-gemma-4-26b-a4b-fp8.yaml
+#
+# Usage: helm template gemma4-12b chart/ -f chart/values.yaml -f chart/values-gemma-4-12b-it-fp8-dynamic.yaml
+
+name: gemma-4-12b-it-fp8-dynamic
+namespace:
+  create: false
+  name: models-as-a-service
+
+model:
+  uri: hf://RedHatAI/gemma-4-12B-it-FP8-Dynamic
+  name: RedHatAI/gemma-4-12B-it-FP8-Dynamic
+  metadata:
+    useCase: chat
+    type: generative
+serving:
+  hardwareProfile:
+    name: gpu-profile
+    namespace: redhat-ods-applications
+# # For Model-as-a-Service (MaaS) routing, uncomment and configure:
+#   routerGatewayRefs:
+#     - name: maas-default-gateway
+#       namespace: openshift-ingress
+
+mainContainer:
+  # Passed as VLLM_ADDITIONAL_ARGS to the KServe wrapper script.
+  # Tight on a 23 GB L4 (untested): text only and a bounded context to leave room for the KV cache.
+  extraArgs:
+    - "--limit-mm-per-prompt='{\"image\":0,\"audio\":0}'"
+    - "--max-model-len"
+    - "16384"
+  resources:
+    limits:
+      cpu: "4"
+      memory: "32Gi"
+      nvidia.com/gpu: "1"
+    requests:
+      cpu: "2"
+      memory: "16Gi"
+      nvidia.com/gpu: "1"
