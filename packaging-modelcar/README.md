@@ -27,6 +27,24 @@ podman push quay.io/alopezme/modelcar-gemma-4-26b-a4b-fp8:latest
 
 ### Common Examples
 
+**Granite 4.1 8B FP8 (L4):**
+```bash
+podman build --platform linux/amd64 \
+  -f packaging-modelcar/Dockerfile packaging-modelcar \
+  --build-arg MODEL_REPO=RedHatAI/granite-4.1-8b-fp8 \
+  -t quay.io/alopezme/modelcar-granite-4.1-8b-fp8:latest
+podman push quay.io/alopezme/modelcar-granite-4.1-8b-fp8:latest
+```
+
+**Gemma 4 12B FP8-Dynamic (L4):**
+```bash
+podman build --platform linux/amd64 \
+  -f packaging-modelcar/Dockerfile packaging-modelcar \
+  --build-arg MODEL_REPO=RedHatAI/gemma-4-12B-it-FP8-Dynamic \
+  -t quay.io/alopezme/modelcar-gemma-4-12b-it-fp8-dynamic:latest
+podman push quay.io/alopezme/modelcar-gemma-4-12b-it-fp8-dynamic:latest
+```
+
 **Gemma 4 31B FP8-Dynamic (recommended for H100):**
 ```bash
 podman build --platform linux/amd64 \
@@ -73,6 +91,7 @@ podman build --platform linux/amd64 \
 
 ## Image Structure
 
+- **Layers:** `split_layers.py` groups the weights into layers of about 5 GB (`--build-arg LAYER_MAX_GB=5`), so the runtime pulls them in parallel and no layer exceeds the Quay limit (20 GB). No per-model edit of the Dockerfile is needed. Up to 10 layers (50 GB); a bigger model makes the build fail with an explicit error (raise `MAX_CHUNKS` in `split_layers.py` and add `COPY` lines). A single file larger than 5 GB gets a layer of its own. Unused layers are empty (~1 KB).
 - **Base:** UBI 9 Python 3.12 (builder) → UBI Micro (runtime)
 - **Model location:** `/models` in the image
 - **Runtime mount:** KServe mounts at `/mnt/models` in the pod

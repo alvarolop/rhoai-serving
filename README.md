@@ -182,7 +182,7 @@ cd chart/ && make docs
 Gated or private **`hf://`** checkpoints need a token. Put it in **`.hf_token`** (git-ignored; see **`.hf_token.example`**) or export **`HF_TOKEN`**. The chart creates **`hf-secret`** and mounts **`HF_TOKEN`** only when **`model.uri`** starts with **`hf://`** and **`hfToken`** is non-empty at render time ([KServe / Hugging Face storage](https://kserve.github.io/website/docs/model-serving/storage/providers/hf)). Public **`hf://`** models in this repo (for example Nomic) can deploy without a token.
 
 > [!TIP]
-> **`oci://`** ModelCars (Qwen3-8B, GPT-OSS 20B, Devstral and Gemma 26B here) do not use Hugging Face download auth.
+> **`oci://`** ModelCars (Qwen3-8B, GPT-OSS 20B, Devstral, Gemma and Granite 4.1 here) do not use Hugging Face download auth.
 
 ### Model notes
 
