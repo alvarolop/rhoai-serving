@@ -1,14 +1,14 @@
-# Llama 3.1 70B - Multi-GPU generative model (4x GPU)
-# Usage: helm template llama chart/ -f chart/values.yaml -f chart/values-llama-3.1-70b.yaml
+# Llama 3.3 70B Instruct FP8-block (RedHatAI) - Multi-GPU generative model (4x GPU, H100-class), 72.7 GB of weights
+# Usage: helm template llama chart/ -f chart/values.yaml -f chart/values-llama-3.3-70b.yaml
 
-name: llama-3-1-70b
+name: llama-3-3-70b
 namespace:
   create: false
   name: models-as-a-service
 
 model:
-  uri: hf://RedHatAI/Llama-3.1-70B-Instruct-FP8-dynamic
-  name: llama-3-1-70b-instruct
+  uri: hf://RedHatAI/Llama-3.3-70B-Instruct-FP8-block
+  name: llama-3-3-70b-instruct
   metadata:
     useCase: chat
     type: generative
