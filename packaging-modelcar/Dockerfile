@@ -9,7 +9,8 @@
 #     --build-arg MODEL_REPO=ibm-granite/granite-3.1-2b-instruct \
 #     -t quay.io/<org>/modelcar-tinyllama:demo
 #
-# Weights are split into ~5 GB layers (LAYER_MAX_GB) by split_layers.py, so no per-model edit is needed.
+# Weights are split into ~5 GB layers (LAYER_MAX_GB) by split_layers.py; uncomment as many chunk COPY
+# lines as the build log asks for (see packaging-modelcar/README.md).
 #
 # Hugging Face token (faster downloads, needed for gated models): pass it as a build secret, which is
 # never stored in any layer or in the image history:
@@ -46,19 +47,25 @@ FROM registry.access.redhat.com/ubi9/ubi-micro:latest
 
 RUN mkdir -p /models
 
-# One layer per directory built by split_layers.py (up to 10 x LAYER_MAX_GB = 50 GB by default).
-# Unused chunk directories are empty: each one adds a ~1 KB layer and no weights.
-# For a bigger model, raise MAX_CHUNKS in split_layers.py and add COPY lines here.
+# One layer per directory built by split_layers.py. The build log prints how many weight layers the
+# model needs: uncomment the COPY lines up to that chunk (up to 10 x LAYER_MAX_GB = 50 GB by default).
+# A forgotten line makes the check below fail the build instead of producing an incomplete image.
 COPY --from=downloader --chown=1001:0 /models-other/ /models/
 COPY --from=downloader --chown=1001:0 /models-chunk-01/ /models/
-COPY --from=downloader --chown=1001:0 /models-chunk-02/ /models/
-COPY --from=downloader --chown=1001:0 /models-chunk-03/ /models/
-COPY --from=downloader --chown=1001:0 /models-chunk-04/ /models/
-COPY --from=downloader --chown=1001:0 /models-chunk-05/ /models/
-COPY --from=downloader --chown=1001:0 /models-chunk-06/ /models/
-COPY --from=downloader --chown=1001:0 /models-chunk-07/ /models/
-COPY --from=downloader --chown=1001:0 /models-chunk-08/ /models/
-COPY --from=downloader --chown=1001:0 /models-chunk-09/ /models/
-COPY --from=downloader --chown=1001:0 /models-chunk-10/ /models/
+# COPY --from=downloader --chown=1001:0 /models-chunk-02/ /models/
+# COPY --from=downloader --chown=1001:0 /models-chunk-03/ /models/
+# COPY --from=downloader --chown=1001:0 /models-chunk-04/ /models/
+# COPY --from=downloader --chown=1001:0 /models-chunk-05/ /models/
+# COPY --from=downloader --chown=1001:0 /models-chunk-06/ /models/
+# COPY --from=downloader --chown=1001:0 /models-chunk-07/ /models/
+# COPY --from=downloader --chown=1001:0 /models-chunk-08/ /models/
+# COPY --from=downloader --chown=1001:0 /models-chunk-09/ /models/
+# COPY --from=downloader --chown=1001:0 /models-chunk-10/ /models/
+
+# Fail the build if some weights are missing, and make the model directory read-only
+RUN --mount=type=bind,from=downloader,source=/meta,target=/meta \
+    set -- /models/*.safetensors; \
+    [ "$#" -eq "$(cat /meta/safetensors-count)" ] || { echo "ERROR: /models has $# safetensors, expected $(cat /meta/safetensors-count): uncomment more COPY lines"; exit 1; }; \
+    chmod 555 /models
 
 USER 1001

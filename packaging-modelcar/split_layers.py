@@ -4,10 +4,10 @@
 Weights are split into /models-chunk-NN directories of about LAYER_MAX_GB each (default 5), so the
 layers are small and the container runtime can pull them in parallel. Everything that is not a
 *.safetensors file (config, tokenizer, chat template...) goes to /models-other. The Dockerfile COPYs
-each directory as its own layer, so it never has to be edited per model.
+each directory as its own layer. The number of layers (COPY lines to uncomment) is printed at the end of the split.
 
 A single file bigger than LAYER_MAX_GB cannot be split: it gets a layer of its own.
-The build fails (instead of silently dropping weights) if the model needs more than MAX_CHUNKS layers.
+The build fails if the model needs more than MAX_CHUNKS layers, and the final image fails if a COPY line is missing.
 """
 import os
 import shutil
@@ -42,11 +42,19 @@ def main() -> int:
         shutil.move(path, os.path.join(CHUNK.format(chunk), name))
         used += size
 
+    # Read-only: the model is only ever read by vLLM
     for d in [OTHER] + [CHUNK.format(i) for i in range(1, MAX_CHUNKS + 1)]:
-        os.chmod(d, 0o755)
         for f in os.listdir(d):
-            os.chmod(os.path.join(d, f), 0o644)
-    print(f"Split {SRC}: {chunk} weight layer(s) of about {LIMIT / 1e9:.0f} GB + config files", file=sys.stderr)
+            os.chmod(os.path.join(d, f), 0o444)
+        os.chmod(d, 0o555)
+
+    # The final image checks that it contains this many safetensors (guards against forgotten COPY lines)
+    count = sum(len([f for f in os.listdir(CHUNK.format(i))]) for i in range(1, MAX_CHUNKS + 1))
+    os.makedirs("/meta", exist_ok=True)
+    with open("/meta/safetensors-count", "w") as fh:
+        fh.write(str(count))
+    print(f"Split {SRC}: {count} safetensors in {chunk} weight layer(s) of about {LIMIT / 1e9:.0f} GB "
+          f"-> uncomment COPY lines up to /models-chunk-{chunk:02d} in the Dockerfile", file=sys.stderr)
     return 0
 
 
