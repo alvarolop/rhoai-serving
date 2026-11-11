@@ -73,28 +73,32 @@ Run it from the repository root with `oc` logged in. All overlays deploy into th
 ### Deploy a model
 
 ```bash
-# ============================ GPU ============================
+# ===================== GPU: fits 1x L4 (AWS g6 demo) =====================
 
-# Generative (vLLM, 1 GPU)
+# Generative (vLLM)
 helm template qwen3-8b chart/ -f chart/values.yaml -f chart/values-qwen3-8b-fp8-dynamic.yaml | oc apply -f -
 helm template gpt-oss-20b chart/ -f chart/values.yaml -f chart/values-gpt-oss-20b.yaml | oc apply -f -
 helm template granite-4-0-h-tiny chart/ -f chart/values.yaml -f chart/values-granite-4-0-h-tiny.yaml | oc apply -f -
 helm template devstral-small-2-24b-instruct chart/ -f chart/values.yaml -f chart/values-devstral-small-2-24b-instruct.yaml | oc apply -f -
-helm template gemma-4-26b-a4b-fp8 chart/ -f chart/values.yaml -f chart/values-gemma-4-26b-a4b-fp8.yaml | oc apply -f -
 
-# Generative (vLLM, multi-GPU: 4 GPUs)
-helm template llama-3-1-70b chart/ -f chart/values.yaml -f chart/values-llama-3.1-70b.yaml --set-file hfToken=.hf_token | oc apply -f -
-helm template qwen3-5-35b-a3b-gptq-int4 chart/ -f chart/values.yaml -f chart/values-qwen3.5-35b-a3b-gptq-int4.yaml | oc apply -f -
-
-# Guardrails (1 GPU)
+# Guardrails
 helm template granite-guardian-4-1-8b chart/ -f chart/values.yaml -f chart/values-granite-guardian-4.1-8b.yaml | oc apply -f -
 
-# Embeddings (1 GPU)
+# Embeddings
 helm template bge-m3 chart/ -f chart/values.yaml -f chart/values-bge-m3.yaml | oc apply -f -
 helm template nomic-embed-text-v2-moe chart/ -f chart/values.yaml -f chart/values-nomic-embed-text-v2-moe-gpu.yaml | oc apply -f -
 
 # Scheduler (EPP) tuning: add it as a third overlay on top of any generative model
 helm template gpt-oss-20b chart/ -f chart/values.yaml -f chart/values-gpt-oss-20b.yaml -f chart/values-scheduler-tuning-examples.yaml | oc apply -f -
+
+# ===================== GPU: needs H100 / multi-GPU (production) =====================
+
+# Generative (vLLM, 1x H100)
+helm template gemma-4-26b-a4b-fp8 chart/ -f chart/values.yaml -f chart/values-gemma-4-26b-a4b-fp8.yaml | oc apply -f -
+
+# Generative (vLLM, 4 GPUs)
+helm template llama-3-1-70b chart/ -f chart/values.yaml -f chart/values-llama-3.1-70b.yaml --set-file hfToken=.hf_token | oc apply -f -
+helm template qwen3-5-35b-a3b-gptq-int4 chart/ -f chart/values.yaml -f chart/values-qwen3.5-35b-a3b-gptq-int4.yaml | oc apply -f -
 
 # ============================ CPU (no GPU needed) ============================
 
