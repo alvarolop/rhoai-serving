@@ -50,6 +50,23 @@ podman build --platform linux/amd64 \
 podman push quay.io/alopezme/modelcar-gemma-4-12b-it-fp8-dynamic:latest
 ```
 
+### Small models without safetensors (single layer)
+
+`Dockerfile.small` is a parallel Dockerfile for **small** models (embeddings, rerankers...) whose weights are `pytorch_model.bin` / `*.pt` instead of safetensors, such as `BAAI/bge-m3`. The whole model goes into **one layer** (so keep it to a few GB; Quay rejects layers over 20 GB), `onnx/` and images are skipped, and the files are read-only. vLLM loads `.bin` weights when there are no safetensors, so no extra flag is needed.
+
+**BGE-M3 (embeddings, L4):**
+```bash
+# Weight layers: 1 (single layer, nothing to uncomment)
+podman build --platform linux/amd64 \
+  -f packaging-modelcar/Dockerfile.small packaging-modelcar \
+  --build-arg MODEL_REPO=BAAI/bge-m3 \
+  --secret id=hf,src=.hf_token \
+  -t quay.io/alopezme/modelcar-bge-m3:latest
+podman push quay.io/alopezme/modelcar-bge-m3:latest
+```
+
+What to download can be changed with `--build-arg HF_ALLOW_PATTERNS=...` and `--build-arg HF_IGNORE_PATTERNS=...`.
+
 **Gemma 4 31B FP8-Dynamic (recommended for H100):**
 ```bash
 # Weight layers: 2 -> uncomment COPY /models-chunk-02 in the Dockerfile
