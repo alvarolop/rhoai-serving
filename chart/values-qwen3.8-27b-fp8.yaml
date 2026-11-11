@@ -1,0 +1,37 @@
+# Qwen3.8-27B FP8 (RedHatAI) - Dense 27B, 30.9 GB of weights. Needs an H100-class GPU (80 GB).
+# Replaces Qwen3.5-35B-A3B GPTQ-Int4, which used 4 GPUs.
+# Usage: helm template qwen38-27b-fp8 chart/ -f chart/values.yaml -f chart/values-qwen3.8-27b-fp8.yaml
+
+name: qwen38-27b-fp8
+namespace:
+  create: false
+  name: models-as-a-service
+
+model:
+  uri: hf://RedHatAI/Qwen3.8-27B-FP8
+  name: RedHatAI/Qwen3.8-27B-FP8
+  metadata:
+    useCase: chat
+    type: generative
+serving:
+  hardwareProfile:
+    name: gpu-profile
+    namespace: redhat-ods-applications
+# # For Model-as-a-Service (MaaS) routing, uncomment and configure:
+#   routerGatewayRefs:
+#     - name: maas-default-gateway
+#       namespace: openshift-ingress
+
+mainContainer:
+  # extraArgs:
+  #   - "--max-model-len"
+  #   - "32768"
+  resources:
+    limits:
+      cpu: "8"
+      memory: "64Gi"
+      nvidia.com/gpu: "1"
+    requests:
+      cpu: "4"
+      memory: "32Gi"
+      nvidia.com/gpu: "1"
