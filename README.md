@@ -78,7 +78,8 @@ Run it from the repository root with `oc` logged in. All overlays deploy into th
 # Generative (vLLM)
 helm template qwen3-8b chart/ -f chart/values.yaml -f chart/values-qwen3-8b-fp8-dynamic.yaml | oc apply -f -
 helm template gpt-oss-20b chart/ -f chart/values.yaml -f chart/values-gpt-oss-20b.yaml | oc apply -f -
-helm template granite-4-0-h-tiny chart/ -f chart/values.yaml -f chart/values-granite-4-0-h-tiny.yaml | oc apply -f -
+helm template granite-4-1-8b-fp8 chart/ -f chart/values.yaml -f chart/values-granite-4-1-8b-fp8.yaml | oc apply -f -
+helm template gemma-4-12b-it-fp8-dynamic chart/ -f chart/values.yaml -f chart/values-gemma-4-12b-it-fp8-dynamic.yaml | oc apply -f -
 helm template devstral-small-2-24b-instruct chart/ -f chart/values.yaml -f chart/values-devstral-small-2-24b-instruct.yaml | oc apply -f -
 
 # Guardrails
@@ -95,10 +96,10 @@ helm template gpt-oss-20b chart/ -f chart/values.yaml -f chart/values-gpt-oss-20
 
 # Generative (vLLM, 1x H100)
 helm template gemma-4-26b-a4b-fp8 chart/ -f chart/values.yaml -f chart/values-gemma-4-26b-a4b-fp8.yaml | oc apply -f -
+helm template qwen38-27b-fp8 chart/ -f chart/values.yaml -f chart/values-qwen3.8-27b-fp8.yaml | oc apply -f -
 
 # Generative (vLLM, 4 GPUs)
-helm template llama-3-1-70b chart/ -f chart/values.yaml -f chart/values-llama-3.1-70b.yaml --set-file hfToken=.hf_token | oc apply -f -
-helm template qwen3-5-35b-a3b-gptq-int4 chart/ -f chart/values.yaml -f chart/values-qwen3.5-35b-a3b-gptq-int4.yaml | oc apply -f -
+helm template llama-3-3-70b chart/ -f chart/values.yaml -f chart/values-llama-3.3-70b.yaml | oc apply -f -
 
 # ============================ CPU (no GPU needed) ============================
 
@@ -117,7 +118,7 @@ helm template tinyllama-s3-minio chart/ -f chart/values.yaml -f chart/values-exa
 helm template example-obc-model chart/ -f chart/values.yaml -f chart/values-example-odf-obc-s3.yaml | oc apply -f -
 ```
 
-Only `hf://` models that are gated (Llama) need `--set-file hfToken=.hf_token`. See [Hugging Face token](#hugging-face-token).
+None of the models listed here is gated. Gated `hf://` models need `--set-file hfToken=.hf_token`, see [Hugging Face token](#hugging-face-token).
 
 ### Test a model
 
@@ -181,7 +182,7 @@ cd chart/ && make docs
 Gated or private **`hf://`** checkpoints need a token. Put it in **`.hf_token`** (git-ignored; see **`.hf_token.example`**) or export **`HF_TOKEN`**. The chart creates **`hf-secret`** and mounts **`HF_TOKEN`** only when **`model.uri`** starts with **`hf://`** and **`hfToken`** is non-empty at render time ([KServe / Hugging Face storage](https://kserve.github.io/website/docs/model-serving/storage/providers/hf)). Public **`hf://`** models in this repo (for example Nomic) can deploy without a token.
 
 > [!TIP]
-> **`oci://`** ModelCars (Qwen3-8B, GPT-OSS 20B, Granite 4.0 H Tiny here) do not use Hugging Face download auth.
+> **`oci://`** ModelCars (Qwen3-8B, GPT-OSS 20B, Devstral and Gemma 26B here) do not use Hugging Face download auth.
 
 ### Model notes
 

@@ -186,7 +186,7 @@ parallelism:
 ```
 
 **Examples:**
-- **Llama 3.1 70B** (`values-llama-3.1-70b.yaml`): Uses `tensor: 4` to split the model across 4 GPUs on a single node
+- **Llama 3.3 70B** (`values-llama-3.3-70b.yaml`): Uses `tensor: 4` to split the model across 4 GPUs on a single node
 - **Future multi-node deployments**: Combine `tensor`, `data`, and `dataLocal` for distributed serving
 
 Only applies to generative models (`LLMInferenceService`). Predictive models use replica-based scaling instead.
