@@ -4,7 +4,7 @@ Build OCI container images with HuggingFace model weights for Red Hat OpenShift 
 
 ## Prerequisites
 
-**HuggingFace Token:** Create `.hf_token` in repo root (see `.hf_token.example`)
+**HuggingFace Token:** Create `.hf_token` in repo root (see `.hf_token.example`). It is passed to the build as a secret (`--secret id=hf,src=.hf_token`), so it is never stored in the image or its history. Not required for public models, but downloads are faster and gated models need it.
 ```bash
 echo "hf_yourTokenHere" > .hf_token
 ```
@@ -18,7 +18,7 @@ echo "hf_yourTokenHere" > .hf_token
 podman build --platform linux/amd64 \
   -f packaging-modelcar/Dockerfile packaging-modelcar \
   --build-arg MODEL_REPO=RedHatAI/gemma-4-26B-A4B-it-FP8-Dynamic \
-  --build-arg HF_TOKEN=$(cat .hf_token) \
+  --secret id=hf,src=.hf_token \
   -t quay.io/alopezme/modelcar-gemma-4-26b-a4b-fp8:latest
 
 # Push to registry
@@ -32,6 +32,7 @@ podman push quay.io/alopezme/modelcar-gemma-4-26b-a4b-fp8:latest
 podman build --platform linux/amd64 \
   -f packaging-modelcar/Dockerfile packaging-modelcar \
   --build-arg MODEL_REPO=RedHatAI/granite-4.1-8b-fp8 \
+  --secret id=hf,src=.hf_token \
   -t quay.io/alopezme/modelcar-granite-4.1-8b-fp8:latest
 podman push quay.io/alopezme/modelcar-granite-4.1-8b-fp8:latest
 ```
@@ -41,6 +42,7 @@ podman push quay.io/alopezme/modelcar-granite-4.1-8b-fp8:latest
 podman build --platform linux/amd64 \
   -f packaging-modelcar/Dockerfile packaging-modelcar \
   --build-arg MODEL_REPO=RedHatAI/gemma-4-12B-it-FP8-Dynamic \
+  --secret id=hf,src=.hf_token \
   -t quay.io/alopezme/modelcar-gemma-4-12b-it-fp8-dynamic:latest
 podman push quay.io/alopezme/modelcar-gemma-4-12b-it-fp8-dynamic:latest
 ```
@@ -50,7 +52,7 @@ podman push quay.io/alopezme/modelcar-gemma-4-12b-it-fp8-dynamic:latest
 podman build --platform linux/amd64 \
   -f packaging-modelcar/Dockerfile packaging-modelcar \
   --build-arg MODEL_REPO=RedHatAI/gemma-4-31B-it-FP8-Dynamic \
-  --build-arg HF_TOKEN=$(cat .hf_token) \
+  --secret id=hf,src=.hf_token \
   -t quay.io/alopezme/modelcar-gemma-4-31b-fp8:latest
 ```
 
@@ -58,7 +60,7 @@ podman build --platform linux/amd64 \
 ```bash
 podman build --platform linux/amd64 \
   -f packaging-modelcar/Dockerfile packaging-modelcar \
-  --build-arg HF_TOKEN=$(cat .hf_token) \
+  --secret id=hf,src=.hf_token \
   -t quay.io/alopezme/modelcar-tinyllama:demo
 ```
 
@@ -67,7 +69,7 @@ podman build --platform linux/amd64 \
 podman build --platform linux/amd64 \
   -f packaging-modelcar/Dockerfile packaging-modelcar \
   --build-arg MODEL_REPO=meta-llama/Llama-3.1-8B-Instruct \
-  --build-arg HF_TOKEN=$(cat .hf_token) \
+  --secret id=hf,src=.hf_token \
   -t quay.io/alopezme/modelcar-llama-3.1-8b:latest
 ```
 
@@ -76,7 +78,7 @@ podman build --platform linux/amd64 \
 podman build --platform linux/amd64 \
   -f packaging-modelcar/Dockerfile packaging-modelcar \
   --build-arg MODEL_REPO=ibm-granite/granite-guardian-4.1-8b \
-  --build-arg HF_TOKEN=$(cat .hf_token) \
+  --secret id=hf,src=.hf_token \
   -t quay.io/alopezme/modelcar-granite-guardian-4.1-8b:latest
 ```
 
@@ -85,7 +87,7 @@ podman build --platform linux/amd64 \
 podman build --platform linux/amd64 \
   -f packaging-modelcar/Dockerfile packaging-modelcar \
   --build-arg MODEL_REPO=mistralai/Devstral-Small-2-24B-Instruct-2512 \
-  --build-arg HF_TOKEN=$(cat .hf_token) \
+  --secret id=hf,src=.hf_token \
   -t quay.io/alopezme/modelcar-devstral-small-2-24b:latest
 ```
 

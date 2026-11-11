@@ -11,14 +11,14 @@
 #
 # Weights are split into ~5 GB layers (LAYER_MAX_GB) by split_layers.py, so no per-model edit is needed.
 #
-# Gated models: pass secret build-arg (not persisted in layers if you use --secret):
-#   podman build --secret id=hf,src=$HOME/.cache/huggingface/token ...
-# and teach download_model.py to read that file if you extend it; or use:
-#   --build-arg HF_TOKEN=...  (less ideal: ends up in image history unless BuildKit secrets).
+# Hugging Face token (faster downloads, needed for gated models): pass it as a build secret, which is
+# never stored in any layer or in the image history:
+#   podman build --secret id=hf,src=.hf_token ...
+# (--build-arg HF_TOKEN=... also works, but it ends up in the builder image history.)
 
 ARG MODEL_REPO=TinyLlama/TinyLlama-1.1B-Chat-v1.0
 
-FROM registry.access.redhat.com/ubi9/python-312:latest AS downloader
+FROM registry.access.redhat.com/ubi9/python-314:latest AS downloader
 ARG MODEL_REPO
 ARG HF_TOKEN=""
 
@@ -34,7 +34,9 @@ COPY download_model.py split_layers.py /tmp/
 # pull them in parallel. split_layers.py fails the build if the model does not fit in MAX_CHUNKS layers.
 ARG LAYER_MAX_GB=5
 ENV LAYER_MAX_GB=${LAYER_MAX_GB}
-RUN set -ex; \
+RUN --mount=type=secret,id=hf,required=false \
+    set -ex; \
+    if [ -s /run/secrets/hf ]; then export HF_TOKEN="$(cat /run/secrets/hf)"; fi; \
     python /tmp/download_model.py; \
     python /tmp/split_layers.py; \
     rm -f /tmp/download_model.py /tmp/split_layers.py
