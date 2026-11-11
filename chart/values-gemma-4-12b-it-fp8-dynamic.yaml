@@ -2,6 +2,7 @@
 # Hugging Face repo id: RedHatAI/gemma-4-12B-it-FP8-Dynamic
 # Bigger sibling for H100: values-gemma-4-26b-a4b-fp8.yaml
 #
+# ModelCar: build it first (see packaging-modelcar/README.md) and push it to quay.io/alopezme.
 # Usage: helm template gemma4-12b chart/ -f chart/values.yaml -f chart/values-gemma-4-12b-it-fp8-dynamic.yaml
 
 name: gemma-4-12b-it-fp8-dynamic
@@ -10,7 +11,7 @@ namespace:
   name: models-as-a-service
 
 model:
-  uri: hf://RedHatAI/gemma-4-12B-it-FP8-Dynamic
+  uri: oci://quay.io/alopezme/modelcar-gemma-4-12b-it-fp8-dynamic:latest
   name: RedHatAI/gemma-4-12B-it-FP8-Dynamic
   metadata:
     useCase: chat

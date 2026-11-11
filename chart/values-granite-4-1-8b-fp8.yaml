@@ -1,5 +1,6 @@
 # Granite 4.1 8B FP8 (RedHatAI) - Single GPU generative model, 9.6 GB of weights (fits an L4)
 # Replaces Granite 4.0 H Tiny FP8.
+# ModelCar: build it first (see packaging-modelcar/README.md) and push it to quay.io/alopezme.
 # Usage: helm template granite chart/ -f chart/values.yaml -f chart/values-granite-4-1-8b-fp8.yaml
 #
 # Tool calling used to reference Granite 3.3 flags (--chat-template tool_chat_template_granite_3.3.jinja,
@@ -16,7 +17,7 @@ namespace:
   name: models-as-a-service
 
 model:
-  uri: hf://RedHatAI/granite-4.1-8b-fp8
+  uri: oci://quay.io/alopezme/modelcar-granite-4.1-8b-fp8:latest
   name: granite-4-1-8b-fp8
   metadata:
     useCase: chat
