@@ -14,6 +14,7 @@ echo "hf_yourTokenHere" > .hf_token
 ### Build and Push
 
 ```bash
+# Weight layers: 1 -> the Dockerfile works as is (chunk-01 only). It is a single 28.6 GB file: check that your registry accepts layers that big (Quay: 20 GB)
 # Build ModelCar image
 podman build --platform linux/amd64 \
   -f packaging-modelcar/Dockerfile packaging-modelcar \
@@ -29,6 +30,7 @@ podman push quay.io/alopezme/modelcar-gemma-4-26b-a4b-fp8:latest
 
 **Granite 4.1 8B FP8 (L4):**
 ```bash
+# Weight layers: 2 -> uncomment COPY /models-chunk-02 in the Dockerfile
 podman build --platform linux/amd64 \
   -f packaging-modelcar/Dockerfile packaging-modelcar \
   --build-arg MODEL_REPO=RedHatAI/granite-4.1-8b-fp8 \
@@ -39,6 +41,7 @@ podman push quay.io/alopezme/modelcar-granite-4.1-8b-fp8:latest
 
 **Gemma 4 12B FP8-Dynamic (L4):**
 ```bash
+# Weight layers: 1 -> the Dockerfile works as is (chunk-01 only)
 podman build --platform linux/amd64 \
   -f packaging-modelcar/Dockerfile packaging-modelcar \
   --build-arg MODEL_REPO=RedHatAI/gemma-4-12B-it-FP8-Dynamic \
@@ -49,6 +52,7 @@ podman push quay.io/alopezme/modelcar-gemma-4-12b-it-fp8-dynamic:latest
 
 **Gemma 4 31B FP8-Dynamic (recommended for H100):**
 ```bash
+# Weight layers: 2 -> uncomment COPY /models-chunk-02 in the Dockerfile
 podman build --platform linux/amd64 \
   -f packaging-modelcar/Dockerfile packaging-modelcar \
   --build-arg MODEL_REPO=RedHatAI/gemma-4-31B-it-FP8-Dynamic \
@@ -58,6 +62,7 @@ podman build --platform linux/amd64 \
 
 **TinyLlama (default, for testing):**
 ```bash
+# Weight layers: 1 -> the Dockerfile works as is (chunk-01 only)
 podman build --platform linux/amd64 \
   -f packaging-modelcar/Dockerfile packaging-modelcar \
   --secret id=hf,src=.hf_token \
@@ -66,6 +71,7 @@ podman build --platform linux/amd64 \
 
 **Meta Llama models:**
 ```bash
+# Weight layers: 4 -> uncomment COPY /models-chunk-02..04 in the Dockerfile
 podman build --platform linux/amd64 \
   -f packaging-modelcar/Dockerfile packaging-modelcar \
   --build-arg MODEL_REPO=meta-llama/Llama-3.1-8B-Instruct \
@@ -75,6 +81,7 @@ podman build --platform linux/amd64 \
 
 **Granite Guardian 4.1 8B (guardrails/moderation):**
 ```bash
+# Weight layers: 4 -> uncomment COPY /models-chunk-02..04 in the Dockerfile
 podman build --platform linux/amd64 \
   -f packaging-modelcar/Dockerfile packaging-modelcar \
   --build-arg MODEL_REPO=ibm-granite/granite-guardian-4.1-8b \
@@ -84,6 +91,7 @@ podman build --platform linux/amd64 \
 
 **Devstral Small 2 24B Instruct (agentic coding, 256k context):**
 ```bash
+# Weight layers: 6 -> uncomment COPY /models-chunk-02..06 in the Dockerfile
 podman build --platform linux/amd64 \
   -f packaging-modelcar/Dockerfile packaging-modelcar \
   --build-arg MODEL_REPO=mistralai/Devstral-Small-2-24B-Instruct-2512 \
@@ -93,7 +101,8 @@ podman build --platform linux/amd64 \
 
 ## Image Structure
 
-- **Layers:** `split_layers.py` groups the weights into layers of about 5 GB (`--build-arg LAYER_MAX_GB=5`), so the runtime pulls them in parallel and no layer exceeds the Quay limit (20 GB). No per-model edit of the Dockerfile is needed. Up to 10 layers (50 GB); a bigger model makes the build fail with an explicit error (raise `MAX_CHUNKS` in `split_layers.py` and add `COPY` lines). A single file larger than 5 GB gets a layer of its own. Unused layers are empty (~1 KB).
+- **Layers:** `split_layers.py` groups the weights into layers of about 5 GB (`--build-arg LAYER_MAX_GB=5`), so the runtime pulls them in parallel. The Dockerfile has `COPY` lines for `/models-chunk-01` to `/models-chunk-10`, with only the first one active: uncomment up to the chunk count that the build log prints (`Split /models: ... uncomment COPY lines up to /models-chunk-NN`), or see the `# Weight layers` comment next to each command below. If you forget one, the build fails (`/models has X safetensors, expected Y`) instead of producing an incomplete image. A single file bigger than 5 GB gets a layer of its own, and Quay rejects layers over 20 GB.
+- **Read-only:** files are `r--r--r--` and `/models` is `r-xr-xr-x`, since vLLM only reads the model.
 - **Base:** UBI 9 Python 3.14 (builder) → UBI Micro (runtime)
 - **Model location:** `/models` in the image
 - **Runtime mount:** KServe mounts at `/mnt/models` in the pod
@@ -114,6 +123,7 @@ Mistral models on HuggingFace include **two copies** of weights:
 
 **Our download script excludes consolidated format** to avoid duplicate weights. If you need the Mistral format, override:
 ```bash
+# Weight layers: 1 -> the Dockerfile works as is (chunk-01 only)
 podman build \
   --build-arg HF_IGNORE_PATTERNS="" \
   ...
