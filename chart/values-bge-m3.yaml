@@ -16,7 +16,9 @@ namespace:
   name: models-as-a-service
 
 model:
-  uri: hf://BAAI/bge-m3
+  # Own ModelCar built with packaging-modelcar/Dockerfile.small (pytorch_model.bin, single layer)
+  uri: oci://quay.io/alopezme/modelcar-bge-m3:latest
+  # uri: hf://BAAI/bge-m3
   name: BAAI/bge-m3
   metadata:
     useCase: embedding
