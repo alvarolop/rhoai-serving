@@ -9,7 +9,7 @@ The **`rhoai-serving`** Helm chart targets **OpenShift AI + KServe**. Models are
 Rendered resources can include:
 
 - **Namespace** (optional) with dashboard / optional **Kueue**-managed labels.
-- **Connection Secret** (`metadata.name` == **`.Values.name`**) shaped for **uri**, **oci**, or **s3** (see **`chart/templates/secret-connection.yaml`** and **`_helpers.tpl`** **`modelConnectionProtocol`**). **S3** is never inferred from the URI alone; set **`model.connection.protocol: s3`** explicitly.
+- **Connection Secret** (`metadata.name` == **`.Values.name`**) shaped for **uri**, **oci**, or **s3** (see **`chart/templates/Secret-connection.yaml`** and **`_helpers.tpl`** **`modelConnectionProtocol`**). **S3** is never inferred from the URI alone; set **`model.connection.protocol: s3`** explicitly.
 - **`hf-secret`** and **`HF_TOKEN`** on the generative worker only when **`model.uri`** starts with **`hf://`** and **`hfToken`** is non-empty.
 - **Generative** (**`serving.type: generative`**): **`LLMInferenceService`** — worker **`main`**, replicas, resources, **`VLLM_ADDITIONAL_ARGS`** from **`extraArgs`**, **`extraEnv`**, optional **`mainContainer`** image/command/args, dashboard / Kueue / hardware-profile / auth annotations, optional GPU tolerations.
 - **Predictive** (**`serving.type: predictive`**): **`ServingRuntime`** (OVMS-oriented container template) + **`InferenceService`** (**`RawDeployment`**).
