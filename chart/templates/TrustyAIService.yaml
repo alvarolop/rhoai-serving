@@ -16,13 +16,4 @@ spec:
   metrics:
     schedule: "5s"
     batchSize: 5000
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: kserve-logger-ca-bundle
-  namespace: {{ include "rhoai-serving.namespaceName" . }}
-  annotations:
-    service.beta.openshift.io/inject-cabundle: "true"
-data: {}
 {{- end }}
