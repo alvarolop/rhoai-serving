@@ -44,13 +44,66 @@ false
 {{- end -}}
 
 {{/*
+True when the GPU is requested through Dynamic Resource Allocation (a ResourceClaim) instead of the
+device plugin: dra.enabled AND the model asks for a GPU (hasNvidiaGpu). CPU models (cpu-profile or no
+nvidia.com/gpu in resources) never get a claim, whatever dra.enabled says.
+*/}}
+{{- define "rhoai-serving.useDra" -}}
+{{- if and (.Values.dra).enabled (eq (include "rhoai-serving.hasNvidiaGpu" . | trim) "true") -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
+{{/*
+Number of GPUs requested. Single source of truth is mainContainer.resources limits["nvidia.com/gpu"]
+(falls back to requests, then 1), so the same values file works with and without DRA.
+*/}}
+{{- define "rhoai-serving.gpuCount" -}}
+{{- $k := "nvidia.com/gpu" -}}
+{{- $res := .Values.mainContainer.resources | default dict -}}
+{{- $lim := $res.limits | default dict -}}
+{{- $req := $res.requests | default dict -}}
+{{- $v := 1 -}}
+{{- if and (hasKey $lim $k) (ne (index $lim $k | toString) "0") }}{{- $v = index $lim $k | toString | atoi -}}
+{{- else if and (hasKey $req $k) (ne (index $req $k | toString) "0") }}{{- $v = index $req $k | toString | atoi -}}
+{{- end -}}
+{{- $v -}}
+{{- end -}}
+
+{{/* Name of the pod-level claim (spec.resourceClaims[].name) and of the container claim reference. */}}
+{{- define "rhoai-serving.draClaimName" -}}
+{{- .Values.dra.claimName | default "gpu" -}}
+{{- end -}}
+
+{{/* ResourceClaimTemplate referenced by the pod: dra.claimTemplate.existing, or the one created by the chart. */}}
+{{- define "rhoai-serving.draClaimTemplateName" -}}
+{{- .Values.dra.claimTemplate.existing | default (printf "%s-gpu" .Values.name) -}}
+{{- end -}}
+
+{{/* Pod-level claims list (LLMInferenceService spec.template / InferenceService spec.predictor). */}}
+{{- define "rhoai-serving.draPodClaims" -}}
+- name: {{ include "rhoai-serving.draClaimName" . }}
+  resourceClaimTemplateName: {{ include "rhoai-serving.draClaimTemplateName" . }}
+{{- end -}}
+
+{{/*
 KServe model container resources (generative LLMInferenceService + predictive InferenceService).
-Strip nvidia.com/gpu from limits/requests when neither side requests a GPU, so Helm deep-merge
-does not leave stale GPU keys on CPU-only overlays.
+- Device plugin (default for CPU/no DRA): rendered as-is. Strip nvidia.com/gpu from limits/requests
+  when neither side requests a GPU, so Helm deep-merge does not leave stale GPU keys on CPU-only overlays.
+- DRA (rhoai-serving.useDra): nvidia.com/gpu is removed from limits/requests and replaced by
+  resources.claims -> the pod-level claim.
 */}}
 {{- define "rhoai-serving.kserveModelResources" -}}
 {{- $res := .Values.mainContainer.resources | default dict -}}
-{{- if eq (include "rhoai-serving.hasNvidiaGpu" . | trim) "true" -}}
+{{- if eq (include "rhoai-serving.useDra" . | trim) "true" -}}
+{{- $r := deepCopy $res -}}
+{{- range $side := list "limits" "requests" -}}
+{{- if hasKey $r $side -}}
+{{- $o := omit (index $r $side | default dict) "nvidia.com/gpu" -}}
+{{- if $o }}{{- $_ := set $r $side $o -}}{{- else }}{{- $_ := unset $r $side -}}{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- $_ := set $r "claims" (list (dict "name" (include "rhoai-serving.draClaimName" .))) -}}
+{{- toYaml $r -}}
+{{- else if eq (include "rhoai-serving.hasNvidiaGpu" . | trim) "true" -}}
 {{- toYaml $res -}}
 {{- else -}}
 limits:
@@ -58,6 +111,16 @@ limits:
 requests:
   {{- omit ($res.requests | default dict) "nvidia.com/gpu" | toYaml | nindent 2 }}
 {{- end -}}
+{{- end -}}
+
+{{/*
+Emit the opendatahub.io/hardware-profile-* annotations? They are skipped on DRA models unless
+dra.hardwareProfileAnnotation is true: the RHOAI HardwareProfile webhook can inject the profile
+identifier (nvidia.com/gpu) into the container, which breaks pods on clusters without device plugin.
+The Kueue queue / priority labels do not depend on the annotation (they derive from the profile name).
+*/}}
+{{- define "rhoai-serving.emitHardwareProfileAnnotation" -}}
+{{- if and (eq (include "rhoai-serving.useDra" . | trim) "true") (not .Values.dra.hardwareProfileAnnotation) -}}false{{- else -}}true{{- end -}}
 {{- end -}}
 
 {{/*

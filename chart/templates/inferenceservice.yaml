@@ -22,8 +22,10 @@ metadata:
     prometheus.io/path: "/metrics"
     prometheus.io/port: "8888"
     {{- end }}
+    {{- if eq (include "rhoai-serving.emitHardwareProfileAnnotation" . | trim) "true" }}
     opendatahub.io/hardware-profile-name: {{ .Values.serving.hardwareProfile.name | quote }}
     opendatahub.io/hardware-profile-namespace: {{ .Values.serving.hardwareProfile.namespace | quote }}
+    {{- end }}
   labels:
     opendatahub.io/dashboard: "true"
     networking.kserve.io/visibility: exposed
@@ -36,6 +38,10 @@ spec:
     automountServiceAccountToken: false
     deploymentStrategy:
       type: RollingUpdate
+    {{- if eq (include "rhoai-serving.useDra" . | trim) "true" }}
+    resourceClaims:
+      {{- include "rhoai-serving.draPodClaims" . | nindent 6 }}
+    {{- end }}
     # imagePullSecrets:
     #   - name: {{ .Values.name }}
     {{- if eq .Values.scaling.mode "fixed" }}

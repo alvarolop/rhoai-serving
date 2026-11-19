@@ -277,6 +277,47 @@ guardrails:
           - check script in output         # Prevent script tags in responses
           - mask sensitive data on output  # Presidio PII masking
 
+# @section -- Dynamic Resource Allocation (DRA)
+
+# -- GPU through Dynamic Resource Allocation instead of the NVIDIA device plugin. With DRA the pod does not request `nvidia.com/gpu`; it references a ResourceClaimTemplate (created by this chart in the model namespace) through `spec.resourceClaims` and `resources.claims`. The number of GPUs is derived from `mainContainer.resources.limits["nvidia.com/gpu"]`, so the same `values-<model>.yaml` works with DRA on or off. CPU models (cpu-profile / no GPU in resources) never get a claim. Only generative models (LLMInferenceService) and predictive models that request a GPU (InferenceService supports `predictor.resourceClaims`) are affected. Needs the NVIDIA DRA driver (it publishes the DeviceClasses) and, for Kueue accounting, `deviceClassMappings` for `gpu.nvidia.com` (rhoai-gitops).
+dra:
+  # -- Request the GPU with a ResourceClaim (true) or with `nvidia.com/gpu` limits (false, device plugin). Set false on clusters without the NVIDIA DRA driver.
+  enabled: true
+  # -- DeviceClass published by the NVIDIA DRA driver for full GPUs (use mig.nvidia.com only through `mig.enabled`)
+  deviceClassName: gpu.nvidia.com
+  # -- Name of the pod-level claim (`spec.resourceClaims[].name`) and of the container reference (`resources.claims[].name`)
+  claimName: gpu
+  # -- Only GPUs with this `productName` attribute (e.g. "NVIDIA L4", "NVIDIA H100 80GB HBM3"). Empty = any GPU of the DeviceClass (portable).
+  productName: ""
+  # -- Minimum GPU memory, CEL `quantity()` syntax (e.g. "40Gi"). Empty = no filter.
+  minMemory: ""
+  # -- Extra CEL expressions (all must match), e.g. `device.attributes["gpu.nvidia.com"].architecture == "Hopper"`
+  selectors: []
+  # -- Keep the `opendatahub.io/hardware-profile-*` annotations on DRA models. Default false: the RHOAI HardwareProfile webhook may inject the profile accelerator identifier (`nvidia.com/gpu`) into the container, which cannot be scheduled on a cluster without device plugin. The Kueue queue and priority labels do not depend on it (they derive from `serving.hardwareProfile.name`).
+  hardwareProfileAnnotation: false
+  # -- ResourceClaimTemplate settings
+  claimTemplate:
+    # -- Name of an existing ResourceClaimTemplate in the model namespace. Empty = the chart creates `<name>-gpu`.
+    existing: ""
+  # -- MIG partitions with `firstAvailable` (preferred profile first, fallback second). Replaces the full-GPU request. WARNING: a vLLM process only sees the FIRST MIG partition of its list, so `parallelism.tensor > 1` cannot be spread across MIG slices (the chart fails the render); use N full GPUs for tensor parallelism. The `profile` attribute comes from the NVIDIA DRA driver documentation (not verified on a MIG cluster).
+  mig:
+    # -- Request MIG slices instead of full GPUs
+    enabled: false
+    # -- DeviceClass for MIG devices
+    deviceClassName: mig.nvidia.com
+    # -- Preferred MIG profile
+    preferred:
+      # -- Profile attribute value (e.g. "3g.40gb")
+      profile: ""
+      # -- Number of slices of that profile
+      count: 1
+    # -- Fallback MIG profile, used when the preferred one is not available. Empty profile = no fallback.
+    fallback:
+      # -- Profile attribute value (e.g. "2g.20gb")
+      profile: ""
+      # -- Number of slices of that profile
+      count: 1
+
 # @section -- Parallelism Configuration
 
 # -- Multi-node distributed workload parallelism for generative models (LLMInferenceService only). Enables tensor parallelism (TP), data parallelism (DP), and expert parallelism (EP) across multiple GPUs/nodes. Leave empty {} for single-replica workloads.
