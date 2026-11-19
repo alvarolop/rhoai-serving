@@ -23,7 +23,7 @@ metadata:
     prometheus.io/port: "8888"
     {{- end }}
     {{- if eq (include "rhoai-serving.emitHardwareProfileAnnotation" . | trim) "true" }}
-    opendatahub.io/hardware-profile-name: {{ .Values.serving.hardwareProfile.name | quote }}
+    opendatahub.io/hardware-profile-name: {{ include "rhoai-serving.hardwareProfileName" . | quote }}
     opendatahub.io/hardware-profile-namespace: {{ .Values.serving.hardwareProfile.namespace | quote }}
     {{- end }}
   labels:

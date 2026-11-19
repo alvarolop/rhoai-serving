@@ -17,7 +17,7 @@ metadata:
     security.opendatahub.io/enable-auth: '{{ .Values.auth.enabled }}'
     opendatahub.io/model-type: {{ .Values.model.metadata.type | quote }}
     {{- if and .Values.serving.hardwareProfile.name (eq (include "rhoai-serving.emitHardwareProfileAnnotation" . | trim) "true") }}
-    opendatahub.io/hardware-profile-name: {{ .Values.serving.hardwareProfile.name | quote }}
+    opendatahub.io/hardware-profile-name: {{ include "rhoai-serving.hardwareProfileName" . | quote }}
     opendatahub.io/hardware-profile-namespace: {{ .Values.serving.hardwareProfile.namespace | quote }}
     {{- end }}
   labels:

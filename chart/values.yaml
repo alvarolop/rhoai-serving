@@ -297,7 +297,9 @@ dra:
   minMemory: ""
   # -- Extra CEL expressions (all must match), e.g. `device.attributes["gpu.nvidia.com"].architecture == "Hopper"`
   selectors: []
-  # -- Keep the `opendatahub.io/hardware-profile-*` annotations on DRA models. Default false: verified on RHOAI 3.5.3, the HardwareProfile webhook adds `nvidia.com/gpu` on top of the claim (Kueue counts 2 GPUs and the pod never schedules). The dashboard shows the profile as Unknown. The Kueue queue and priority labels do not depend on it (they derive from `serving.hardwareProfile.name`).
+  # -- HardwareProfile used on DRA models whose `serving.hardwareProfile.name` is `gpu-profile` (model files are not edited). It must NOT have an `nvidia.com/gpu` identifier: verified on RHOAI 3.5.3, with `gpu-profile` the webhook adds `nvidia.com/gpu` on top of the claim, Kueue counts 2 GPUs and the pod never schedules. `gpu-dra-profile` (rhoai-gitops) has the same queue (serving-lq) and priority. Empty = no swap (the annotation is then skipped on DRA models).
+  hardwareProfile: gpu-dra-profile
+  # -- Force the `opendatahub.io/hardware-profile-*` annotations on DRA models even when the profile is not the DRA one. Leave false: any profile with an `nvidia.com/gpu` identifier breaks the pod.
   hardwareProfileAnnotation: false
   # -- ResourceClaimTemplate settings
   claimTemplate:

@@ -114,13 +114,24 @@ requests:
 {{- end -}}
 
 {{/*
-Emit the opendatahub.io/hardware-profile-* annotations? They are skipped on DRA models unless
-dra.hardwareProfileAnnotation is true: the RHOAI HardwareProfile webhook can inject the profile
-identifier (nvidia.com/gpu) into the container, which breaks pods on clusters without device plugin.
-The Kueue queue / priority labels do not depend on the annotation (they derive from the profile name).
+HardwareProfile name written in opendatahub.io/hardware-profile-name. With DRA, gpu-profile is swapped for
+dra.hardwareProfile (gpu-dra-profile in rhoai-gitops: same queue, but NO nvidia.com/gpu identifier), so model
+files keep saying gpu-profile. Verified on RHOAI 3.5.3: with gpu-profile the webhook adds nvidia.com/gpu on top
+of the claim, Kueue counts 2 GPUs and the pod never schedules.
+*/}}
+{{- define "rhoai-serving.hardwareProfileName" -}}
+{{- $n := .Values.serving.hardwareProfile.name | default "" -}}
+{{- if and (eq (include "rhoai-serving.useDra" . | trim) "true") (eq $n "gpu-profile") .Values.dra.hardwareProfile -}}{{ .Values.dra.hardwareProfile }}{{- else -}}{{ $n }}{{- end -}}
+{{- end -}}
+
+{{/*
+Emit the opendatahub.io/hardware-profile-* annotations? Always without DRA. With DRA only when the effective profile
+is the DRA one (no GPU identifier) or dra.hardwareProfileAnnotation is true: any other GPU profile would make the
+webhook inject nvidia.com/gpu next to the claim. Queue / priority labels derive from serving.hardwareProfile.name
+and do not depend on the annotation.
 */}}
 {{- define "rhoai-serving.emitHardwareProfileAnnotation" -}}
-{{- if and (eq (include "rhoai-serving.useDra" . | trim) "true") (not .Values.dra.hardwareProfileAnnotation) -}}false{{- else -}}true{{- end -}}
+{{- if or (ne (include "rhoai-serving.useDra" . | trim) "true") .Values.dra.hardwareProfileAnnotation (and .Values.dra.hardwareProfile (eq (include "rhoai-serving.hardwareProfileName" . | trim) .Values.dra.hardwareProfile)) -}}true{{- else -}}false{{- end -}}
 {{- end -}}
 
 {{/*
@@ -173,7 +184,7 @@ spec.scheduling.kueue.localQueueName, so it is derived from serving.hardwareProf
 {{- define "rhoai-serving.kueueLocalQueue" -}}
 {{- $hp := .Values.serving.hardwareProfile.name | default "" -}}
 {{- if .Values.kueue.localQueue -}}{{ .Values.kueue.localQueue }}
-{{- else if eq $hp "gpu-profile" -}}serving-lq
+{{- else if or (eq $hp "gpu-profile") (eq $hp "gpu-dra-profile") -}}serving-lq
 {{- else if eq $hp "gpu-batch-profile" -}}batch-lq
 {{- else -}}default
 {{- end -}}
@@ -189,7 +200,7 @@ kueue.priorityClass is set; empty means no label.
 {{- define "rhoai-serving.kueuePriorityClass" -}}
 {{- $hp := .Values.serving.hardwareProfile.name | default "" -}}
 {{- if .Values.kueue.priorityClass -}}{{ .Values.kueue.priorityClass }}
-{{- else if eq $hp "gpu-profile" -}}model-critical
+{{- else if or (eq $hp "gpu-profile") (eq $hp "gpu-dra-profile") -}}model-critical
 {{- else if eq $hp "gpu-batch-profile" -}}batch-nightly
 {{- end -}}
 {{- end -}}
