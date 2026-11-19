@@ -297,7 +297,7 @@ dra:
   minMemory: ""
   # -- Extra CEL expressions (all must match), e.g. `device.attributes["gpu.nvidia.com"].architecture == "Hopper"`
   selectors: []
-  # -- Keep the `opendatahub.io/hardware-profile-*` annotations on DRA models. Default false: the RHOAI HardwareProfile webhook may inject the profile accelerator identifier (`nvidia.com/gpu`) into the container, which cannot be scheduled on a cluster without device plugin. The Kueue queue and priority labels do not depend on it (they derive from `serving.hardwareProfile.name`).
+  # -- Keep the `opendatahub.io/hardware-profile-*` annotations on DRA models. Default false: verified on RHOAI 3.5.3, the HardwareProfile webhook adds `nvidia.com/gpu` on top of the claim (Kueue counts 2 GPUs and the pod never schedules). The dashboard shows the profile as Unknown. The Kueue queue and priority labels do not depend on it (they derive from `serving.hardwareProfile.name`).
   hardwareProfileAnnotation: false
   # -- ResourceClaimTemplate settings
   claimTemplate:
