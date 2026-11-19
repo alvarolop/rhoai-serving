@@ -58,7 +58,7 @@ If your cluster **does not** taint GPU nodes, **CPU** pods could **in principle*
 
 **Cause:** **`gpu-flavor`** in gitops declares the NVIDIA taint toleration with **`operator: Exists`**. If the **`LLMInferenceService`** pod template only had **`effect` + `key`** (implicit **`Equal`**), the live pod and Kueue’s merged toleration **differ**. On unsuspend, Kueue updates the **`Pod`**; the API server rejects that toleration change.
 
-**Fix (chart):** **`chart/templates/llminferenceservice.yaml`** and **`chart/templates/inferenceservice.yaml`** emit the GPU toleration with **`operator: Exists`**, matching **`resourceflavor-gpu-flavor.yaml`**. Details and rationale: **[004 — GPU tolerations vs Kueue `ResourceFlavor`](004-kueue-gpu-tolerations.md)** (updated for this interaction).
+**Fix (chart):** **`chart/templates/LLMInferenceService.yaml`** and **`chart/templates/InferenceService.yaml`** emit the GPU toleration with **`operator: Exists`**, matching **`resourceflavor-gpu-flavor.yaml`**. Details and rationale: **[004 — GPU tolerations vs Kueue `ResourceFlavor`](004-kueue-gpu-tolerations.md)** (updated for this interaction).
 
 **Why the llm-d router pod often looked “fine”:** The **EPP / router-scheduler** pod is **CPU-only** and usually has **no** `nvidia.com/gpu` toleration before admit. Kueue only **adds** tolerations there → no forbidden **modification**. The **main** vLLM pod carried the mismatched GPU toleration → failure.
 

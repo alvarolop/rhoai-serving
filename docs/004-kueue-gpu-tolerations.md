@@ -27,7 +27,7 @@ Reasons:
 
 ## Consequences
 
-- **Predictive** **`InferenceService`** path uses the same **`hasNvidiaGpu`** + **`gpuPodTolerations`** gate in **`inferenceservice.yaml`**; this note applies primarily to **generative** **`LLMInferenceService`**.
+- **Predictive** **`InferenceService`** path uses the same **`hasNvidiaGpu`** + **`gpuPodTolerations`** gate in **`InferenceService.yaml`**; this note applies primarily to **generative** **`LLMInferenceService`**.
 - After disabling **`gpuPodTolerations`**, if pods stay **`Pending`** on tainted GPU nodes, re-enable **`true`** or fix **HardwareProfile / queue / flavor** alignment.
 
 ## Status
