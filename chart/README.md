@@ -191,6 +191,20 @@ parallelism:
 
 Only applies to generative models (`LLMInferenceService`). Predictive models use replica-based scaling instead.
 
+## GPUs with Dynamic Resource Allocation (DRA)
+
+`dra.enabled` (default `true`) requests the GPU through a `ResourceClaimTemplate` instead of `nvidia.com/gpu` limits. The same `values-<model>.yaml` works with DRA on or off: the GPU count is read from `mainContainer.resources.limits["nvidia.com/gpu"]`, and with DRA on that key is replaced by `resources.claims` plus a pod-level `resourceClaims` entry. CPU models never get a claim.
+
+```bash
+# DRA (default)
+helm template <release> chart/ -f chart/values.yaml -f chart/values-<model>.yaml | oc apply -f -
+
+# Device plugin (clusters without the NVIDIA DRA driver)
+helm template <release> chart/ -f chart/values.yaml -f chart/values-<model>.yaml --set dra.enabled=false | oc apply -f -
+```
+
+Optional filters (`dra.productName`, `dra.minMemory`, `dra.selectors`), MIG with `firstAvailable` (`dra.mig.*`) and an existing template (`dra.claimTemplate.existing`) are documented in `values.yaml` and in [docs/010-dra-gpu-claims.md](../docs/010-dra-gpu-claims.md).
+
 ## Health Probes
 
 For large models with slow startup times (>2min), configure health probes to prevent premature restarts:

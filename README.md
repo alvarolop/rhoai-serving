@@ -120,6 +120,10 @@ helm template example-obc-model chart/ -f chart/values.yaml -f chart/values-exam
 
 None of the models listed here is gated. Gated `hf://` models need `--set-file hfToken=.hf_token`, see [Hugging Face token](#hugging-face-token).
 
+### GPUs: DRA or device plugin
+
+GPU models request their GPU with Dynamic Resource Allocation by default (`dra.enabled: true`: a `ResourceClaimTemplate` in the model namespace instead of `nvidia.com/gpu` limits). The model files do not change; CPU models are unaffected. On a cluster **without** the NVIDIA DRA driver (device plugin), add `--set dra.enabled=false` to any command above. Details in [docs/010-dra-gpu-claims.md](docs/010-dra-gpu-claims.md).
+
 ### Test a model
 
 ```bash

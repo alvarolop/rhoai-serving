@@ -91,6 +91,10 @@ Models can enable TrustyAI for bias and data drift monitoring by setting `trusty
 This deploys a `TrustyAIService` CR and the required `kserve-logger-ca-bundle` ConfigMap in the model's namespace.
 Supports PVC or DATABASE storage backends.
 
+### GPUs: Dynamic Resource Allocation (DRA)
+
+`dra.enabled` (default `true`) renders GPU models with a `ResourceClaimTemplate` (`templates/resourceclaimtemplate.yaml`) plus `spec.resourceClaims` / `resources.claims` instead of `nvidia.com/gpu` limits. The GPU count is derived from `mainContainer.resources.limits["nvidia.com/gpu"]`, so model files do not change; `--set dra.enabled=false` renders the device-plugin form exactly as before. CPU models never get a claim. See `docs/010-dra-gpu-claims.md`.
+
 ### HuggingFace Token Authentication
 
 Models using `hf://` URIs that are gated or private require a HuggingFace token.
@@ -133,6 +137,7 @@ chart/
     servingruntime.yaml                # Predictive: ServingRuntime
     trustyai-service.yaml              # Optional: TrustyAI monitoring
     secret-hf-token.yaml               # Optional: HuggingFace token secret
+    resourceclaimtemplate.yaml         # GPU claim when dra.enabled (DRA)
     namespace.yaml
     rbac.yaml
     secret-connection.yaml
