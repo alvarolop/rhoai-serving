@@ -303,7 +303,7 @@ Deploys a TrustyAIService CR and required CA bundle ConfigMap. See `values-disti
 | namespace.kueueManaged | bool | `true` | Enable Kueue management label for queue enforcement (Red Hat OpenShift AI workload scheduling) |
 | namespace.name | string | `"model-serving"` | Namespace name |
 | resources | object | {} (set in model-specific values files) | Container resource limits and requests. Override in values-<model>.yaml files per model requirements. |
-| routerGatewayRefs | list | [] | Gateway API refs for spec.router.gateway. Default empty for standard llm-d + Route. Set for MaaS deployments. |
+| serving.routerGatewayRefs | list | MaaS gateway (maas-default-gateway / openshift-ingress) | Gateway API refs for spec.router.gateway. Default: the MaaS gateway. Set `[]`/null to use the standard llm-d gateway (openshift-ai-inference). |
 | runtime | object | `{"displayName":"OpenVINO Model Server","image":"quay.io/opendatahub/openvino_model_server:stable","modelFormat":{"name":"openvino_ir","version":"opset13"},"version":"v2026.1.0"}` | Predictive runtime configuration (only used when serving.type is "predictive") |
 | runtime.displayName | string | `"OpenVINO Model Server"` | ServingRuntime display name |
 | runtime.image | string | `"quay.io/opendatahub/openvino_model_server:stable"` | Runtime container image |

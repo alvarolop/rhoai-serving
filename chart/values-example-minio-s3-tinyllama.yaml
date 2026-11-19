@@ -27,10 +27,6 @@ serving:
   hardwareProfile:
     name: cpu-profile
     namespace: redhat-ods-applications
-# # For Model-as-a-Service (MaaS) routing, uncomment and configure:
-#   routerGatewayRefs:
-#     - name: maas-default-gateway
-#       namespace: openshift-ingress
 
 mainContainer:
   image: "docker.io/vllm/vllm-openai-cpu:v0.33.0"

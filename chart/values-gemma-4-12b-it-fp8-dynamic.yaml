@@ -20,10 +20,6 @@ serving:
   hardwareProfile:
     name: gpu-profile
     namespace: redhat-ods-applications
-# # For Model-as-a-Service (MaaS) routing, uncomment and configure:
-#   routerGatewayRefs:
-#     - name: maas-default-gateway
-#       namespace: openshift-ingress
 
 mainContainer:
   # Passed as VLLM_ADDITIONAL_ARGS to the KServe wrapper script.

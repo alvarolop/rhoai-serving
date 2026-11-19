@@ -37,12 +37,6 @@ serving:
   hardwareProfile:
     name: gpu-profile
     namespace: redhat-ods-applications
-  # For Model-as-a-Service (MaaS) routing
-  # When defined, NeMo Guardrails automatically uses internal gateway URL
-  # Comment out to use direct workload service instead
-  routerGatewayRefs:
-    - name: maas-default-gateway
-      namespace: openshift-ingress
 
 # Uses the OpenShift AI default vLLM image (supports FP8 natively; Gemma 4 is supported since RHOAI 3.5).
 # Community image override, kept in case a newer vLLM is needed before it lands in RHOAI:

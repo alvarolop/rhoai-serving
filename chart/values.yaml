@@ -63,9 +63,13 @@ serving:
     # -- HardwareProfile namespace
     # @default -- redhat-ods-applications
     namespace: redhat-ods-applications
-  # -- Gateway API refs for spec.router.gateway. Default empty for standard llm-d + Route. Set for MaaS deployments.
-  # @default -- []
-  routerGatewayRefs: []
+  # -- Gateway API refs for spec.router.gateway. Default: the MaaS gateway (maas-default-gateway in openshift-ingress), so models are published through Models-as-a-Service. The model namespace must be allowed by the gateway. To use the standard llm-d gateway (openshift-ai-inference) instead, set `[]`.
+  # @default -- MaaS gateway (maas-default-gateway / openshift-ingress)
+  routerGatewayRefs:
+    - name: maas-default-gateway
+      namespace: openshift-ingress
+  # Standard llm-d gateway (openshift-ai-inference) instead of MaaS: override with an empty list
+  # routerGatewayRefs: []
   # -- Router configuration for intelligent routing and HTTPRoute settings
   router:
     # -- HTTPRoute configuration for request timeouts and URL rewriting

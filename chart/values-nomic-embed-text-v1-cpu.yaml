@@ -32,10 +32,6 @@ serving:
   hardwareProfile:
     name: cpu-profile
     namespace: redhat-ods-applications
-# # For Model-as-a-Service (MaaS) routing, uncomment and configure:
-#   routerGatewayRefs:
-#     - name: maas-default-gateway
-#       namespace: openshift-ingress
 
 # Red Hat AI Inference Server vLLM CPU image (amd64, AVX2). This repo has no "latest" tag: pin an explicit version (3.3 is the newest)
 # vLLM 0.13.0+ supports NomicBertModelC architecture

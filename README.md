@@ -191,7 +191,7 @@ Gated or private **`hf://`** checkpoints need a token. Put it in **`.hf_token`**
 ### Model notes
 
 - **Embeddings** (`bge-m3`, `nomic-embed-text-v2-moe`): GPU, platform vLLM image, `gpu-profile`, `--task embedding`. Call `/v1/embeddings` with `spec.model.name`. See [vLLM pooling models](https://docs.vllm.ai/en/latest/models/pooling_models/embed/).
-- **MaaS**: overlays that set `serving.routerGatewayRefs` (for example `maas-default-gateway` in `openshift-ingress`) attach to the MaaS gateway; list gateways with `oc get gateway.networking.k8s.io -A`. The namespace must be allowed by the gateway.
+- **MaaS**: by default (`serving.routerGatewayRefs` in `values.yaml`) generative models attach to the MaaS gateway (`maas-default-gateway` in `openshift-ingress`); to use the standard llm-d gateway (`openshift-ai-inference`) set `--set serving.routerGatewayRefs=null`; list gateways with `oc get gateway.networking.k8s.io -A`. The namespace must be allowed by the gateway.
 - **Guardrails**: `values-granite-guardian-4.1-8b.yaml`; the generative overlays can also enable `guardrails` (NeMo).
 
 ### Extra Runtime Arguments
