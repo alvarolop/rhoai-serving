@@ -93,7 +93,7 @@ Supports PVC or DATABASE storage backends.
 
 ### GPUs: Dynamic Resource Allocation (DRA)
 
-`dra.enabled` (default `true`) renders GPU models with a `ResourceClaimTemplate` (`templates/resourceclaimtemplate.yaml`) plus `spec.resourceClaims` / `resources.claims` instead of `nvidia.com/gpu` limits. The GPU count is derived from `mainContainer.resources.limits["nvidia.com/gpu"]`, so model files do not change; `--set dra.enabled=false` renders the device-plugin form exactly as before. CPU models never get a claim. See `docs/010-dra-gpu-claims.md`.
+`dra.enabled` (default `true`) renders GPU models with a `ResourceClaimTemplate` (`templates/ResourceClaimTemplate.yaml`) plus `spec.resourceClaims` / `resources.claims` instead of `nvidia.com/gpu` limits. The GPU count is derived from `mainContainer.resources.limits["nvidia.com/gpu"]`, so model files do not change; `--set dra.enabled=false` renders the device-plugin form exactly as before. CPU models never get a claim. See `docs/010-dra-gpu-claims.md`.
 
 ### HuggingFace Token Authentication
 
@@ -131,16 +131,18 @@ chart/
   values.yaml                          # Generative defaults and schema
   values-<model>.yaml                  # Per-model overrides (next to values.yaml)
   values-example-minio-s3-tinyllama.yaml  # Example S3/MinIO + CPU vLLM overlay
-  templates/
-    inferenceservice.yaml              # Predictive: InferenceService
-    llminferenceservice.yaml           # Generative: LLMInferenceService
-    servingruntime.yaml                # Predictive: ServingRuntime
-    trustyai-service.yaml              # Optional: TrustyAI monitoring
-    secret-hf-token.yaml               # Optional: HuggingFace token secret
-    resourceclaimtemplate.yaml         # GPU claim when dra.enabled (DRA)
-    namespace.yaml
+  templates/                           # <Kind>.yaml (name from values) / cm-, ns-, sa-, rb-, crb- abbreviations
+    InferenceService.yaml              # Predictive: InferenceService
+    LLMInferenceService.yaml           # Generative: LLMInferenceService
+    ServingRuntime.yaml                # Predictive: ServingRuntime
+    TrustyAIService.yaml               # Optional: TrustyAI monitoring
+    cm-kserve-logger-ca-bundle.yaml    # Optional: TrustyAI logger CA bundle
+    Secret-hf-token.yaml               # Optional: HuggingFace token secret
+    ResourceClaimTemplate.yaml         # GPU claim when dra.enabled (DRA)
+    ns-model.yaml                      # Namespace (namespace.create)
     rbac.yaml
     secret-connection.yaml
+    keda/  nemo/                       # Optional: KEDA autoscaling / NeMo Guardrails objects
 ```
 
 Each serving scenario includes:
