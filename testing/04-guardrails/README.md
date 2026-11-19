@@ -409,7 +409,7 @@ To enable optional features like profanity filtering, rate limiting, or PII dete
 3. Redeploy via Helm or ArgoCD
 
 ### 📚 **Guardrails Library** (Hardcoded)
-**Location:** `chart/templates/nemo/configmap.yaml`
+**Location:** `chart/templates/nemo/cm-config.yaml`
 
 The comprehensive library of **available guardrails** (same for all models):
 

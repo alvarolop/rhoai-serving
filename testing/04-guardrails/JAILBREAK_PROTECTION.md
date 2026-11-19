@@ -185,7 +185,7 @@ guardrails:
 
 The chart automatically generates the correct URLs for both the main model and guard LLM:
 
-**File**: `chart/templates/nemo/configmap.yaml`
+**File**: `chart/templates/nemo/cm-config.yaml`
 
 ```yaml
 {{- $modelUrl := printf "https://%s.%s.svc.cluster.local:8000" $workloadSvc $modelNs -}}
