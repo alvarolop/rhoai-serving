@@ -131,7 +131,7 @@ chart/
   values.yaml                          # Generative defaults and schema
   values-<model>.yaml                  # Per-model overrides (next to values.yaml)
   values-example-minio-s3-tinyllama.yaml  # Example S3/MinIO + CPU vLLM overlay
-  templates/                           # <Kind>.yaml (name from values) / cm-, ns-, sa-, rb-, crb- abbreviations
+  templates/                           # <Kind>.yaml (name from values) / cm-, sa-, rb-, crb- abbreviations
     InferenceService.yaml              # Predictive: InferenceService
     LLMInferenceService.yaml           # Generative: LLMInferenceService
     ServingRuntime.yaml                # Predictive: ServingRuntime
@@ -139,9 +139,9 @@ chart/
     cm-kserve-logger-ca-bundle.yaml    # Optional: TrustyAI logger CA bundle
     Secret-hf-token.yaml               # Optional: HuggingFace token secret
     ResourceClaimTemplate.yaml         # GPU claim when dra.enabled (DRA)
-    ns-model.yaml                      # Namespace (namespace.create)
+    Namespace.yaml                     # Namespace (namespace.create)
     rbac.yaml
-    secret-connection.yaml
+    Secret-connection.yaml             # Model connection Secret (uri / oci / s3)
     keda/  nemo/                       # Optional: KEDA autoscaling / NeMo Guardrails objects
 ```
 
