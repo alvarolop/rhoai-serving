@@ -12,7 +12,6 @@
 
 name: bge-m3
 namespace:
-  create: false
   name: models-as-a-service
 
 model:

@@ -268,8 +268,6 @@ Deploys a TrustyAIService CR and required CA bundle ConfigMap. See `values-disti
 | hfToken | string | "" (pass via --set-file hfToken=.hf_token) | Hugging Face token for gated/private models. Chart creates hf-secret when model.uri starts with hf:// and this is non-empty. |
 | kueue | object | `{"localQueueName":"default"}` | Kueue LocalQueue configuration |
 | kueue.localQueueName | string | `"default"` | LocalQueue name used as label kueue.x-k8s.io/queue-name on serving CRs. Must match a LocalQueue in the model namespace. |
-| monitoring | object | `{"userWorkloadDisabled":false}` | OpenShift monitoring configuration for predictive models with KEDA autoscaling |
-| monitoring.userWorkloadDisabled | bool | `false` | Disable user workload monitoring (use cluster monitoring instead). When true, sets openshift.io/cluster-monitoring label on namespace for KEDA metrics access. Only applies to predictive models with scaling.mode: keda. |
 | mainContainer | object | `{"args":[],"command":[],"env":[],"extraArgs":[],"image":"","livenessProbe":{},"readinessProbe":{},"startupProbe":{}}` | Main container configuration for LLMInferenceService/InferenceService pods |
 | mainContainer.args | list | `[]` | Container args override |
 | mainContainer.command | list | `[]` | Container command override |
@@ -295,13 +293,9 @@ Deploys a TrustyAIService CR and required CA bundle ConfigMap. See `values-disti
 | model.name | string | `""` | Model name for serving requests |
 | model.uri | string | `""` | Model URI (e.g., hf://RedHatAI/Qwen3-8B-FP8-dynamic, oci://registry.redhat.io/rhelai1/modelcar-qwen3-8b-fp8-dynamic:1.5) |
 | name | string | `"model-server"` | Resource identity name for the model serving deployment |
-| namespace | object | `{"create":true,"description":"","displayName":"","kueueManaged":true,"name":"model-serving"}` | Target namespace configuration for all chart resources |
+| namespace | object | `{"name":"models-as-a-service"}` | Target namespace for all chart resources (not created by the chart) |
 | parallelism | object | `{}` | Multi-node distributed workload parallelism for generative models (LLMInferenceService only). Enables tensor and data parallelism across multiple GPUs/nodes. Leave empty {} for single-replica workloads. |
-| namespace.create | bool | `true` | Create the namespace if it doesn't exist |
-| namespace.description | string | `""` | OpenShift console description annotation (optional) |
-| namespace.displayName | string | `""` | OpenShift console display name (defaults to .name if empty) |
-| namespace.kueueManaged | bool | `true` | Enable Kueue management label for queue enforcement (Red Hat OpenShift AI workload scheduling) |
-| namespace.name | string | `"model-serving"` | Namespace name |
+| namespace.name | string | `"models-as-a-service"` | Namespace name |
 | resources | object | {} (set in model-specific values files) | Container resource limits and requests. Override in values-<model>.yaml files per model requirements. |
 | serving.routerGatewayRefs | list | MaaS gateway (maas-default-gateway / openshift-ingress) | Gateway API refs for spec.router.gateway. Default: the MaaS gateway. Set `[]`/null to use the standard llm-d gateway (openshift-ai-inference). |
 | runtime | object | `{"displayName":"OpenVINO Model Server","image":"quay.io/opendatahub/openvino_model_server:stable","modelFormat":{"name":"openvino_ir","version":"opset13"},"version":"v2026.1.0"}` | Predictive runtime configuration (only used when serving.type is "predictive") |
@@ -328,8 +322,7 @@ Deploys a TrustyAIService CR and required CA bundle ConfigMap. See `values-disti
 | scaling.keda.prometheus.threshold | int | `2` | Threshold value that triggers scaling (number of concurrent requests) |
 | scaling.mode | string | `"fixed"` | Scaling mode: "fixed" (static replicas), "hpa" (predictive models CPU/memory HPA), "keda" (predictive models custom metrics), "wva" (generative models - not yet available) |
 | scaling.replicas | int | `1` | Number of replicas when mode is "fixed" |
-| serving | object | `{"gpuPodTolerations":true,"hardwareProfile":{"name":"gpu-profile","namespace":"redhat-ods-applications"},"type":"generative"}` | Model serving configuration. Determines whether to deploy generative (LLMInferenceService) or predictive (InferenceService) models. |
-| serving.gpuPodTolerations | bool | `true` | Enable GPU pod tolerations when resources request nvidia.com/gpu. Matches Kueue ResourceFlavor tolerations. |
+| serving | object | `{"hardwareProfile":{"name":"gpu-profile","namespace":"redhat-ods-applications"},"type":"generative"}` | Model serving configuration. Determines whether to deploy generative (LLMInferenceService) or predictive (InferenceService) models. |
 | serving.hardwareProfile | object | `{"name":"gpu-profile","namespace":"redhat-ods-applications"}` | OpenShift AI HardwareProfile reference |
 | serving.hardwareProfile.name | string | `"gpu-profile"` | HardwareProfile name (cpu-profile for CPU-only, gpu-profile for GPU models) |
 | serving.hardwareProfile.namespace | string | redhat-ods-applications | HardwareProfile namespace |

@@ -3,7 +3,6 @@
 
 name: llama-3-3-70b
 namespace:
-  create: false
   name: models-as-a-service
 
 model:

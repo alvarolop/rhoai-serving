@@ -13,7 +13,6 @@
 
 name: granite-4-1-8b-fp8
 namespace:
-  create: false
   name: models-as-a-service
 
 model:

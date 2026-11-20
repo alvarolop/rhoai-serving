@@ -24,7 +24,6 @@
 
 name: gemma-4-26b-a4b-fp8
 namespace:
-  create: false
   name: models-as-a-service
 
 model:

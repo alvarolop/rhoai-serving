@@ -6,20 +6,6 @@ Namespace name used by all namespaced resources.
 {{- end }}
 
 {{/*
-OpenShift console display name for the Namespace (when namespace.create is true).
-*/}}
-{{- define "rhoai-serving.namespaceDisplayName" -}}
-{{- .Values.namespace.displayName | default (printf "Model - %s" .Values.name) -}}
-{{- end }}
-
-{{/*
-OpenShift console description for the Namespace (when namespace.create is true).
-*/}}
-{{- define "rhoai-serving.namespaceDescription" -}}
-{{- .Values.namespace.description | default (printf "Serving model %s" .Values.name) -}}
-{{- end }}
-
-{{/*
 True if the model container should request NVIDIA GPU resources and GPU-related chart bits
 (tolerations, full resources blob). Uses resources.limits/requests nvidia.com/gpu unless
 HardwareProfile is cpu-profile: cpu-profile forces CPU-only rendering and strips GPU in

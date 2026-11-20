@@ -18,7 +18,6 @@
 
 name: granite-guardian-4-1-8b
 namespace:
-  create: false
   name: models-as-a-service
 
 model:

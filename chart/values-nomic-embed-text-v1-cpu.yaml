@@ -19,7 +19,6 @@
 
 name: nomic-embed-text-v1-cpu
 namespace:
-  create: false
   name: models-as-a-service
 
 model:

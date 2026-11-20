@@ -4,7 +4,6 @@
 
 name: qwen38-27b-fp8
 namespace:
-  create: false
   name: models-as-a-service
 
 model:

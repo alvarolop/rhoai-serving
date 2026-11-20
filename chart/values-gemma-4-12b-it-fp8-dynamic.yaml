@@ -7,7 +7,6 @@
 
 name: gemma-4-12b-it-fp8-dynamic
 namespace:
-  create: false
   name: models-as-a-service
 
 model:

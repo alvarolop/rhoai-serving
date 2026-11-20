@@ -6,7 +6,6 @@
 
 name: tinyllama-s3-minio
 namespace:
-  create: false
   name: models-as-a-service
 
 model:

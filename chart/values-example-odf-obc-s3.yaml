@@ -25,7 +25,6 @@
 
 name: example-obc-model
 namespace:
-  create: false
   name: models-as-a-service
 
 model:

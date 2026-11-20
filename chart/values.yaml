@@ -19,18 +19,10 @@ name: model-server
 
 # @section -- Namespace Configuration
 
-# -- Target namespace configuration for all chart resources
+# -- Target namespace for all chart resources. The namespace is NOT created by this chart: it is owned by the platform (rhoai-gitops creates it, labels it for Kueue and creates the LocalQueues and GPU claim templates).
 namespace:
-  # -- Create the namespace if it doesn't exist
-  create: true
   # -- Namespace name
   name: models-as-a-service
-  # -- OpenShift console display name (defaults to "Model - <name>" if empty)
-  displayName: ""
-  # -- OpenShift console description (defaults to "Serving model <name>" if empty)
-  description: ""
-  # -- Enable Kueue management label for queue enforcement (Red Hat OpenShift AI workload scheduling)
-  kueueManaged: true
 
 # @section -- Kueue Configuration
 
@@ -42,13 +34,6 @@ kueue:
   # -- WorkloadPriorityClass for the workload label kueue.x-k8s.io/priority-class (orders models inside serving-cq). Empty = derive from serving.hardwareProfile.name (gpu-profile: model-critical, gpu-batch-profile: batch-nightly, otherwise no label). Other classes: model-standard, batch-interactive.
   # @default -- "" (derived)
   priorityClass: ""
-
-# @section -- Monitoring Configuration
-
-# -- OpenShift monitoring configuration for predictive models with KEDA autoscaling
-monitoring:
-  # -- Disable user workload monitoring (use cluster monitoring instead). When true, sets openshift.io/cluster-monitoring label on namespace for KEDA metrics access. Only applies to predictive models with scaling.mode: keda.
-  userWorkloadDisabled: false
 
 # @section -- Serving Configuration
 
@@ -113,7 +98,7 @@ serving:
       #           weight: 10  # KV utilization impact
       #         - pluginRef: no-hit-lru-scorer
       #           weight: 10  # Spread requests with no cache hit (LRU)
-  # -- MaaS (Models-as-a-Service) catalog integration. Creates MaaSModelRef CR using namespace.displayName, namespace.description, and dashboard.genaiUseCase.
+  # -- MaaS (Models-as-a-Service) catalog integration. Creates MaaSModelRef CR using model.displayName, model.description and model.metadata.useCase.
   maas:
     # -- Enable MaaSModelRef creation for MaaS catalog (generative models only: MaaS supports LLMInferenceService, not InferenceService)
     enabled: true
@@ -165,6 +150,10 @@ model:
   uri: ""
   # -- Model name for serving requests
   name: ""
+  # -- Display name in the MaaS catalog (MaaSModelRef). Defaults to "Model - <name>" if empty.
+  displayName: ""
+  # -- Description in the MaaS catalog (MaaSModelRef). Defaults to "Serving model <name>" if empty.
+  description: ""
   # -- Maximum model sequence length (context window). Optional - only set when using --max-model-len vLLM arg or for MaaSModelRef annotation.
   maxModelLen: ""
   # -- Model metadata annotations for OpenShift AI dashboard and MaaS catalog

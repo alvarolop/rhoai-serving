@@ -8,7 +8,6 @@
 
 name: granite-3-3-2b-instruct
 namespace:
-  create: false
   name: models-as-a-service
 
 model:

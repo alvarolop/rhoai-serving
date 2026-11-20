@@ -6,13 +6,13 @@ metadata:
   namespace: {{ .Values.namespace.name }}
   annotations:
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
-    {{- if .Values.namespace.displayName }}
-    openshift.io/display-name: {{ .Values.namespace.displayName | quote }}
+    {{- if .Values.model.displayName }}
+    openshift.io/display-name: {{ .Values.model.displayName | quote }}
     {{- else }}
     openshift.io/display-name: {{ printf "Model - %s" .Values.name | quote }}
     {{- end }}
-    {{- if .Values.namespace.description }}
-    openshift.io/description: {{ .Values.namespace.description | quote }}
+    {{- if .Values.model.description }}
+    openshift.io/description: {{ .Values.model.description | quote }}
     {{- else }}
     openshift.io/description: {{ printf "Serving model %s" .Values.name | quote }}
     {{- end }}

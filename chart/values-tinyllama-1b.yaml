@@ -8,7 +8,6 @@
 
 name: tinyllama-1b
 namespace:
-  create: false
   name: models-as-a-service
 
 model:

@@ -5,7 +5,6 @@
 
 name: gpt-oss-20b
 namespace:
-  create: false
   name: models-as-a-service
 
 model:

@@ -143,18 +143,7 @@ helm template gpt-oss-20b chart/ -f chart/values.yaml -f chart/values-gpt-oss-20
 
 ### Namespace
 
-Resources go to `namespace.name`. The overlays use `create: false` (the namespace must already exist). Set `create: true` and the chart also renders the `Namespace`:
-
-```yaml
-namespace:
-  create: true
-  name: model-qwen
-  displayName: ""       # console short title; defaults to name if empty
-  description: ""       # optional
-  kueueManaged: true    # label kueue.openshift.io/managed=true (serving runs under Kueue)
-```
-
-If you use an existing namespace, make sure it has `kueue.openshift.io/managed=true`. See [Kueue queues](#kueue-queues).
+Resources go to `namespace.name` (default `models-as-a-service`). The chart does **not** create the namespace: it is owned by the platform (rhoai-gitops creates it, labels it `kueue.openshift.io/managed=true` and creates the LocalQueues and GPU claim templates), so it must already exist.
 
 ### Kueue queues
 
