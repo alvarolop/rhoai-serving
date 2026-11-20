@@ -45,11 +45,11 @@ false
 
 {{/*
 True when the GPU is requested through Dynamic Resource Allocation (a ResourceClaim) instead of the
-device plugin: dra.enabled AND the model asks for a GPU (hasNvidiaGpu). CPU models (cpu-profile or no
-nvidia.com/gpu in resources) never get a claim, whatever dra.enabled says.
+device plugin: serving.dra.enabled AND the model asks for a GPU (hasNvidiaGpu). CPU models (cpu-profile or no
+nvidia.com/gpu in resources) never get a claim, whatever serving.dra.enabled says.
 */}}
 {{- define "rhoai-serving.useDra" -}}
-{{- if and (.Values.dra).enabled (eq (include "rhoai-serving.hasNvidiaGpu" . | trim) "true") -}}true{{- else -}}false{{- end -}}
+{{- if and (.Values.serving.dra).enabled (eq (include "rhoai-serving.hasNvidiaGpu" . | trim) "true") -}}true{{- else -}}false{{- end -}}
 {{- end -}}
 
 {{/*
@@ -70,12 +70,12 @@ Number of GPUs requested. Single source of truth is mainContainer.resources limi
 
 {{/* Name of the pod-level claim (spec.resourceClaims[].name) and of the container claim reference. */}}
 {{- define "rhoai-serving.draClaimName" -}}
-{{- .Values.dra.claimName | default "gpu" -}}
+{{- .Values.serving.dra.claimName | default "gpu" -}}
 {{- end -}}
 
-{{/* ResourceClaimTemplate referenced by the pod: dra.claimTemplate.existing, or the one created by the chart. */}}
+{{/* ResourceClaimTemplate referenced by the pod: serving.dra.claimTemplate.existing, or the one created by the chart. */}}
 {{- define "rhoai-serving.draClaimTemplateName" -}}
-{{- .Values.dra.claimTemplate.existing | default (printf "%s-gpu" .Values.name) -}}
+{{- .Values.serving.dra.claimTemplate.existing | default (printf "%s-gpu" .Values.name) -}}
 {{- end -}}
 
 {{/* Pod-level claims list (LLMInferenceService spec.template / InferenceService spec.predictor). */}}
@@ -115,23 +115,23 @@ requests:
 
 {{/*
 HardwareProfile name written in opendatahub.io/hardware-profile-name. With DRA, gpu-profile is swapped for
-dra.hardwareProfile (gpu-dra-profile in rhoai-gitops: same queue, but NO nvidia.com/gpu identifier), so model
+serving.dra.hardwareProfile (gpu-dra-profile in rhoai-gitops: same queue, but NO nvidia.com/gpu identifier), so model
 files keep saying gpu-profile. Verified on RHOAI 3.5.3: with gpu-profile the webhook adds nvidia.com/gpu on top
 of the claim, Kueue counts 2 GPUs and the pod never schedules.
 */}}
 {{- define "rhoai-serving.hardwareProfileName" -}}
 {{- $n := .Values.serving.hardwareProfile.name | default "" -}}
-{{- if and (eq (include "rhoai-serving.useDra" . | trim) "true") (eq $n "gpu-profile") .Values.dra.hardwareProfile -}}{{ .Values.dra.hardwareProfile }}{{- else -}}{{ $n }}{{- end -}}
+{{- if and (eq (include "rhoai-serving.useDra" . | trim) "true") (eq $n "gpu-profile") .Values.serving.dra.hardwareProfile -}}{{ .Values.serving.dra.hardwareProfile }}{{- else -}}{{ $n }}{{- end -}}
 {{- end -}}
 
 {{/*
 Emit the opendatahub.io/hardware-profile-* annotations? Always without DRA. With DRA only when the effective profile
-is the DRA one (no GPU identifier) or dra.hardwareProfileAnnotation is true: any other GPU profile would make the
+is the DRA one (no GPU identifier) or serving.dra.hardwareProfileAnnotation is true: any other GPU profile would make the
 webhook inject nvidia.com/gpu next to the claim. Queue / priority labels derive from serving.hardwareProfile.name
 and do not depend on the annotation.
 */}}
 {{- define "rhoai-serving.emitHardwareProfileAnnotation" -}}
-{{- if or (ne (include "rhoai-serving.useDra" . | trim) "true") .Values.dra.hardwareProfileAnnotation (and .Values.dra.hardwareProfile (eq (include "rhoai-serving.hardwareProfileName" . | trim) .Values.dra.hardwareProfile)) -}}true{{- else -}}false{{- end -}}
+{{- if or (ne (include "rhoai-serving.useDra" . | trim) "true") .Values.serving.dra.hardwareProfileAnnotation (and .Values.serving.dra.hardwareProfile (eq (include "rhoai-serving.hardwareProfileName" . | trim) .Values.serving.dra.hardwareProfile)) -}}true{{- else -}}false{{- end -}}
 {{- end -}}
 
 {{/*

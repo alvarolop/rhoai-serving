@@ -28,6 +28,9 @@ model:
     useCase: moderation
     type: generative
 serving:
+  dra:
+    claimTemplate:
+      existing: gpu-m-x1  # shared platform GPU size (rhoai-gitops 06-dra): gpu-s-x1 embeddings, gpu-m-x1 L4, gpu-l-x1 H100
   hardwareProfile:
     name: gpu-profile
     namespace: redhat-ods-applications
@@ -172,10 +175,3 @@ chatTemplate:
     {%- if add_generation_prompt %}
         {{- '<|start_of_role|>assistant<|end_of_role|>' }}
     {%- endif %}
-
-# GPU through DRA: shared ResourceClaimTemplate defined by the platform (rhoai-gitops, templates/06-dra), not created by this chart.
-# Sizes: gpu-s-x1 = small (embeddings; MIG 1g.12gb or any GPU >= 16Gi), gpu-m-x1 = L4-class 24 GB (8-24B models on the L4), gpu-l-x1 = 1x H100 (>= 80Gi).
-# Ignored with dra.enabled=false (device plugin). Remove the line to let the chart create its own template.
-dra:
-  claimTemplate:
-    existing: gpu-m-x1

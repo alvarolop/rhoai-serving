@@ -1,11 +1,11 @@
-{{- if and (eq (include "rhoai-serving.useDra" . | trim) "true") (not .Values.dra.claimTemplate.existing) }}
-{{- $dra := .Values.dra -}}
+{{- if and (eq (include "rhoai-serving.useDra" . | trim) "true") (not .Values.serving.dra.claimTemplate.existing) }}
+{{- $dra := .Values.serving.dra -}}
 {{- $count := include "rhoai-serving.gpuCount" . | trim | atoi -}}
 {{- $gpuAttr := `device.attributes["gpu.nvidia.com"]` -}}
 {{- $tensor := 0 -}}
 {{- if .Values.parallelism }}{{- $tensor = (.Values.parallelism.tensor | default 0 | int) -}}{{- end }}
 {{- if and $dra.mig.enabled (gt $tensor 1) }}
-{{- fail "dra.mig.enabled with parallelism.tensor > 1: a vLLM process only sees the FIRST MIG partition of its list, so tensor parallelism cannot span MIG slices. Use full GPUs (dra.mig.enabled=false)." }}
+{{- fail "serving.dra.mig.enabled with parallelism.tensor > 1: a vLLM process only sees the FIRST MIG partition of its list, so tensor parallelism cannot span MIG slices. Use full GPUs (serving.dra.mig.enabled=false)." }}
 {{- end }}
 ---
 apiVersion: resource.k8s.io/v1

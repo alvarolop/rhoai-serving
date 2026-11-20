@@ -193,17 +193,17 @@ Only applies to generative models (`LLMInferenceService`). Predictive models use
 
 ## GPUs with Dynamic Resource Allocation (DRA)
 
-`dra.enabled` (default `true`) requests the GPU through a `ResourceClaimTemplate` instead of `nvidia.com/gpu` limits. The same `values-<model>.yaml` works with DRA on or off: the GPU count is read from `mainContainer.resources.limits["nvidia.com/gpu"]`, and with DRA on that key is replaced by `resources.claims` plus a pod-level `resourceClaims` entry. CPU models never get a claim.
+`serving.dra.enabled` (default `true`) requests the GPU through a `ResourceClaimTemplate` instead of `nvidia.com/gpu` limits. The same `values-<model>.yaml` works with DRA on or off: the GPU count is read from `mainContainer.resources.limits["nvidia.com/gpu"]`, and with DRA on that key is replaced by `resources.claims` plus a pod-level `resourceClaims` entry. CPU models never get a claim.
 
 ```bash
 # DRA (default)
 helm template <release> chart/ -f chart/values.yaml -f chart/values-<model>.yaml | oc apply -f -
 
 # Device plugin (clusters without the NVIDIA DRA driver)
-helm template <release> chart/ -f chart/values.yaml -f chart/values-<model>.yaml --set dra.enabled=false | oc apply -f -
+helm template <release> chart/ -f chart/values.yaml -f chart/values-<model>.yaml --set serving.dra.enabled=false | oc apply -f -
 ```
 
-Optional filters (`dra.productName`, `dra.minMemory`, `dra.selectors`), MIG with `firstAvailable` (`dra.mig.*`) and an existing template (`dra.claimTemplate.existing`) are documented in `values.yaml` and in [docs/010-dra-gpu-claims.md](../docs/010-dra-gpu-claims.md).
+Optional filters (`serving.dra.productName`, `serving.dra.minMemory`, `serving.dra.selectors`), MIG with `firstAvailable` (`serving.dra.mig.*`) and an existing template (`serving.dra.claimTemplate.existing`) are documented in `values.yaml` and in [docs/010-dra-gpu-claims.md](../docs/010-dra-gpu-claims.md).
 
 ## Health Probes
 
