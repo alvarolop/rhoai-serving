@@ -48,13 +48,13 @@ serving:
     # -- HardwareProfile namespace
     # @default -- redhat-ods-applications
     namespace: redhat-ods-applications
-  # -- GPU through Dynamic Resource Allocation (DRA) instead of the NVIDIA device plugin. With DRA the pod does not request `nvidia.com/gpu`: it references a ResourceClaimTemplate through `spec.resourceClaims` and `resources.claims`. The templates are NOT created by this chart: the platform team defines them (rhoai-gitops `06-dra`) as shared GPU sizes. CPU models never get a claim. Needs the NVIDIA DRA driver and, for Kueue accounting, the `gpu.nvidia.com` DeviceClass mapped to `nvidia.com/gpu` (rhoai-gitops).
+  # -- GPU through Dynamic Resource Allocation (DRA) instead of the NVIDIA device plugin: the pod references a ResourceClaimTemplate (`resourceClaims` + `resources.claims`) instead of `nvidia.com/gpu`. The templates are defined by the platform team (rhoai-gitops `06-dra`), not by this chart. CPU models never get a claim. See docs/010-dra-gpu-claims.md.
   dra:
-    # -- Request the GPU with a ResourceClaim (true) or with `nvidia.com/gpu` limits (false, device plugin). Set false on clusters without the NVIDIA DRA driver.
+    # -- Use a ResourceClaim (true) or `nvidia.com/gpu` limits (false). Set false on clusters without the NVIDIA DRA driver.
     enabled: true
-    # -- Name of the platform-defined ResourceClaimTemplate in the model namespace (required for GPU models when DRA is enabled). Sizes in rhoai-gitops `06-dra`: `gpu-s-x1` (small, embeddings), `gpu-m-x1` (L4-class 24 GB), `gpu-l-x1` (1x H100), `gpu-xl-x4` (4 GPUs). The GPU count comes from the template.
+    # -- Platform-defined ResourceClaimTemplate in the model namespace; required for GPU models when DRA is on. Sizes: `gpu-s-x1` (small, embeddings), `gpu-m-x1` (L4-class), `gpu-l-x1` (1x H100), `gpu-xl-x4` (4 GPUs). The GPU count comes from the template.
     claimTemplate: ""
-    # -- HardwareProfile written in the annotation of DRA models whose `serving.hardwareProfile.name` is `gpu-profile`. It must NOT have an `nvidia.com/gpu` identifier (the RHOAI webhook would add it on top of the claim and Kueue would count 2 GPUs). `gpu-dra-profile` (rhoai-gitops) has the same queue and priority. Any other GPU profile gets no hardware-profile annotation on DRA models.
+    # -- HardwareProfile written in the annotation of DRA models whose profile is `gpu-profile`. It must not carry an `nvidia.com/gpu` identifier (the webhook would add it on top of the claim and Kueue would count 2 GPUs).
     hardwareProfile: gpu-dra-profile
   # -- Gateway API refs for spec.router.gateway. Default: the MaaS gateway (maas-default-gateway in openshift-ingress), so models are published through Models-as-a-Service. The model namespace must be allowed by the gateway. To use the standard llm-d gateway (openshift-ai-inference) instead, set `[]`.
   # @default -- MaaS gateway (maas-default-gateway / openshift-ingress)

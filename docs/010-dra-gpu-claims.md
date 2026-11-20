@@ -1,59 +1,72 @@
 # 010 — GPUs through Dynamic Resource Allocation (DRA)
 
-## Context
+**TL;DR**
 
-With the NVIDIA device plugin a model asks for `nvidia.com/gpu` in `resources.limits`. On clusters running the **NVIDIA DRA driver** (OpenShift 4.22 + RHOAI 3.5) there is no device plugin: the pod references a **`ResourceClaimTemplate`** and the scheduler allocates a device from a `ResourceSlice`.
+- GPU models request their GPU with a **`ResourceClaimTemplate`** (DRA) instead of `nvidia.com/gpu` limits. On by default: `serving.dra.enabled: true`.
+- **This chart creates no claim templates.** Each model names a platform-defined size in `serving.dra.claimTemplate`: `gpu-s-x1`, `gpu-m-x1`, `gpu-l-x1`, `gpu-xl-x4` (rhoai-gitops, `06-dra`).
+- On DRA models the hardware profile becomes **`gpu-dra-profile`** (no `nvidia.com/gpu` identifier). With `gpu-profile` the pod never schedules.
+- CPU models are untouched. Cluster without the NVIDIA DRA driver: `--set serving.dra.enabled=false`.
+
+## How it fits together
 
 ```
 GPU hardware
-   │  NVIDIA DRA driver (kubelet plugin)
+   │  NVIDIA DRA driver
    ▼
-ResourceSlice            (per node: productName, architecture, memory, type=gpu|mig, ...)
+ResourceSlice          what each node offers (model, memory, MIG profile)
    │
    ▼
-DeviceClass              gpu.nvidia.com / mig.nvidia.com   (created by NVIDIA)
+DeviceClass            gpu.nvidia.com / mig.nvidia.com           created by NVIDIA
    │
    ▼
-ResourceClaimTemplate    gpu-s-x1 / gpu-m-x1 / gpu-l-x1 / gpu-xl-x4   (created by the platform team, rhoai-gitops 06-dra)
+ResourceClaimTemplate  gpu-s-x1 / gpu-m-x1 / gpu-l-x1 / gpu-xl-x4   created by the platform team (rhoai-gitops)
    │  one ResourceClaim per pod
    ▼
-Pod                      spec.resourceClaims[gpu] + containers[].resources.claims[gpu]   (written by this chart)
+Pod                    resourceClaims + resources.claims          written by THIS chart
 ```
 
-Kueue 1.5 evaluates the claims. **rhoai-gitops** maps the `gpu.nvidia.com` DeviceClass to `nvidia.com/gpu` (`Kueue` CR `deviceClassMappings`), so `serving-lq` / `batch-lq` count claims against the same quota as before. Nothing Kueue-related changes in this repo.
+Kueue counts the claim against the same quota as before, because rhoai-gitops maps the `gpu.nvidia.com` DeviceClass to `nvidia.com/gpu` (`deviceClassMappings`). Nothing Kueue-related changes here.
 
-## Decision
+## What the chart does
 
-This chart **does not define GPU claim templates**: how a GPU is requested (device filters, MIG alternatives, fallbacks) is a platform decision. The chart only references one by name.
+| | `serving.dra.enabled: true` (default) | `false` (device plugin) |
+|---|---|---|
+| Container resources | `claims: [{name: gpu}]`, no `nvidia.com/gpu` | `nvidia.com/gpu` in limits/requests |
+| Pod | `resourceClaims: [{name: gpu, resourceClaimTemplateName: <size>}]` | nothing |
+| GPU count | from the template | from `nvidia.com/gpu` in the values |
+| Hardware profile annotation | `gpu-dra-profile` | as in the values |
 
-`serving.dra` in `values.yaml` (`enabled: true` by default):
+- Applies to `LLMInferenceService` (`spec.template`) and to a predictive `InferenceService` that asks for a GPU (`spec.predictor`).
+- A model with a GPU and no `serving.dra.claimTemplate` fails the render with a clear message.
+- CPU models (`cpu-profile` or no GPU in the resources) never get a claim.
 
-- `serving.dra.claimTemplate`: name of the platform-defined `ResourceClaimTemplate` in the model namespace. Required for GPU models when DRA is on (the render fails with a clear message otherwise). The GPU count comes from the template.
-- DRA on: `nvidia.com/gpu` is removed from limits/requests of the model container and replaced by `resources.claims`, plus `spec.resourceClaims` on the pod.
-- DRA off (`--set serving.dra.enabled=false`): the device-plugin form, identical to before DRA support.
-- CPU models (`cpu-profile`, no GPU in resources) never get a claim (`rhoai-serving.useDra` = `serving.dra.enabled` AND `hasNvidiaGpu`).
-- Where the claim goes: `LLMInferenceService.spec.template.resourceClaims` and `InferenceService.spec.predictor.resourceClaims` (both CRDs accept it). The chart does not render `spec.worker` / `prefill`.
+## Sizes (platform-defined)
 
-Shared sizes defined in rhoai-gitops (`templates/06-dra`), each a `firstAvailable` list so the same name lands on different hardware per cluster:
+Each size is a `firstAvailable` list: the same name lands on different hardware in different clusters.
 
-| Template | Intent | Alternatives, in order |
-|----------|--------|------------------------|
-| `gpu-s-x1` | small model (embeddings) | MIG `1g.12gb`, MIG `2g.24gb`, any GPU >= 16Gi |
-| `gpu-m-x1` | about 24 GB, LLMs on the L4 | `NVIDIA L4`, MIG `2g.24gb`, any GPU >= 22Gi |
+| Template | For | Alternatives, in order |
+|----------|-----|------------------------|
+| `gpu-s-x1` | small models (embeddings) | MIG `1g.12gb`, MIG `2g.24gb`, any GPU >= 16Gi |
+| `gpu-m-x1` | 8-24B LLMs on the L4 | `NVIDIA L4`, MIG `2g.24gb`, any GPU >= 22Gi |
 | `gpu-l-x1` | 1x H100 | any GPU >= 80Gi, MIG `7g.94gb` |
-| `gpu-xl-x4` | 4 GPUs (tensor parallelism) | commented reference in rhoai-gitops, **not rendered yet**: infra must create it before Llama 70B is deployed |
+| `gpu-xl-x4` | 4 GPUs (tensor parallelism) | reference only in rhoai-gitops, **not created yet** |
 
-The model files choose the size in `serving.dra.claimTemplate`: `gpu-s-x1` for the embedding models (bge-m3, nomic), `gpu-m-x1` for the 8-24B models on the L4, `gpu-l-x1` for the 1x H100 ones, `gpu-xl-x4` for Llama 70B. `gpu-s-x1` is not used for LLMs: its first alternative on a MIG cluster is a 12 GB slice, too small for the weights plus KV cache. The shared templates are created in `models-as-a-service` (`dra.namespaces` in rhoai-gitops): a model in another namespace needs it added there. A vLLM process only sees the first MIG partition of its list, so tensor parallelism needs N full GPUs (a platform concern when defining `gpu-xl-x4`).
+Models pick one in their values file (first lines of `serving:`): `gpu-s-x1` for bge-m3 and nomic, `gpu-m-x1` for the L4 LLMs, `gpu-l-x1` for Qwen3.8 and Gemma 26B, `gpu-xl-x4` for Llama 70B. `gpu-s-x1` is not used for LLMs: on a MIG cluster its first option is a 12 GB slice, too small for weights plus KV cache.
 
-### HardwareProfile
+## Hardware profile
 
-The `opendatahub.io/hardware-profile-*` annotation makes the RHOAI webhook apply the profile, and `HardwareProfile` identifiers have no DRA field in RHOAI 3.5.3. **Verified on the cluster** with `gpu-profile`: the webhook adds `nvidia.com/gpu: 1` to limits/requests *on top of* the claim. Kueue then counts 2 GPUs against a quota of 1 (`insufficient quota for nvidia.com/gpu ... request (2) > maximum capacity (1)`), the pod stays `SchedulingGated`, and the nodes do not advertise `nvidia.com/gpu` anyway.
+The `opendatahub.io/hardware-profile-*` annotation makes the RHOAI webhook apply the profile, and `HardwareProfile` has no DRA field in RHOAI 3.5. Verified on the cluster:
 
-Fix: **`gpu-dra-profile`** (rhoai-gitops, `templates/05-hardware-profiles`): same queue `serving-lq` and priority `model-critical`, but only CPU and memory identifiers. On DRA models whose `serving.hardwareProfile.name` is `gpu-profile` the chart writes `serving.dra.hardwareProfile` (default `gpu-dra-profile`) in the annotation, so the dashboard shows the profile instead of "Unknown". The Kueue labels keep deriving from the name in the values (`gpu-profile` and `gpu-dra-profile` both map to `serving-lq` / `model-critical`). Any other profile with DRA (for example `gpu-batch-profile`, which has no DRA variant) gets no annotation, because it would inject `nvidia.com/gpu`. `gpu-dra-profile` must exist in the cluster before the model is applied.
+```
+gpu-profile      model ─webhook─▶ adds nvidia.com/gpu: 1 ─▶ Kueue counts limit + claim = 2 GPUs ─▶ SchedulingGated
+gpu-dra-profile  model ─webhook─▶ CPU and memory only    ─▶ Kueue counts the claim   = 1 GPU  ─▶ Running
+```
 
-## Consequences
+`gpu-dra-profile` (rhoai-gitops, `05-hardware-profiles`) has the same queue (`serving-lq`) and priority (`model-critical`) as `gpu-profile`. The chart swaps `gpu-profile` for `serving.dra.hardwareProfile` (default `gpu-dra-profile`) when DRA is on, so model files keep saying `gpu-profile`. Kueue labels still derive from the name in the values. Any other GPU profile (for example `gpu-batch-profile`) gets no annotation on DRA models, because it would inject `nvidia.com/gpu`.
 
-- Cluster without the NVIDIA DRA driver: set `serving.dra.enabled=false` (or the pods stay `Pending` waiting for a claim).
-- Argo CD Applications that deploy GPU models on a non-DRA cluster must pass `serving.dra.enabled=false`.
+## Operating notes
+
+- `gpu-dra-profile` and the sizes must exist before a model is applied. The sizes are created in `models-as-a-service` (`dra.namespaces` in rhoai-gitops): a model in another namespace needs it added there.
+- Llama 70B needs `gpu-xl-x4`: it will not start until infra creates it.
 - A new GPU size is a change in rhoai-gitops, not in this chart.
-- `chart/README.md`: the generated values table must be regenerated with `helm-docs` (`make docs` in `chart/`).
+- The `chart/README.md` values table must be regenerated with `helm-docs` (`make docs` in `chart/`).

@@ -193,7 +193,7 @@ Only applies to generative models (`LLMInferenceService`). Predictive models use
 
 ## GPUs with Dynamic Resource Allocation (DRA)
 
-`serving.dra.enabled` (default `true`) requests the GPU through a platform-defined `ResourceClaimTemplate` instead of `nvidia.com/gpu` limits. The chart does **not** create claim templates: each model names one in `serving.dra.claimTemplate` (`gpu-s-x1`, `gpu-m-x1`, `gpu-l-x1`, `gpu-xl-x4`, defined by the platform team in rhoai-gitops `06-dra`). CPU models never get a claim.
+**TL;DR:** `serving.dra.enabled` (default `true`) requests the GPU through a platform-defined `ResourceClaimTemplate` named in `serving.dra.claimTemplate` (`gpu-s-x1`, `gpu-m-x1`, `gpu-l-x1`, `gpu-xl-x4`). The chart creates no templates. CPU models never get a claim.
 
 ```bash
 # DRA (default)
@@ -203,7 +203,7 @@ helm template <release> chart/ -f chart/values.yaml -f chart/values-<model>.yaml
 helm template <release> chart/ -f chart/values.yaml -f chart/values-<model>.yaml --set serving.dra.enabled=false | oc apply -f -
 ```
 
-Details in [docs/010-dra-gpu-claims.md](../docs/010-dra-gpu-claims.md).
+Details and diagrams in [docs/010-dra-gpu-claims.md](../docs/010-dra-gpu-claims.md).
 
 ## Health Probes
 
