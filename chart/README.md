@@ -186,14 +186,13 @@ parallelism:
 ```
 
 **Examples:**
-- **Llama 3.3 70B** (`values-llama-3.3-70b.yaml`): Uses `tensor: 4` to split the model across 4 GPUs on a single node
 - **Future multi-node deployments**: Combine `tensor`, `data`, and `dataLocal` for distributed serving
 
 Only applies to generative models (`LLMInferenceService`). Predictive models use replica-based scaling instead.
 
 ## GPUs with Dynamic Resource Allocation (DRA)
 
-**TL;DR:** `serving.dra.enabled` (default `true`) requests the GPU through a platform-defined `ResourceClaimTemplate` named in `serving.dra.claimTemplate` (`gpu-s-x1`, `gpu-m-x1`, `gpu-l-x1`, `gpu-xl-x4`). The chart creates no templates. CPU models never get a claim.
+**TL;DR:** `serving.dra.enabled` (default `true`) requests the GPU through a platform-defined `ResourceClaimTemplate` named in `serving.dra.claimTemplate` (`gpu-s-x1`, `gpu-m-x1`, `gpu-l-x1`, `gpu-xl-x1`). The chart creates no templates. CPU models never get a claim.
 
 ```bash
 # DRA (default)

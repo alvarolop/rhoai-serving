@@ -52,7 +52,7 @@ serving:
   dra:
     # -- Use a ResourceClaim (true) or `nvidia.com/gpu` limits (false). Set false on clusters without the NVIDIA DRA driver.
     enabled: true
-    # -- Platform-defined ResourceClaimTemplate in the model namespace; required for GPU models when DRA is on. Sizes: `gpu-s-x1` (small, embeddings), `gpu-m-x1` (L4-class), `gpu-l-x1` (1x H100), `gpu-xl-x4` (4 GPUs). The GPU count comes from the template.
+    # -- Platform-defined ResourceClaimTemplate in the model namespace; required for GPU models when DRA is on. Sizes: `gpu-s-x1` (small, embeddings), `gpu-m-x1` (L4-class), `gpu-l-x1` (1x H100), `gpu-xl-x1` (1 GPU with 140 Gi or more). The GPU count comes from the template.
     claimTemplate: ""
     # -- HardwareProfile written in the annotation of DRA models whose profile is `gpu-profile`. It must not carry an `nvidia.com/gpu` identifier (the webhook would add it on top of the claim and Kueue would count 2 GPUs).
     hardwareProfile: gpu-dra-profile

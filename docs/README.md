@@ -12,6 +12,6 @@ Short, opinionated notes for this repository’s Helm chart: what the chart **do
 | [007 — NVFP4, inference stack, GPU matrix](007-nvfp4-inference-stack-and-gpu-matrix.md) | What **NVFP4** means; **OpenShift AI / vLLM worker** vs chart scope; **NVIDIA driver / GPU Operator / GPU SKU** checks; Hopper vs Blackwell |
 | [008 — Gemma 4 “A4B” naming (MoE)](008-gemma-4-a4b-moe-naming.md) | What **26B-A4B** and **`it`** denote (sparse experts, instruction-tuned)—not a date or random suffix |
 | [009 — ModelCar symlinks with Hugging Face blobs](009-modelcar-symlinks-huggingface-blobs.md) | Why large models (Gemma, Llama) break in ModelCar images with symlinks; `local_dir_use_symlinks=False` fix for blob storage |
-| [010 — GPUs through DRA](010-dra-gpu-claims.md) | TL;DR, flow diagram, platform-defined claim templates (`gpu-s/m/l-x1`, `gpu-xl-x4`), and why DRA models use `gpu-dra-profile` |
+| [010 — GPUs through DRA](010-dra-gpu-claims.md) | TL;DR, flow diagram, platform-defined claim templates (`gpu-s/m/l-x1`, `gpu-xl-x1`), and why DRA models use `gpu-dra-profile` |
 
 Exact hostnames and path rules can change between OpenShift AI releases; treat product docs as authoritative for your version.

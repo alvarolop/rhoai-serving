@@ -1,4 +1,5 @@
-# Llama 3.3 70B Instruct FP8-block (RedHatAI) - Multi-GPU generative model (4x GPU, H100-class), 72.7 GB of weights
+# Llama 3.3 70B Instruct FP8-block (RedHatAI) - Single large GPU (B200 / H200, 140 GB or more), 72.7 GB of weights
+# (an 80 GB H100 would leave almost no KV cache: gpu-xl-x1 keeps it on one card, no tensor parallelism)
 # Usage: helm template llama chart/ -f chart/values.yaml -f chart/values-llama-3.3-70b.yaml
 
 name: llama-3-3-70b
@@ -13,14 +14,10 @@ model:
     type: generative
 serving:
   dra:
-    claimTemplate: gpu-xl-x4  # platform GPU size (rhoai-gitops 06-dra); 4 GPUs, the platform must define it (a commented reference exists)
+    claimTemplate: gpu-xl-x1  # platform GPU size (rhoai-gitops 06-dra): 1 GPU with 140 Gi or more
   hardwareProfile:
     name: gpu-profile
     namespace: redhat-ods-applications
-
-# Tensor parallelism: split model across 4 GPUs on a single node
-parallelism:
-  tensor: 4
 
 mainContainer:
   # extraArgs:
@@ -59,9 +56,9 @@ mainContainer:
     limits:
       cpu: "8"
       memory: "128Gi"
-      nvidia.com/gpu: "4"
+      nvidia.com/gpu: "1"
     requests:
       cpu: "4"
       memory: "64Gi"
-      nvidia.com/gpu: "4"
+      nvidia.com/gpu: "1"
 

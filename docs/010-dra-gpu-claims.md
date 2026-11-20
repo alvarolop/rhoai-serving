@@ -3,7 +3,7 @@
 **TL;DR**
 
 - GPU models request their GPU with a **`ResourceClaimTemplate`** (DRA) instead of `nvidia.com/gpu` limits. On by default: `serving.dra.enabled: true`.
-- **This chart creates no claim templates.** Each model names a platform-defined size in `serving.dra.claimTemplate`: `gpu-s-x1`, `gpu-m-x1`, `gpu-l-x1`, `gpu-xl-x4` (rhoai-gitops, `06-dra`).
+- **This chart creates no claim templates.** Each model names a platform-defined size in `serving.dra.claimTemplate`: `gpu-s-x1`, `gpu-m-x1`, `gpu-l-x1`, `gpu-xl-x1` (rhoai-gitops, `06-dra`).
 - On DRA models the hardware profile becomes **`gpu-dra-profile`** (no `nvidia.com/gpu` identifier). With `gpu-profile` the pod never schedules.
 - CPU models are untouched. Cluster without the NVIDIA DRA driver: `--set serving.dra.enabled=false`.
 
@@ -19,7 +19,7 @@ ResourceSlice          what each node offers (model, memory, MIG profile)
 DeviceClass            gpu.nvidia.com / mig.nvidia.com           created by NVIDIA
    │
    ▼
-ResourceClaimTemplate  gpu-s-x1 / gpu-m-x1 / gpu-l-x1 / gpu-xl-x4   created by the platform team (rhoai-gitops)
+ResourceClaimTemplate  gpu-s-x1 / m-x1 / l-x1 / xl-x1   created by the platform team (rhoai-gitops)
    │  one ResourceClaim per pod
    ▼
 Pod                    resourceClaims + resources.claims          written by THIS chart
@@ -49,9 +49,9 @@ Each size is a `firstAvailable` list: the same name lands on different hardware 
 | `gpu-s-x1` | small models (embeddings) | MIG `1g.12gb`, MIG `2g.24gb`, any GPU >= 16Gi |
 | `gpu-m-x1` | 8-24B LLMs on the L4 | `NVIDIA L4`, MIG `2g.24gb`, any GPU >= 22Gi |
 | `gpu-l-x1` | 1x H100 | any GPU >= 80Gi, MIG `7g.94gb` |
-| `gpu-xl-x4` | 4 GPUs (tensor parallelism) | reference only in rhoai-gitops, **not created yet** |
+| `gpu-xl-x1` | 1 GPU with 140 Gi or more (B200, H200) | any GPU >= 140Gi, MIG `7g.180gb`, MIG `7g.141gb` |
 
-Models pick one in their values file (first lines of `serving:`): `gpu-s-x1` for bge-m3 and nomic, `gpu-m-x1` for the L4 LLMs, `gpu-l-x1` for Qwen3.8 and Gemma 26B, `gpu-xl-x4` for Llama 70B. `gpu-s-x1` is not used for LLMs: on a MIG cluster its first option is a 12 GB slice, too small for weights plus KV cache.
+Models pick one in their values file (first lines of `serving:`): `gpu-s-x1` for bge-m3 and nomic, `gpu-m-x1` for the L4 LLMs, `gpu-l-x1` for Qwen3.8 and Gemma 26B, `gpu-xl-x1` for Llama 70B (FP8, 72.7 GB of weights: on an 80 GB H100 almost nothing is left for the KV cache). `gpu-s-x1` is not used for LLMs: on a MIG cluster its first option is a 12 GB slice, too small for weights plus KV cache.
 
 ## Hardware profile
 
@@ -67,6 +67,6 @@ gpu-dra-profile  model ─webhook─▶ CPU and memory only    ─▶ Kueue coun
 ## Operating notes
 
 - `gpu-dra-profile` and the sizes must exist before a model is applied. The sizes are created in `models-as-a-service` (`dra.namespaces` in rhoai-gitops): a model in another namespace needs it added there.
-- Llama 70B needs `gpu-xl-x4`: it will not start until infra creates it.
+- Llama 70B asks for `gpu-xl-x1` (one B200/H200): it does not schedule on L4 or H100 clusters. There is no multi-GPU size; add one to rhoai-gitops if tensor parallelism is needed.
 - A new GPU size is a change in rhoai-gitops, not in this chart.
 - The `chart/README.md` values table must be regenerated with `helm-docs` (`make docs` in `chart/`).
