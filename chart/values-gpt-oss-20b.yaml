@@ -452,3 +452,10 @@ chatTemplate:
     {%- if add_generation_prompt -%}
     <|start|>assistant
     {%- endif -%}
+
+# GPU through DRA: shared ResourceClaimTemplate defined by the platform (rhoai-gitops, templates/06-dra), not created by this chart.
+# Sizes: gpu-s-x1 = small (L4 demo; MIG 1g.12gb / 2g.24gb or any GPU >= 16Gi), gpu-m-x1 = L4-class 24 GB, gpu-l-x1 = 1x H100 (>= 80Gi).
+# Ignored with dra.enabled=false (device plugin). Remove the line to let the chart create its own template.
+dra:
+  claimTemplate:
+    existing: gpu-s-x1

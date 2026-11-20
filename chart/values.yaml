@@ -303,7 +303,7 @@ dra:
   hardwareProfileAnnotation: false
   # -- ResourceClaimTemplate settings
   claimTemplate:
-    # -- Name of an existing ResourceClaimTemplate in the model namespace. Empty = the chart creates `<name>-gpu`.
+    # -- Name of an existing ResourceClaimTemplate in the model namespace. Preferred: the shared sizes defined by the platform (rhoai-gitops `06-dra`): `gpu-s-x1` (small, L4 demo), `gpu-m-x1` (L4-class 24 GB), `gpu-l-x1` (1x H100, >= 80Gi). The GPU count then comes from the template, not from the resources. Empty = the chart creates `<name>-gpu` (needed for multi-GPU, e.g. 4 GPUs, until the platform defines `gpu-xl-x4`).
     existing: ""
   # -- MIG partitions with `firstAvailable` (preferred profile first, fallback second). Replaces the full-GPU request. WARNING: a vLLM process only sees the FIRST MIG partition of its list, so `parallelism.tensor > 1` cannot be spread across MIG slices (the chart fails the render); use N full GPUs for tensor parallelism. The `profile` attribute comes from the NVIDIA DRA driver documentation (not verified on a MIG cluster).
   mig:

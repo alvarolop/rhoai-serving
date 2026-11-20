@@ -44,7 +44,15 @@ By default there is no product filter: any GPU of `gpu.nvidia.com`, so the same 
 
 **MIG** (`dra.mig.enabled`, off by default) replaces the request with `firstAvailable`: preferred profile with its `count`, then a fallback profile with its `count`. The `profile` attribute comes from NVIDIA/Red Hat documentation and has not been verified on a MIG cluster. A vLLM process only sees the **first** MIG partition of its list, so `parallelism.tensor > 1` cannot be spread over MIG slices; the chart fails the render in that case. Tensor parallelism works with N full GPUs.
 
-**Existing template**: `dra.claimTemplate.existing: <name>` references a `ResourceClaimTemplate` that already exists in the model namespace and the chart does not create one. The template is namespaced, so it must live in the model namespace.
+**Existing template (preferred)**: `dra.claimTemplate.existing: <name>` references a `ResourceClaimTemplate` that already exists in the model namespace and the chart does not create one. The template is namespaced, so it must live in the model namespace. The platform team defines shared t-shirt sizes in rhoai-gitops (`templates/06-dra`), each one a `firstAvailable` list so the same name lands on different hardware per cluster:
+
+| Template | Intent | Alternatives, in order |
+|----------|--------|------------------------|
+| `gpu-s-x1` | small model, L4 demo | MIG `1g.12gb`, MIG `2g.24gb`, any GPU >= 16Gi |
+| `gpu-m-x1` | about 24 GB | `NVIDIA L4`, MIG `2g.24gb`, any GPU >= 22Gi |
+| `gpu-l-x1` | 1x H100 | any GPU >= 80Gi, MIG `7g.94gb` |
+
+The model files choose the size (`dra.claimTemplate.existing: gpu-s-x1` for the L4 demo models, `gpu-l-x1` for the 1x H100 ones). Multi-GPU models (Llama 70B, 4 GPUs) still use the chart-generated template until the platform defines `gpu-xl-x4` (a commented reference exists there). The shared templates are created in `models-as-a-service` (`dra.namespaces` in rhoai-gitops): a model in another namespace needs it added there. With `dra.enabled=false` the setting is ignored.
 
 ### HardwareProfile
 
