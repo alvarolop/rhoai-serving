@@ -53,7 +53,8 @@ if [[ -z "${API_MODEL}" ]]; then
 fi
 
 ROUTE=$(oc get LLMInferenceService "${SERVICE_NAME}" -n "${NAMESPACE}" --template='{{ .status.url }}')
-TOKEN=$(oc get secret "${SERVICE_NAME}-sa-token" -n "${NAMESPACE}" -o jsonpath='{.data.token}' | base64 -d)
+# MaaS API key (create one with testing/06-maas/retrieve-api-key.sh and export MAAS_API_KEY)
+TOKEN="${MAAS_API_KEY:?Set MAAS_API_KEY (see testing/06-maas/retrieve-api-key.sh)}"
 
 echo "Testing LLMInferenceService ${SERVICE_NAME} in ${NAMESPACE} (OpenAI model: ${API_MODEL})..."
 echo "Route: $ROUTE"

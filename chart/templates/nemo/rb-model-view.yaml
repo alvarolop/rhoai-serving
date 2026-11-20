@@ -1,0 +1,18 @@
+{{- if and (eq .Values.serving.type "generative") .Values.guardrails.enabled .Values.auth.enabled }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    opendatahub.io/dashboard: "true"
+  name: "{{ .Values.name }}-view"
+  namespace: {{ include "rhoai-serving.namespaceName" . }}
+subjects:
+  - kind: ServiceAccount
+    name: "{{ .Values.name }}-sa"
+    namespace: {{ include "rhoai-serving.namespaceName" . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: "{{ .Values.name }}-view-role"
+{{- end }}
