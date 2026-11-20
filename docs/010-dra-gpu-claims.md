@@ -52,7 +52,7 @@ By default there is no product filter: any GPU of `gpu.nvidia.com`, so the same 
 | `gpu-m-x1` | about 24 GB | `NVIDIA L4`, MIG `2g.24gb`, any GPU >= 22Gi |
 | `gpu-l-x1` | 1x H100 | any GPU >= 80Gi, MIG `7g.94gb` |
 
-The model files choose the size (`dra.claimTemplate.existing: gpu-s-x1` for the L4 demo models, `gpu-l-x1` for the 1x H100 ones). Multi-GPU models (Llama 70B, 4 GPUs) still use the chart-generated template until the platform defines `gpu-xl-x4` (a commented reference exists there). The shared templates are created in `models-as-a-service` (`dra.namespaces` in rhoai-gitops): a model in another namespace needs it added there. With `dra.enabled=false` the setting is ignored.
+The model files choose the size: `gpu-s-x1` for the small embedding models (bge-m3, nomic), `gpu-m-x1` for the 8-24B models on the L4, `gpu-l-x1` for the 1x H100 ones. `gpu-s-x1` is not used for LLMs: its first alternative on a MIG cluster is a 12 GB slice, too small for the weights plus KV cache. Multi-GPU models (Llama 70B, 4 GPUs) still use the chart-generated template until the platform defines `gpu-xl-x4` (a commented reference exists there). The shared templates are created in `models-as-a-service` (`dra.namespaces` in rhoai-gitops): a model in another namespace needs it added there. With `dra.enabled=false` the setting is ignored.
 
 ### HardwareProfile
 

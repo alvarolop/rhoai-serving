@@ -122,7 +122,7 @@ None of the models listed here is gated. Gated `hf://` models need `--set-file h
 
 ### GPUs: DRA or device plugin
 
-GPU models request their GPU with Dynamic Resource Allocation by default (`dra.enabled: true`: a `ResourceClaimTemplate` in the model namespace instead of `nvidia.com/gpu` limits). The model files pick a shared platform size (`gpu-s-x1` for the L4 demo, `gpu-l-x1` for 1x H100; defined in rhoai-gitops `06-dra`); CPU models are unaffected. On a cluster **without** the NVIDIA DRA driver (device plugin), add `--set dra.enabled=false` to any command above. Details in [docs/010-dra-gpu-claims.md](docs/010-dra-gpu-claims.md).
+GPU models request their GPU with Dynamic Resource Allocation by default (`dra.enabled: true`: a `ResourceClaimTemplate` in the model namespace instead of `nvidia.com/gpu` limits). The model files pick a shared platform size (`gpu-s-x1` for small embeddings, `gpu-m-x1` for the L4 demo LLMs, `gpu-l-x1` for 1x H100; defined in rhoai-gitops `06-dra`); CPU models are unaffected. On a cluster **without** the NVIDIA DRA driver (device plugin), add `--set dra.enabled=false` to any command above. Details in [docs/010-dra-gpu-claims.md](docs/010-dra-gpu-claims.md).
 
 ### Test a model
 
