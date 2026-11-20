@@ -8,7 +8,7 @@ The chart must create predictable Kubernetes names for the dashboard, connection
 
 - **`name`** — Becomes **`LLMInferenceService.metadata.name`** (generative) or **`InferenceService` / `ServingRuntime` names** (predictive). Use a stable, DNS-friendly token (for example `tinyllama-1b`, `qwen3-8b`).
 - **`namespace.name`** — Target namespace for all namespaced objects. The chart does not create it: the platform (rhoai-gitops) owns the namespace, its Kueue label and its LocalQueues.
-- **Connection Secret** — Named **`{{ .Values.name }}`**, aligned with **`opendatahub.io/connections`** on the serving CR. **`model.connection.protocol`** selects **`uri`** (**`data.URI`**, **`connection-type-ref: uri-v1`**), **`oci`** (**`data.OCI_HOST`**, **`oci-v1`**, optional **`data[".dockerconfigjson"]`**), or **`s3`** (**`data`** AWS keys, **`opendatahub.io/managed`**, **`connection-type`** + **`connection-type-ref: s3`**). For **`s3`**, **`model.connection.s3.path`** maps to **`opendatahub.io/connection-path`** when set. See **`model.connection`** in `chart/values.yaml` and Red Hat *Using the connections API* (Working on data science projects).
+- **Connection Secret** — Only created when it carries credentials: **S3** (`AWS_*` keys; **`model.s3.path`** maps to **`opendatahub.io/connection-path`**) or **OCI** with **`model.oci.dockerconfigjson`**. It is named **`{{ .Values.name }}`**, matching **`opendatahub.io/connections`** on the serving CR (written only in these cases). `hf://` and public `oci://` models need none: the URI already sits in **`spec.model.uri`** (or **`storageUri`**). The protocol is detected from the **`model.uri`** prefix (`s3://`, `oci://`, otherwise `uri`). See Red Hat *Using the connections API*.
 
 ## Consequences
 

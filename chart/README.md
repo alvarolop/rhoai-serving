@@ -71,9 +71,9 @@ The chart supports multiple methods for loading models:
 
 ### S3 Configuration
 
-**Option 1: Manual S3 credentials** - Set `model.connection.s3.endpoint`, `bucket`, `accessKeyId`, `secretAccessKey`
+**Option 1: Manual S3 credentials** - Set `model.s3.endpoint`, `bucket`, `accessKeyId`, `secretAccessKey`
 
-**Option 2: OpenShift Data Foundation ObjectBucketClaim** - Set `model.connection.s3.objectBucketClaim` to auto-read ODF-generated credentials
+**Option 2: OpenShift Data Foundation ObjectBucketClaim** - Set `model.s3.objectBucketClaim` to auto-read ODF-generated credentials
 
 See `values-example-minio-s3-tinyllama.yaml` and `values-example-odf-obc-s3.yaml` for examples.
 
@@ -262,14 +262,6 @@ Deploys a TrustyAIService CR and required CA bundle ConfigMap. See `values-disti
 |-----|------|---------|-------------|
 | namespace | object | `{"name":"models-as-a-service"}` | Target namespace for all chart resources. The namespace is NOT created by this chart: it is owned by the platform (rhoai-gitops creates it, labels it for Kueue and creates the LocalQueues and GPU claim templates). |
 | namespace.name | string | `"models-as-a-service"` | Namespace name |
-
-### Kueue Configuration
-
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| kueue | object | `{"localQueue":"","priorityClass":""}` | Kueue queues (rhoai-gitops "reserved-spot"). The ClusterQueues, LocalQueues and WorkloadPriorityClasses are created by rhoai-gitops, not by this chart. |
-| kueue.localQueue | string | `"" (derived)` | LocalQueue for the workload label. Empty = derive from serving.hardwareProfile.name (gpu-profile: serving-lq, gpu-batch-profile: batch-lq, otherwise default). Must match the HardwareProfile spec.scheduling.kueue.localQueueName. |
-| kueue.priorityClass | string | `"" (derived)` | WorkloadPriorityClass for the workload label kueue.x-k8s.io/priority-class (orders models inside serving-cq). Empty = derive from serving.hardwareProfile.name (gpu-profile: model-critical, gpu-batch-profile: batch-nightly, otherwise no label). Other classes: model-standard, batch-interactive. |
 
 ### Serving Configuration
 

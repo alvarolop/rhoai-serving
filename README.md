@@ -46,16 +46,22 @@ Quick tests:
 
 ## Architecture Components
 
-The integrated KServe + llm-d + MLServer system comprises layered responsibilities:
+The integrated KServe + llm-d + OpenVINO system comprises layered responsibilities:
 
 | Component | Role |
 |-----------|------|
 | **KServe** | Model serving orchestration (Raw deployment mode) |
 | **LLMInferenceService** | CRD for serving generative models |
-| **llm-d** | Distributed inference framework for generative models |
-| **MLServer** | Serving runtime for predictive models based on Seldon |
-| **TrustyAI** | Guardrails model for TrustyAI |
+| **llm-d** | Distributed inference: inference gateway plus the EPP scheduler that routes each request to a replica |
+| **MaaS gateway** | Default gateway for generative models: API keys, subscriptions and token limits |
+| **Kueue** | Queues and GPU quota (reserved-spot queues from rhoai-gitops), selected through the HardwareProfile |
+| **DRA claim templates** | Shared GPU sizes defined by the platform team; models reference them by name |
+| **OpenVINO Model Server** | Serving runtime for predictive models |
+| **TrustyAI / NeMo Guardrails** | Bias and drift monitoring, and guardrails for generative models |
 
+![Simplified architecture](docs/architecture-20260429-235356.png)
+
+*Simplified view (April 2026): it predates MaaS as the default gateway and DRA, see the table above.*
 
 > [!TIP]
 > For more details, see the [KServe blog post on cloud-native AI inference with llm-d](https://kserve.github.io/website/blog/cloud-native-ai-inference-kserve-llm-d).
@@ -149,15 +155,17 @@ Resources go to `namespace.name` (default `models-as-a-service`). The chart does
 
 ### Kueue queues
 
-The cluster uses the *reserved-spot* queues from [rhoai-gitops](https://github.com/alvarolop/rhoai-gitops#kueue-queues-reserved-spot): `serving-cq` owns the GPUs (models), `batch-cq` borrows idle ones, and `cluster-queue` serves CPU workloads. Queues are selected through the HardwareProfile, and the chart only sets the matching `kueue.x-k8s.io/queue-name` label. The `ClusterQueue` and the `LocalQueue` objects (shared by every model in the namespace) are created by rhoai-gitops:
+The cluster uses the *reserved-spot* queues from [rhoai-gitops](https://github.com/alvarolop/rhoai-gitops#kueue-queues-reserved-spot): `serving-cq` owns the GPUs (models), `batch-cq` borrows idle ones, and `cluster-queue` serves CPU workloads. The `ClusterQueue` and the `LocalQueue` objects (shared by every model in the namespace) are created by rhoai-gitops.
 
-| `serving.hardwareProfile.name` | LocalQueue (label) | Priority (label) |
+The queue comes from the **HardwareProfile**: the chart writes the `opendatahub.io/hardware-profile-*` annotation and the RHOAI admission adds `kueue.x-k8s.io/queue-name` itself (verified on `LLMInferenceService` and `InferenceService`). The chart only writes the queue label when it cannot write the annotation (a DRA model on a GPU profile without a DRA variant). It always writes the priority label, because RHOAI 3.5 does not apply the profile priority to an `LLMInferenceService`:
+
+| `serving.hardwareProfile.name` | LocalQueue | Priority label |
 |---|---|---|
-| `gpu-profile` | `serving-lq` | `model-critical` |
+| `gpu-profile` (`gpu-dra-profile` with DRA) | `serving-lq` | `model-critical` |
 | `gpu-batch-profile` | `batch-lq` | `batch-nightly` |
 | `cpu-profile` | `default` | none |
 
-Override the labels with `kueue.localQueue` and `kueue.priorityClass` (for example `model-standard`). RHOAI 3.5 does not apply the HardwareProfile priority to an `LLMInferenceService`, hence the explicit label. The LocalQueue must exist in the namespace. If a pod stays `SchedulingGated`, check the Workload:
+The LocalQueue must exist in the namespace. If a pod stays `SchedulingGated`, check the Workload:
 
 ```bash
 oc get workload -n models-as-a-service
