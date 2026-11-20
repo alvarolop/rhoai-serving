@@ -1,5 +1,5 @@
-# Llama 3.3 70B Instruct FP8-block (RedHatAI) - Single large GPU (B200 / H200, 140 GB or more), 72.7 GB of weights
-# (an 80 GB H100 would leave almost no KV cache: gpu-xl-x1 keeps it on one card, no tensor parallelism)
+# Llama 3.3 70B Instruct FP8-block (RedHatAI) - 2 GPUs with tensor parallelism (2x H100 80GB or bigger), 72.7 GB of weights
+# Showcase for parallelism: the platform size gpu-xl-x2 gives 2 whole GPUs, so the model needs parallelism.tensor: 2
 # Usage: helm template llama chart/ -f chart/values.yaml -f chart/values-llama-3.3-70b.yaml
 
 name: llama-3-3-70b
@@ -14,10 +14,14 @@ model:
     type: generative
 serving:
   dra:
-    claimTemplate: gpu-xl-x1  # platform GPU size (rhoai-gitops 06-dra): 1 GPU with 140 Gi or more
+    claimTemplate: gpu-xl-x2  # platform GPU size (rhoai-gitops 06-dra): 2 GPUs of 78 Gi or more, needs parallelism.tensor: 2
   hardwareProfile:
     name: gpu-profile
     namespace: redhat-ods-applications
+
+# Tensor parallelism: split the model across the 2 GPUs of the claim (must match the GPU count of gpu-xl-x2)
+parallelism:
+  tensor: 2
 
 mainContainer:
   # extraArgs:
@@ -56,9 +60,9 @@ mainContainer:
     limits:
       cpu: "8"
       memory: "128Gi"
-      nvidia.com/gpu: "1"
+      nvidia.com/gpu: "2"
     requests:
       cpu: "4"
       memory: "64Gi"
-      nvidia.com/gpu: "1"
+      nvidia.com/gpu: "2"
 

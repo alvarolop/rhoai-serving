@@ -92,13 +92,13 @@ helm template nomic-embed-text-v2-moe chart/ -f chart/values.yaml -f chart/value
 # Scheduler (EPP) tuning: add it as a third overlay on top of any generative model
 helm template gpt-oss-20b chart/ -f chart/values.yaml -f chart/values-gpt-oss-20b.yaml -f chart/values-scheduler-tuning-examples.yaml | oc apply -f -
 
-# ===================== GPU: needs H100 or bigger (production) =====================
+# ===================== GPU: needs H100 / multi-GPU (production) =====================
 
 # Generative (vLLM, 1x H100)
 helm template gemma-4-26b-a4b-fp8 chart/ -f chart/values.yaml -f chart/values-gemma-4-26b-a4b-fp8.yaml | oc apply -f -
 helm template qwen38-27b-fp8 chart/ -f chart/values.yaml -f chart/values-qwen3.8-27b-fp8.yaml | oc apply -f -
 
-# Generative (vLLM, 1x B200/H200, 140 GB+)
+# Generative (vLLM, 2 GPUs with tensor parallelism)
 helm template llama-3-3-70b chart/ -f chart/values.yaml -f chart/values-llama-3.3-70b.yaml | oc apply -f -
 
 # ============================ CPU (no GPU needed) ============================
@@ -122,7 +122,7 @@ None of the models listed here is gated. Gated `hf://` models need `--set-file h
 
 ### GPUs: DRA or device plugin
 
-**TL;DR:** GPU models request their GPU through a shared `ResourceClaimTemplate` (DRA), named in `serving.dra.claimTemplate` (`gpu-s-x1` embeddings, `gpu-m-x1` L4 demo, `gpu-l-x1` 1x H100, `gpu-xl-x1` 1 GPU 140 Gi+). The platform team defines the templates in rhoai-gitops (`06-dra`); this chart creates none. CPU models are unaffected.
+**TL;DR:** GPU models request their GPU through a shared `ResourceClaimTemplate` (DRA), named in `serving.dra.claimTemplate` (`gpu-s-x1` embeddings, `gpu-m-x1` L4 demo, `gpu-l-x1` 1x H100, `gpu-xl-x1` 1 GPU 140 Gi+, `gpu-xl-x2` 2 GPUs). The platform team defines the templates in rhoai-gitops (`06-dra`); this chart creates none. CPU models are unaffected.
 
 On a cluster **without** the NVIDIA DRA driver (device plugin) add `--set serving.dra.enabled=false` to any command above. Details and diagrams: [docs/010-dra-gpu-claims.md](docs/010-dra-gpu-claims.md).
 
