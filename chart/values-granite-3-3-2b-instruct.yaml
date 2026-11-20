@@ -39,29 +39,3 @@ mainContainer:
     requests:
       cpu: "2"
       memory: "16Gi"
-  # Health probes tuned for CPU backend warmup (~90s for 4.7GB model)
-  startupProbe:
-    httpGet:
-      path: /health
-      port: 8000
-      scheme: HTTPS
-    initialDelaySeconds: 60
-    periodSeconds: 10
-    failureThreshold: 18  # 60s + (18 × 10s) = 240s max startup time
-    timeoutSeconds: 5
-  livenessProbe:
-    httpGet:
-      path: /health
-      port: 8000
-      scheme: HTTPS
-    periodSeconds: 30
-    failureThreshold: 2  # 2 × 30s = 60s to recover
-    timeoutSeconds: 10
-  readinessProbe:
-    httpGet:
-      path: /health
-      port: 8000
-      scheme: HTTPS
-    periodSeconds: 10
-    failureThreshold: 3
-    timeoutSeconds: 5
