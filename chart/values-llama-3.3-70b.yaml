@@ -26,6 +26,35 @@ mainContainer:
   # extraArgs:
   #   - "--disable-uvicorn-access-log"
 
+  # Probes: the platform template (v3-5-3-kserve-config-llm-template) already sets all three on /health, port 8000, HTTPS:
+  #   startup 60 x 10s (10 min), liveness 10 x 10s, readiness 2 x 1s.
+  # Only this model overrides them, as a copy-paste example: 72.7 GB of weights take longer to load, so the startup
+  # budget is doubled. Remove the block you do not need; the other models rely on the defaults.
+  startupProbe:
+    httpGet:
+      path: /health
+      port: 8000
+      scheme: HTTPS
+    periodSeconds: 10
+    failureThreshold: 120   # 120 x 10s = 20 min to load the weights
+    timeoutSeconds: 5
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+      scheme: HTTPS
+    periodSeconds: 10
+    failureThreshold: 10    # 10 x 10s = 100s before restarting
+    timeoutSeconds: 5
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+      scheme: HTTPS
+    periodSeconds: 5
+    failureThreshold: 2
+    timeoutSeconds: 5
+
   resources:
     limits:
       cpu: "8"
