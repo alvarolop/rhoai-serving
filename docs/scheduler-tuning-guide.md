@@ -1,315 +1,103 @@
-# Scheduler Tuning Guide for Performance Testing
+# Scheduler tuning guide (llm-d EndpointPickerConfig)
 
-Guide for tuning the llm-d EndpointPickerConfig scheduler to optimize inference performance.
+**TL;DR**
 
-## Overview
+- llm-d routes each request to one replica with the **Endpoint Picker (EPP)**. It scores replicas with a few scorer plugins; you tune the **weights**.
+- RHOAI 3.5 default: `queue-scorer` 2, `kv-cache-utilization-scorer` 2, `prefix-cache-scorer` 3, `no-hit-lru-scorer` 2 (weights are relative).
+- In this chart: set `serving.router.scheduler.endpointPickerConfig`. It is rendered into the ConfigMap `<name>-epp-config` and referenced from the `LLMInferenceService` (`router.scheduler.config.ref`).
+- Only matters with **2 or more replicas**: with one replica there is nothing to choose.
 
-RHOAI 3.4+ uses the **llm-d EPP (EndPoint Picker)** scheduler for intelligent request routing across model replicas. The scheduler scores each pod based on:
+## How a request is routed
 
-1. **Prefix Cache Affinity** - Routes requests to pods with matching KV cache prefixes
-2. **Queue Depth** - Avoids pods with long request queues
-3. **KV Cache Utilization** - Prevents routing to memory-saturated pods
+```
+Client ─▶ Inference Gateway ─▶ EPP ──────────────────────────────▶ vLLM replica
+                                 ├─ Flow Control   (optional, feature gate) when/in what order to dispatch
+                                 └─ Scheduling     (always on)              where to send it: scorers + picker
+```
 
-## Default Behavior
+| Scorer | Prefers the replica that... |
+|--------|-----------------------------|
+| `prefix-cache-scorer` | already has the request's prompt prefix in its KV cache (hash based, works disconnected) |
+| `queue-scorer` | has the shortest request queue |
+| `kv-cache-utilization-scorer` | has the most free KV cache |
+| `no-hit-lru-scorer` | is the least recently used, as a tiebreaker when nobody has a prefix hit |
 
-By default (`scheduler: {}`), RHOAI uses balanced weights:
-- Prefix cache: ~40%
-- Queue depth: ~30%
-- KV utilization: ~30%
+Optional plugins in 3.5: `precise-prefix-cache-scorer` (token-level matching, needs a tokenizer sidecar that downloads models, so connected clusters only) and `latency-scorer` (lowest observed latency). Disaggregated prefill/decode (`spec.prefill`) gets its own scorer profiles automatically.
 
-This works well for most workloads but can be tuned for specific use cases.
-
-## Quick Start
-
-### 1. Deploy with Custom Configuration
+## Apply a configuration
 
 ```bash
-# Apply a tuning example on top of your model
-helm template model chart/ \
-  -f chart/values.yaml \
-  -f chart/values-<your-model>.yaml \
-  -f chart/values-scheduler-tuning-examples.yaml | oc apply -f -
-```
-
-### 2. Run Load Test
-
-Use consistent load patterns to compare configurations:
-```bash
-# Example: 100 requests with shared prefixes
-for i in {1..100}; do
-  curl -X POST "https://<model-route>/v1/chat/completions" \
-    -H "Authorization: Bearer $TOKEN" \
-    -d '{
-      "model": "model-name",
-      "messages": [{"role": "user", "content": "Tell me about Paris"}],
-      "max_tokens": 50
-    }'
-done
-```
-
-### 3. Monitor Grafana Dashboards
-
-Key metrics to track:
-
-**Time to First Token (TTFT):**
-```promql
-histogram_quantile(0.5, 
-  rate(vllm_time_to_first_token_seconds_bucket[5m])
-)
-```
-
-**Cache Hit Rate:**
-```promql
-rate(vllm_cache_hit_total[5m]) / 
-rate(vllm_cache_access_total[5m]) * 100
-```
-
-**Queue Depth:**
-```promql
-avg(vllm_num_requests_waiting)
-```
-
-**KV Cache Utilization:**
-```promql
-avg(vllm_gpu_cache_usage_perc) / 100
-```
-
-**Request Latency (p95):**
-```promql
-histogram_quantile(0.95, 
-  rate(vllm_request_duration_seconds_bucket[5m])
-)
-```
-
-## Tuning Strategies
-
-### Cache-Optimized (Conversational Workloads)
-
-**Use when:**
-- Multi-turn conversations
-- Repeated system prompts
-- RAG with consistent contexts
-
-**Configuration:**
-```yaml
-serving:
-  router:
-    scheduler:
-      endpointPickerConfig:
-        apiVersion: inference.networking.x-k8s.io/v1alpha1
-        kind: EndpointPickerConfig
-        plugins:
-          - type: prefix-cache-scorer
-            parameters:
-              blockSizeTokens: 5
-              maxPrefixBlocksToMatch: 256
-          - type: queue-scorer
-          - type: kv-cache-utilization-scorer
-          - type: max-score-picker
-        schedulingProfiles:
-          - name: default
-            plugins:
-              - pluginRef: prefix-cache-scorer
-                weight: 70  # Maximize cache affinity
-              - pluginRef: queue-scorer
-                weight: 20
-              - pluginRef: kv-cache-utilization-scorer
-                weight: 10
-```
-
-**Expected improvements:**
-- ✅ 30-50% TTFT reduction on cache hits
-- ✅ 2-3x cache hit rate increase
-- ⚠️ May concentrate load on fewer pods
-
-### Load-Balanced (Mixed Workloads)
-
-**Use when:**
-- Varied request types
-- Variable request sizes
-- Need predictable latency
-
-**Configuration:**
-```yaml
-schedulingProfiles:
-  - name: default
-    plugins:
-      - pluginRef: prefix-cache-scorer
-        weight: 33  # Equal weighting
-      - pluginRef: queue-scorer
-        weight: 33
-      - pluginRef: kv-cache-utilization-scorer
-        weight: 34
-```
-
-**Expected improvements:**
-- ✅ Even request distribution
-- ✅ Lower latency variance (p95/p99)
-- ✅ Better resource utilization
-
-### Queue-First (High Throughput)
-
-**Use when:**
-- High request volume
-- Need to minimize queuing
-- Throughput > latency priority
-
-**Configuration:**
-```yaml
-schedulingProfiles:
-  - name: default
-    plugins:
-      - pluginRef: queue-scorer
-        weight: 60  # Avoid queued pods
-      - pluginRef: prefix-cache-scorer
-        weight: 25
-      - pluginRef: kv-cache-utilization-scorer
-        weight: 15
-```
-
-**Expected improvements:**
-- ✅ Lower average queue depth
-- ✅ Higher throughput (req/sec)
-- ✅ More predictable latency
-
-### Memory-Aware (Large Context Windows)
-
-**Use when:**
-- Large context (128k+ tokens)
-- Memory-constrained GPUs
-- Need to prevent OOM
-
-**Configuration:**
-```yaml
-schedulingProfiles:
-  - name: default
-    plugins:
-      - pluginRef: kv-cache-utilization-scorer
-        weight: 60  # Avoid memory saturation
-      - pluginRef: queue-scorer
-        weight: 25
-      - pluginRef: prefix-cache-scorer
-        weight: 15
-```
-
-**Expected improvements:**
-- ✅ Lower KV cache peaks
-- ✅ Fewer OOM errors
-- ✅ Better memory distribution
-
-## Advanced: Saturation Detection
-
-Prevent routing to overloaded pods:
-
-```yaml
-plugins:
-  - type: utilization-detector
-    parameters:
-      queueDepthThreshold: 8      # Max queue before "saturated"
-      kvCacheUtilThreshold: 0.85  # Max KV util before "saturated"
-      headroom: 0.15              # Safety margin
-
-saturationDetector:
-  pluginRef: utilization-detector
-```
-
-When a pod exceeds thresholds, EPP stops routing new requests to it until utilization drops.
-
-## Testing Workflow
-
-### 1. Establish Baseline
-
-Deploy with defaults and capture metrics for 10-15 minutes of steady load.
-
-### 2. Apply Tuned Configuration
-
-Deploy with modified weights for your use case.
-
-### 3. Compare Metrics
-
-Create Grafana comparison dashboard:
-- TTFT (p50, p95, p99)
-- Cache hit rate
-- Queue depth (avg, max)
-- KV utilization (avg, max)
-- Request latency distribution
-
-### 4. Iterate
-
-Adjust weights in 10-20 point increments and re-test.
-
-## Common Patterns
-
-**Multi-turn chat (with system prompt):**
-```yaml
-# High cache affinity for repeated system prompts
-prefix-cache-scorer: 70
-queue-scorer: 20
-kv-cache-utilization-scorer: 10
-```
-
-**RAG with shared context:**
-```yaml
-# Balance cache and queue (context reuse + varied queries)
-prefix-cache-scorer: 50
-queue-scorer: 30
-kv-cache-utilization-scorer: 20
-```
-
-**Code generation (long outputs):**
-```yaml
-# Prioritize memory and queue
-queue-scorer: 45
-kv-cache-utilization-scorer: 35
-prefix-cache-scorer: 20
-```
-
-**Mixed production workload:**
-```yaml
-# Balanced for stability
-prefix-cache-scorer: 33
-queue-scorer: 33
-kv-cache-utilization-scorer: 34
-```
-
-## Troubleshooting
-
-**High TTFT variance:**
-- Increase `queue-scorer` weight
-- Add saturation detection
-
-**Low cache hit rate:**
-- Increase `prefix-cache-scorer` weight
-- Ensure replicas > 1 for intelligent routing
-
-**OOM errors:**
-- Increase `kv-cache-utilization-scorer` weight
-- Lower `kvCacheUtilThreshold` in saturation detector
-
-**Uneven pod load:**
-- Decrease `prefix-cache-scorer` weight
-- Increase `queue-scorer` weight
-
-## References
-
-- [llm-d Architecture](https://github.com/llm-d/llm-d-inference-scheduler/blob/main/docs/architecture.md)
-- [KServe LLMInferenceService Configuration](https://kserve.github.io/website/docs/model-serving/generative-inference/llmisvc/llmisvc-configuration)
-- [Gateway API EPP Configuration](https://gateway-api-inference-extension.sigs.k8s.io/guides/epp-configuration/config-text/)
-- [RHOAI 3.4 Distributed Inference Docs](https://docs.redhat.com/en/documentation/red_hat_openshift_ai_self_managed/3.4/html/deploy_models_using_distributed_inference_with_llm-d/)
-
-## Example Values Files
-
-See `chart/values-scheduler-tuning-examples.yaml` for ready-to-use configurations:
-- Example 1: Default baseline
-- Example 2: Cache-optimized
-- Example 3: Load-balanced
-- Example 4: Queue-first
-- Example 5: Memory-aware
-
-Apply as overlay:
-```bash
+# Uncomment one example in chart/values-scheduler-tuning-examples.yaml, then add it as a third overlay
 helm template model chart/ \
   -f chart/values.yaml \
   -f chart/values-<model>.yaml \
-  -f chart/values-scheduler-tuning-examples.yaml
+  -f chart/values-scheduler-tuning-examples.yaml | oc apply -f -
 ```
+
+The examples file is fully commented on purpose: as shipped it changes nothing. Restart the EPP pod after changing the ConfigMap.
+
+Inline (`router.scheduler.config.inline`) and ConfigMap (`config.ref`) are mutually exclusive in the CRD; the chart always uses the ConfigMap.
+
+## Strategies
+
+All use `apiVersion: llm-d.ai/v1alpha1`, `kind: EndpointPickerConfig`, with the four scorers and `max-score-picker` declared under `plugins` (see the examples file for the full YAML). Only the weights change:
+
+| Strategy | Use when | prefix | queue | kv-cache | no-hit-lru |
+|----------|----------|:------:|:-----:|:--------:|:----------:|
+| Default (3.5) | start here | 3 | 2 | 2 | 2 |
+| Cache-optimized | multi-turn chat, repeated system prompts, RAG with shared context | 70 | 20 | 10 | 10 |
+| Load-balanced | mixed request types and sizes, predictable latency | 33 | 33 | 34 | 10 |
+| Queue-first | high volume, throughput over latency | 25 | 60 | 15 | 10 |
+| Memory-aware | very long contexts, memory-constrained GPUs | 15 | 25 | 60 | 10 |
+
+```yaml
+schedulingProfiles:
+  - name: default
+    plugins:
+      - pluginRef: prefix-cache-scorer
+        weight: 70
+      - pluginRef: queue-scorer
+        weight: 20
+      - pluginRef: kv-cache-utilization-scorer
+        weight: 10
+      - pluginRef: no-hit-lru-scorer
+        weight: 10
+```
+
+Trade-off to expect: a heavy `prefix-cache-scorer` weight raises cache hits and lowers time to first token, but can concentrate load on a few replicas.
+
+## Measure
+
+Use the same load for every configuration and compare 10-15 minutes of steady traffic. On OpenShift with the Cluster Observability Operator, the built-in dashboards (**Observe & Monitor**, "LLM Traffic") cover traffic, latency and resource use; otherwise query Prometheus. Metric names as exposed by vLLM 0.2x (check **Observe > Metrics** if a query returns nothing):
+
+```promql
+# Time to first token, p50
+histogram_quantile(0.5, sum by (le) (rate(vllm:time_to_first_token_seconds_bucket[5m])))
+# Prefix cache hit rate
+sum(rate(vllm:prefix_cache_hits_total[5m])) / sum(rate(vllm:prefix_cache_queries_total[5m]))
+# Queue depth and KV cache usage
+avg(vllm:num_requests_waiting)
+avg(vllm:kv_cache_usage_perc)
+# Request latency, p95
+histogram_quantile(0.95, sum by (le) (rate(vllm:e2e_request_latency_seconds_bucket[5m])))
+```
+
+The EPP also exports service-level metrics with the `llm_d_epp_` prefix (time to first token, time per output token, inter-token latency, errors) that include scheduler wait and network time, the closest thing to what users feel.
+
+## Troubleshooting
+
+| Symptom | Try |
+|---------|-----|
+| High time-to-first-token variance | raise `queue-scorer` |
+| Low cache hit rate | raise `prefix-cache-scorer`; check there are 2 or more replicas |
+| Memory pressure or OOM | raise `kv-cache-utilization-scorer` |
+| Uneven load across pods | lower `prefix-cache-scorer`, raise `queue-scorer` |
+
+Change weights in steps of 10-20 points and re-measure. Saturation detection and priority queuing belong to the **Flow Control** layer, behind the `flowControl` feature gate of the EPP; this repo does not configure it.
+
+## References
+
+- [Configure request routing for llm-d (RHOAI 3.5)](https://docs.redhat.com/en/documentation/red_hat_openshift_ai_self-managed/3.5/html/deploy_models_using_distributed_inference_with_llm-d/configuring-llm-scheduler)
+- [Monitor llm-d deployments (RHOAI 3.5)](https://docs.redhat.com/en/documentation/red_hat_openshift_ai_self-managed/3.5/html/deploy_models_using_distributed_inference_with_llm-d/monitoring-llmd-deployments)
+- [llm-d inference scheduler architecture](https://github.com/llm-d/llm-d-inference-scheduler/blob/main/docs/architecture.md)
+- Examples: `chart/values-scheduler-tuning-examples.yaml`
