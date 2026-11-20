@@ -335,8 +335,8 @@ Deploys a TrustyAIService CR and required CA bundle ConfigMap. See `values-disti
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| auth | object | `{"enabled":true}` | Authentication configuration via Red Hat Connectivity Link (Kuadrant/Authorino) |
-| auth.enabled | bool | `true` | Enable authentication for the inference service |
+| auth | object | `{"enabled":true}` | Authentication via Red Hat Connectivity Link (Kuadrant/Authorino). Behind the llm-d gateway (`openshift-ai-inference`) clients use a ServiceAccount token, so the chart also renders the ServiceAccount, token Secret, Role and RoleBinding (rbac.yaml). Behind the MaaS gateway access is by API key, subscription and MaaSAuthPolicy, so those are not rendered (unless guardrails are enabled). |
+| auth.enabled | bool | `true` | Enable authentication for the inference service (`security.opendatahub.io/enable-auth`) |
 | hfToken | string | `"" (pass via --set-file hfToken=.hf_token)` | Hugging Face token for gated/private models. Chart creates hf-secret when model.uri starts with hf:// and this is non-empty. |
 
 ### Chat Template Configuration

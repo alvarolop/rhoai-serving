@@ -176,6 +176,20 @@ oc describe workload -n models-as-a-service | grep -A3 QuotaReserved   # e.g. "L
 cd chart/ && make docs
 ```
 
+### Authentication: llm-d gateway or MaaS
+
+**TL;DR:** the gateway decides how clients authenticate, and the chart renders only what that path needs.
+
+```
+openshift-ai-inference (llm-d, no MaaS)      ServiceAccount JWT  ─▶ Role "get" on the model     chart renders SA + token + Role + RoleBinding
+maas-default-gateway   (MaaS, the default)   API key             ─▶ MaaSSubscription + AuthPolicy   chart renders nothing (platform CRs in rhoai-gitops)
+```
+
+- Default is MaaS (`serving.routerGatewayRefs`), so models get **no** per-model ServiceAccount, token or Role. Create API keys with `testing/06-maas/retrieve-api-key.sh`.
+- With `--set serving.routerGatewayRefs=null` (standard llm-d gateway) and for predictive models, `rbac.yaml` renders the ServiceAccount token flow from the RHOAI docs: `oc get secret <name>-sa-token -n <ns> -o jsonpath='{.data.token}' | base64 -d`.
+- NeMo Guardrails always gets the ServiceAccount token (it uses it to call the model).
+- `auth.enabled: false` renders neither.
+
 ### Hugging Face token
 
 Gated or private **`hf://`** checkpoints need a token. Put it in **`.hf_token`** (git-ignored; see **`.hf_token.example`**) or export **`HF_TOKEN`**. The chart creates **`hf-secret`** and mounts **`HF_TOKEN`** only when **`model.uri`** starts with **`hf://`** and **`hfToken`** is non-empty at render time ([KServe / Hugging Face storage](https://kserve.github.io/website/docs/model-serving/storage/providers/hf)). Public **`hf://`** models in this repo (for example Nomic) can deploy without a token.

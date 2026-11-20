@@ -178,9 +178,9 @@ model:
 # @default -- "" (pass via --set-file hfToken=.hf_token)
 hfToken: ""
 
-# -- Authentication configuration via Red Hat Connectivity Link (Kuadrant/Authorino)
+# -- Authentication via Red Hat Connectivity Link (Kuadrant/Authorino). Behind the llm-d gateway (`openshift-ai-inference`) clients use a ServiceAccount token, so the chart also renders the ServiceAccount, token Secret, Role and RoleBinding (rbac.yaml). Behind the MaaS gateway access is by API key, subscription and MaaSAuthPolicy, so those are not rendered (unless guardrails are enabled).
 auth:
-  # -- Enable authentication for the inference service
+  # -- Enable authentication for the inference service (`security.opendatahub.io/enable-auth`)
   enabled: true
 
 # @section -- Chat Template Configuration

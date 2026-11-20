@@ -1,9 +1,0 @@
-{{- if and (eq .Values.serving.type "generative") .Values.guardrails.enabled .Values.auth.enabled }}
----
-# Identity NeMo Guardrails uses to call the main model (its token is OPENAI_API_KEY, see NemoGuardrails.yaml).
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: "{{ .Values.name }}-sa"
-  namespace: {{ include "rhoai-serving.namespaceName" . }}
-{{- end }}

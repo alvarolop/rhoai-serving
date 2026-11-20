@@ -138,6 +138,7 @@ chart/
     TrustyAIService.yaml               # Optional: TrustyAI monitoring
     cm-kserve-logger-ca-bundle.yaml    # Optional: TrustyAI logger CA bundle
     Secret-hf-token.yaml               # Optional: HuggingFace token secret
+    rbac.yaml                          # SA + token + Role + RoleBinding, only when NOT exposed through MaaS (or with guardrails)
     Secret-connection.yaml             # Connection Secret, only for S3 and OCI with credentials
     keda/  nemo/                       # Optional: KEDA autoscaling / NeMo Guardrails objects
 ```

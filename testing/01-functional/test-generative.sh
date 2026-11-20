@@ -53,8 +53,10 @@ if [[ -z "${API_MODEL}" ]]; then
 fi
 
 ROUTE=$(oc get LLMInferenceService "${SERVICE_NAME}" -n "${NAMESPACE}" --template='{{ .status.url }}')
-# MaaS API key (create one with testing/06-maas/retrieve-api-key.sh and export MAAS_API_KEY)
-TOKEN="${MAAS_API_KEY:?Set MAAS_API_KEY (see testing/06-maas/retrieve-api-key.sh)}"
+# MaaS gateway: API key (testing/06-maas/retrieve-api-key.sh, export MAAS_API_KEY).
+# llm-d gateway (no MaaS): ServiceAccount token created by the chart (rbac.yaml).
+TOKEN="${MAAS_API_KEY:-$(oc get secret "${SERVICE_NAME}-sa-token" -n "${NAMESPACE}" -o jsonpath='{.data.token}' 2>/dev/null | base64 -d)}"
+[ -n "${TOKEN}" ] || { echo "No token: export MAAS_API_KEY (MaaS) or deploy with the llm-d gateway so ${SERVICE_NAME}-sa-token exists" >&2; exit 1; }
 
 echo "Testing LLMInferenceService ${SERVICE_NAME} in ${NAMESPACE} (OpenAI model: ${API_MODEL})..."
 echo "Route: $ROUTE"

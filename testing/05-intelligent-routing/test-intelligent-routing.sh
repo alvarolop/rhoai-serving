@@ -70,9 +70,14 @@ MODEL_URL="https://${GATEWAY_ROUTE}/${NAMESPACE}/${DEPLOYMENT_NAME}/v1"
 echo "✅ Model URL: ${MODEL_URL}"
 echo ""
 
-# MaaS API key (create one with testing/06-maas/retrieve-api-key.sh and export MAAS_API_KEY)
+# MaaS gateway: API key (testing/06-maas/retrieve-api-key.sh, export MAAS_API_KEY).
+# llm-d gateway (no MaaS): ServiceAccount token created by the chart (rbac.yaml).
 echo "🔑 Getting authentication token..."
-TOKEN="${MAAS_API_KEY:?Set MAAS_API_KEY (see testing/06-maas/retrieve-api-key.sh)}"
+TOKEN="${MAAS_API_KEY:-$(oc get secret "${DEPLOYMENT_NAME}-sa-token" -n "${NAMESPACE}" -o jsonpath='{.data.token}' 2>/dev/null | base64 -d)}"
+if [ -z "$TOKEN" ]; then
+  echo "❌ ERROR: export MAAS_API_KEY (MaaS) or deploy with the llm-d gateway so ${DEPLOYMENT_NAME}-sa-token exists"
+  exit 1
+fi
 echo "✅ Token retrieved"
 echo ""
 

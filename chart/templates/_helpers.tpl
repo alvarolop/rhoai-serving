@@ -188,3 +188,27 @@ LLMInferenceService (verified), so it is set on the workload itself, derived fro
 {{- else if eq $hp "gpu-batch-profile" -}}batch-nightly
 {{- end -}}
 {{- end -}}
+
+{{/*
+True when the model is exposed through the MaaS gateway: a generative model with a routerGatewayRefs entry named
+maas-default-gateway. Predictive models do not use routerGatewayRefs.
+*/}}
+{{- define "rhoai-serving.exposedThroughMaas" -}}
+{{- $maas := false -}}
+{{- if eq .Values.serving.type "generative" -}}
+{{- range (.Values.serving.routerGatewayRefs | default list) -}}
+{{- if eq (.name | default "") "maas-default-gateway" -}}{{- $maas = true -}}{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- $maas -}}
+{{- end -}}
+
+{{/*
+ServiceAccount token + Role + RoleBinding for platform authentication (security.opendatahub.io/enable-auth).
+The llm-d gateway (openshift-ai-inference, no MaaS) authenticates with a ServiceAccount JWT whose Role has
+`get` on the model. MaaS uses API keys, subscriptions and MaaSAuthPolicy instead, so it needs none of this.
+NeMo Guardrails always needs the token (it calls the model with it), so guardrails keep it on MaaS too.
+*/}}
+{{- define "rhoai-serving.rbacNeeded" -}}
+{{- if and .Values.auth.enabled (or (ne (include "rhoai-serving.exposedThroughMaas" . | trim) "true") .Values.guardrails.enabled) -}}true{{- else -}}false{{- end -}}
+{{- end -}}
