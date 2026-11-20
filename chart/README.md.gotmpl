@@ -36,7 +36,7 @@ helm template <release> chart/ \
 - **Generative (GPU)**: `values-qwen3-8b-fp8-dynamic.yaml`, `values-gpt-oss-20b.yaml`
 - **Embeddings (GPU)**: `values-bge-m3.yaml`, `values-nomic-embed-text-v2-moe-gpu.yaml`
 - **Predictive (CPU)**: `values-distilbert.yaml` (includes KEDA autoscaling configuration example)
-- **Guardrails**: `values-llamaguard-7b.yaml` (gated HuggingFace; requires `hfToken`)
+- **Guardrails**: `values-granite-guardian-4.1-8b.yaml` (ModelCar on Quay)
 
 {{ template "chart.maintainersSection" . }}
 
@@ -77,24 +77,24 @@ See `values-example-minio-s3-tinyllama.yaml` and `values-example-odf-obc-s3.yaml
 
 ### Configuration Structure
 
-All models use a unified `scaling` configuration with four modes:
+All models use a unified `scaling` configuration with three modes:
 
 ```yaml
 scaling:
-  mode: fixed  # "fixed", "hpa" (predictive only), "keda" (predictive only), or "wva" (generative only, not yet available)
+  mode: fixed  # "fixed", "hpa" (predictive only) or "keda" (predictive only)
   replicas: 1  # Used when mode: fixed
 ```
 
 ### Generative Models (LLMInferenceService)
 
-**Fixed scaling** (default and currently only supported option):
+**Fixed scaling** (the only option the chart renders for generative models):
 ```yaml
 scaling:
   mode: fixed
   replicas: 1
 ```
 
-**WVA autoscaling** (coming soon): Will use `mode: wva` for inference-aware autoscaling with Workload Variant Autoscaler.
+**WVA autoscaling** (Technology Preview in RHOAI 3.5): the Workload Variant Autoscaler scales on KV cache usage and queue depth and is configured in the `LLMInferenceService` itself. The chart does not render it yet.
 
 ### Predictive Models (InferenceService)
 
@@ -234,7 +234,7 @@ helm template qwen chart/ \
   -f chart/values-qwen3-8b-fp8-dynamic.yaml | oc apply -f -
 ```
 
-### Deploy BGE-M3 Embeddings (HuggingFace, GPU)
+### Deploy BGE-M3 Embeddings (ModelCar, GPU)
 
 ```bash
 helm template bge-m3 chart/ \
@@ -242,14 +242,17 @@ helm template bge-m3 chart/ \
   -f chart/values-bge-m3.yaml | oc apply -f -
 ```
 
-### Deploy LlamaGuard-7B (Gated HF Model)
+### Deploy Granite Guardian 4.1 (guardrails model)
 
 ```bash
-helm template llamaguard chart/ \
+helm template granite-guardian chart/ \
   -f chart/values.yaml \
-  -f chart/values-llamaguard-7b.yaml \
-  --set hfToken=$(cat .hf_token) | oc apply -f -
+  -f chart/values-granite-guardian-4.1-8b.yaml | oc apply -f -
 ```
+
+### Gated Hugging Face model
+
+Gated `hf://` models need a token: add `--set-file hfToken=.hf_token` to any command.
 
 ### Deploy Predictive Model (OpenVINO, CPU)
 

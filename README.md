@@ -80,7 +80,6 @@ helm template qwen3-8b chart/ -f chart/values.yaml -f chart/values-qwen3-8b-fp8-
 helm template gpt-oss-20b chart/ -f chart/values.yaml -f chart/values-gpt-oss-20b.yaml | oc apply -f -
 helm template granite-4-1-8b-fp8 chart/ -f chart/values.yaml -f chart/values-granite-4-1-8b-fp8.yaml | oc apply -f -
 helm template gemma-4-12b-it-fp8-dynamic chart/ -f chart/values.yaml -f chart/values-gemma-4-12b-it-fp8-dynamic.yaml | oc apply -f -
-helm template devstral-small-2-24b-instruct chart/ -f chart/values.yaml -f chart/values-devstral-small-2-24b-instruct.yaml | oc apply -f -
 
 # Guardrails
 helm template granite-guardian-4-1-8b chart/ -f chart/values.yaml -f chart/values-granite-guardian-4.1-8b.yaml | oc apply -f -
@@ -97,6 +96,7 @@ helm template gpt-oss-20b chart/ -f chart/values.yaml -f chart/values-gpt-oss-20
 # Generative (vLLM, 1x H100)
 helm template gemma-4-26b-a4b-fp8 chart/ -f chart/values.yaml -f chart/values-gemma-4-26b-a4b-fp8.yaml | oc apply -f -
 helm template qwen38-27b-fp8 chart/ -f chart/values.yaml -f chart/values-qwen3.8-27b-fp8.yaml | oc apply -f -
+helm template devstral-small-2-24b-instruct chart/ -f chart/values.yaml -f chart/values-devstral-small-2-24b-instruct.yaml | oc apply -f -
 
 # Generative (vLLM, 2 GPUs with tensor parallelism)
 helm template llama-3-3-70b chart/ -f chart/values.yaml -f chart/values-llama-3.3-70b.yaml | oc apply -f -
@@ -213,7 +213,7 @@ extraEnv:
 
 ### TrustyAI Monitoring
 
-Enable [TrustyAI](https://docs.redhat.com/en/documentation/red_hat_openshift_ai_self-managed/3.3/html/monitoring_your_ai_systems/) for bias and data drift monitoring by setting `trustyai.enabled: true` in a model's values file. This deploys a `TrustyAIService` CR and the required `kserve-logger-ca-bundle` ConfigMap in the model's namespace.
+Enable [TrustyAI](https://docs.redhat.com/en/documentation/red_hat_openshift_ai_self-managed/3.5/html/monitoring_your_ai_systems/) for bias and data drift monitoring by setting `trustyai.enabled: true` in a model's values file. This deploys a `TrustyAIService` CR and the required `kserve-logger-ca-bundle` ConfigMap in the model's namespace.
 
 ```yaml
 trustyai:

@@ -34,7 +34,7 @@ helm template <release> chart/ \
 - **Generative (GPU)**: `values-qwen3-8b-fp8-dynamic.yaml`, `values-gpt-oss-20b.yaml`
 - **Embeddings (GPU)**: `values-bge-m3.yaml`, `values-nomic-embed-text-v2-moe-gpu.yaml`
 - **Predictive (CPU)**: `values-distilbert.yaml` (includes KEDA autoscaling configuration example)
-- **Guardrails**: `values-llamaguard-7b.yaml` (gated HuggingFace; requires `hfToken`)
+- **Guardrails**: `values-granite-guardian-4.1-8b.yaml` (ModelCar on Quay)
 
 ## Maintainers
 
@@ -81,24 +81,24 @@ See `values-example-minio-s3-tinyllama.yaml` and `values-example-odf-obc-s3.yaml
 
 ### Configuration Structure
 
-All models use a unified `scaling` configuration with four modes:
+All models use a unified `scaling` configuration with three modes:
 
 ```yaml
 scaling:
-  mode: fixed  # "fixed", "hpa" (predictive only), "keda" (predictive only), or "wva" (generative only, not yet available)
+  mode: fixed  # "fixed", "hpa" (predictive only) or "keda" (predictive only)
   replicas: 1  # Used when mode: fixed
 ```
 
 ### Generative Models (LLMInferenceService)
 
-**Fixed scaling** (default and currently only supported option):
+**Fixed scaling** (the only option the chart renders for generative models):
 ```yaml
 scaling:
   mode: fixed
   replicas: 1
 ```
 
-**WVA autoscaling** (coming soon): Will use `mode: wva` for inference-aware autoscaling with Workload Variant Autoscaler.
+**WVA autoscaling** (Technology Preview in RHOAI 3.5): the Workload Variant Autoscaler scales on KV cache usage and queue depth and is configured in the `LLMInferenceService` itself. The chart does not render it yet.
 
 ### Predictive Models (InferenceService)
 
@@ -250,25 +250,145 @@ Deploys a TrustyAIService CR and required CA bundle ConfigMap. See `values-disti
 
 ## Values
 
+### Other Values
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| name | string | `"model-server"` | Resource identity name for the model serving deployment |
+
+### Namespace Configuration
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| namespace | object | `{"name":"models-as-a-service"}` | Target namespace for all chart resources. The namespace is NOT created by this chart: it is owned by the platform (rhoai-gitops creates it, labels it for Kueue and creates the LocalQueues and GPU claim templates). |
+| namespace.name | string | `"models-as-a-service"` | Namespace name |
+
+### Kueue Configuration
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| kueue | object | `{"localQueue":"","priorityClass":""}` | Kueue queues (rhoai-gitops "reserved-spot"). The ClusterQueues, LocalQueues and WorkloadPriorityClasses are created by rhoai-gitops, not by this chart. |
+| kueue.localQueue | string | `"" (derived)` | LocalQueue for the workload label. Empty = derive from serving.hardwareProfile.name (gpu-profile: serving-lq, gpu-batch-profile: batch-lq, otherwise default). Must match the HardwareProfile spec.scheduling.kueue.localQueueName. |
+| kueue.priorityClass | string | `"" (derived)` | WorkloadPriorityClass for the workload label kueue.x-k8s.io/priority-class (orders models inside serving-cq). Empty = derive from serving.hardwareProfile.name (gpu-profile: model-critical, gpu-batch-profile: batch-nightly, otherwise no label). Other classes: model-standard, batch-interactive. |
+
+### Serving Configuration
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| serving | object | `{...}` (see sub-keys) | Model serving configuration. Determines whether to deploy generative (LLMInferenceService) or predictive (InferenceService) models. |
+| serving.dra | object | `{"enabled":true,"claimTemplate":"","hardwareProfile":"gpu-dra-profile"}` | GPU through Dynamic Resource Allocation (DRA) instead of the NVIDIA device plugin: the pod references a ResourceClaimTemplate (`resourceClaims` + `resources.claims`) instead of `nvidia.com/gpu`. The templates are defined by the platform team (rhoai-gitops `06-dra`), not by this chart. CPU models never get a claim. See docs/010-dra-gpu-claims.md. |
+| serving.dra.claimTemplate | string | `""` | Platform-defined ResourceClaimTemplate in the model namespace; required for GPU models when DRA is on. Sizes: `gpu-s-x1` (small, embeddings), `gpu-m-x1` (L4-class), `gpu-l-x1` (1x H100), `gpu-xl-x1` (1 GPU with 140 Gi or more), `gpu-xl-x2` (2 GPUs, needs `parallelism.tensor: 2`). The GPU count comes from the template. |
+| serving.dra.enabled | bool | `true` | Use a ResourceClaim (true) or `nvidia.com/gpu` limits (false). Set false on clusters without the NVIDIA DRA driver. |
+| serving.dra.hardwareProfile | string | `"gpu-dra-profile"` | HardwareProfile written in the annotation of DRA models whose profile is `gpu-profile`. It must not carry an `nvidia.com/gpu` identifier (the webhook would add it on top of the claim and Kueue would count 2 GPUs). |
+| serving.hardwareProfile | object | `{"name":"gpu-profile","namespace":"redhat-ods-applications"}` | OpenShift AI HardwareProfile reference |
+| serving.hardwareProfile.name | string | `"gpu-profile"` | HardwareProfile name (cpu-profile for CPU-only, gpu-profile for GPU models) |
+| serving.hardwareProfile.namespace | string | `redhat-ods-applications` | HardwareProfile namespace |
+| serving.maas | object | `{"enabled":true}` | MaaS (Models-as-a-Service) catalog integration. Creates MaaSModelRef CR using model.displayName, model.description and model.metadata.useCase. |
+| serving.maas.enabled | bool | `true` | Enable MaaSModelRef creation for MaaS catalog (generative models only: MaaS supports LLMInferenceService, not InferenceService) |
+| serving.router | object | `{"route":{"requestTimeout":""},"scheduler":{"endpointPickerConfig":{}}}` | Router configuration for intelligent routing and HTTPRoute settings |
+| serving.router.route | object | `{"requestTimeout":""}` | HTTPRoute configuration for request timeouts and URL rewriting |
+| serving.router.route.requestTimeout | string | `""` | Request timeout for long-running inference (e.g., "300s", "5m"). Leave empty for default Gateway timeout. |
+| serving.router.scheduler | object | `{"endpointPickerConfig":{}}` | Scheduler configuration (llm-d EPP). Always enabled in RHOAI 3.4+ for intelligent routing. |
+| serving.router.scheduler.endpointPickerConfig | object | `{} (uses default EPP configuration)` | Custom EndpointPickerConfig for advanced scheduler tuning. Rendered into a ConfigMap (<name>-epp-config) and referenced via router.scheduler.config.ref. Leave empty for defaults (queue-scorer, kv-cache-utilization-scorer, prefix-cache-scorer, no-hit-lru-scorer with weights 2:2:3:2). |
+| serving.routerGatewayRefs | list | `MaaS gateway (maas-default-gateway / openshift-ingress)` | Gateway API refs for spec.router.gateway. Default: the MaaS gateway (maas-default-gateway in openshift-ingress), so models are published through Models-as-a-Service. The model namespace must be allowed by the gateway. To use the standard llm-d gateway (openshift-ai-inference) instead, set `[]`. |
+| serving.type | string | `"generative"` | Serving type: "generative" for vLLM-based LLMs, "predictive" for OpenVINO/ONNX runtimes |
+
+### Scaling Configuration
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| scaling | object | `{...}` (see sub-keys) | Scaling configuration for model serving workloads |
+| scaling.hpa | object | `{"minReplicas":1,"maxReplicas":5,"scaleMetric":"cpu","scaleTarget":80}` | HPA autoscaling configuration (only used when mode is "hpa" for predictive models). Uses standard Kubernetes HPA with CPU/memory metrics. |
+| scaling.hpa.maxReplicas | int | `5` | Maximum number of replicas for autoscaling |
+| scaling.hpa.minReplicas | int | `1` | Minimum number of replicas for autoscaling |
+| scaling.hpa.scaleMetric | string | `"cpu"` | Scaling metric type (cpu or memory) |
+| scaling.hpa.scaleTarget | int | `80` | Target value for the metric (e.g., 80 for 80% CPU utilization) |
+| scaling.keda | object | `{...}` (see sub-keys) | KEDA autoscaling configuration (only used when mode is "keda" for predictive models). Requires KEDA operator installed. |
+| scaling.keda.maxReplicas | int | `5` | Maximum number of replicas for autoscaling |
+| scaling.keda.minReplicas | int | `1` | Minimum number of replicas for autoscaling |
+| scaling.keda.pollingInterval | int | `5` | Polling interval in seconds for checking metrics |
+| scaling.keda.prometheus | object | `{...}` (see sub-keys) | Prometheus trigger configuration |
+| scaling.keda.prometheus.authModes | string | `"bearer"` | Authentication mode for Prometheus (bearer token from ServiceAccount) |
+| scaling.keda.prometheus.query | string | `sum(ovms_current_requests{namespace="NAMESPACE", pod=~"NAME-predictor.*"})` | PromQL query for scaling metric. Default uses ovms_current_requests for OpenVINO models. |
+| scaling.keda.prometheus.serverAddress | string | `https://thanos-querier.openshift-monitoring.svc.cluster.local:9092` | Prometheus server address (default: Thanos Querier in openshift-monitoring) |
+| scaling.keda.prometheus.threshold | int | `2` | Threshold value that triggers scaling (number of concurrent requests) |
+| scaling.mode | string | `"fixed"` | Scaling mode: "fixed" (static replicas), "hpa" (predictive models CPU/memory HPA), "keda" (predictive models custom metrics) |
+| scaling.replicas | int | `1` | Number of replicas when mode is "fixed" |
+
+### Model Configuration
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| model | object | `{...}` (see sub-keys) | Model source configuration (KServe/OpenShift AI storage URI). Supported schemes: hf://, s3://, pvc://, oci:// |
+| model.description | string | `""` | Description in the MaaS catalog (MaaSModelRef). Defaults to "Serving model <name>" if empty. |
+| model.displayName | string | `""` | Display name in the MaaS catalog (MaaSModelRef). Defaults to "Model - <name>" if empty. |
+| model.maxModelLen | string | `""` | Maximum model sequence length (context window). Optional - only set when using --max-model-len vLLM arg or for MaaSModelRef annotation. |
+| model.metadata | object | `{"useCase":"chat","type":"generative"}` | Model metadata annotations for OpenShift AI dashboard and MaaS catalog |
+| model.metadata.type | string | `"generative"` | Model type: "generative", "predictive" |
+| model.metadata.useCase | string | `"chat"` | Use case type: "chat", "embedding", "moderation" |
+| model.name | string | `""` | Model name for serving requests |
+| model.oci | object | `{"dockerconfigjson":""}` | OCI registry connection settings (only used when uri starts with oci://) |
+| model.oci.dockerconfigjson | string | `""` | Docker config JSON for private registries (base64 encoded). Leave empty for public registries. |
+| model.s3 | object | `{...}` (see sub-keys) | S3-compatible storage configuration (only used when uri starts with s3://) |
+| model.s3.accessKeyId | string | `""` | S3 access key ID |
+| model.s3.bucket | string | `""` | S3 bucket name |
+| model.s3.endpoint | string | `""` | S3 endpoint URL (e.g., http://minio.minio.svc.cluster.local:9000) |
+| model.s3.objectBucketClaim | string | `""` | OpenShift Data Foundation ObjectBucketClaim name. When set, credentials are read from ODF-generated Secret/ConfigMap instead of manual fields above. |
+| model.s3.path | string | `""` | Object prefix/path inside the bucket (opendatahub.io/connection-path annotation) |
+| model.s3.region | string | `""` | S3 region |
+| model.s3.secretAccessKey | string | `""` | S3 secret access key |
+| model.uri | string | `""` | Model URI (e.g., hf://RedHatAI/Qwen3-8B-FP8-dynamic, oci://registry.redhat.io/rhelai1/modelcar-qwen3-8b-fp8-dynamic:1.5) |
+
+### Authentication and Secrets
+
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | auth | object | `{"enabled":true}` | Authentication configuration via Red Hat Connectivity Link (Kuadrant/Authorino) |
 | auth.enabled | bool | `true` | Enable authentication for the inference service |
+| hfToken | string | `"" (pass via --set-file hfToken=.hf_token)` | Hugging Face token for gated/private models. Chart creates hf-secret when model.uri starts with hf:// and this is non-empty. |
+
+### Chat Template Configuration
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
 | chatTemplate | object | `{"enabled":false,"template":""}` | Custom chat template for generative models (vLLM). Use when model lacks built-in template. |
 | chatTemplate.enabled | bool | `false` | Enable custom chat template via ConfigMap |
-| dashboard | object | `{"genaiUseCase":"chat","modelType":"generative"}` | OpenShift AI dashboard annotations (generative models only) |
-| dashboard.genaiUseCase | string | `"chat"` | Gen AI use case type: "chat", "embedding", "moderation" |
-| dashboard.modelType | string | `"generative"` | Model type annotation |
-| guardrails | object | `{"enabled":false,"nemo":{"modelUrl":"","useGatewayRefs":false},"type":"nemo"}` | Guardrails for content moderation and safety |
-| guardrails.enabled | bool | `false` | Enable guardrails integration |
-| guardrails.nemo | object | `{"modelUrl":"","useGatewayRefs":false}` | NeMo Guardrails configuration (only used when type is "nemo") |
-| guardrails.nemo.modelUrl | string | `""` | LLM model endpoint URL. If empty and useGatewayRefs is true, auto-generates from routerGatewayRefs. If empty and useGatewayRefs is false, uses fallback defaults. |
-| guardrails.nemo.useGatewayRefs | bool | `false` | Use routerGatewayRefs to auto-generate modelUrl. When true, constructs URL from first gateway ref: http://<gateway-name>-<gateway-name>.<gateway-namespace>.svc.cluster.local/<model-namespace>/<model-name>/v1 |
-| guardrails.type | string | `"nemo"` | Guardrails type: "nemo" (NVIDIA NeMo Guardrails) |
-| hfToken | string | "" (pass via --set-file hfToken=.hf_token) | Hugging Face token for gated/private models. Chart creates hf-secret when model.uri starts with hf:// and this is non-empty. |
-| kueue | object | `{"localQueueName":"default"}` | Kueue LocalQueue configuration |
-| kueue.localQueueName | string | `"default"` | LocalQueue name used as label kueue.x-k8s.io/queue-name on serving CRs. Must match a LocalQueue in the model namespace. |
-| mainContainer | object | `{"args":[],"command":[],"env":[],"extraArgs":[],"image":"","livenessProbe":{},"readinessProbe":{},"startupProbe":{}}` | Main container configuration for LLMInferenceService/InferenceService pods |
+| chatTemplate.template | string | `"" (provide template in model-specific values file)` | Jinja2 template content. Mounted at /etc/vllm/template.jinja and passed to vLLM via --chat-template |
+
+### TrustyAI Configuration
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| trustyai | object | `{"enabled":false}` | TrustyAI monitoring for bias and data drift detection |
+| trustyai.enabled | bool | `false` | Enable TrustyAI service deployment |
+
+### Guardrails Configuration
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| guardrails | object | `{...}` (see sub-keys) | Guardrails for content moderation and safety |
+| guardrails.config | string | `Jailbreak + script blocking + PII detection` | NeMo Guardrails config.yaml content. This controls which guardrails are active. The model connection (openai_api_base, model_name) is auto-injected by the template. Default configuration includes three core guardrails: 1. Jailbreak detection (keyword-based) 2. Malicious script blocking 3. PII detection (Presidio) Override in model-specific values files to customize entities, thresholds, or disable flows. |
+| guardrails.enabled | bool | `false` | Enable NeMo Guardrails integration |
+| guardrails.guardLlm | object | `{"enabled":false,"url":"","modelName":"","name":"","namespace":"","token":""}` | Guard LLM Configuration for self-check flows Red Hat OpenShift AI supports using separate models for self-check guardrails (type: self_check_input, self_check_output) This enables smaller, faster models as guardrail judges while reserving larger models for inference |
+| guardrails.guardLlm.enabled | bool | `false` | Enable guard LLM for self-check flows |
+| guardrails.guardLlm.modelName | string | `""` | Guard model name (must match model.name in the guard model's deployment) |
+| guardrails.guardLlm.name | string | `""` | Guard model deployment name (used for URL generation if url is empty) |
+| guardrails.guardLlm.namespace | string | `""` | Guard model namespace (used for URL generation if url is empty) |
+| guardrails.guardLlm.token | string | `""` | Guard model ServiceAccount token (pass via --set guardrails.guardLlm.token=$(oc get secret <guard-sa-token> -n <namespace> -o jsonpath='{.data.token}' \| base64 -d)) |
+| guardrails.guardLlm.url | string | `""` | Guard model endpoint URL (leave empty to auto-generate from name/namespace) |
+| guardrails.modelUrl | string | `""` | LLM model endpoint URL. Leave empty to auto-generate: If routerGatewayRefs exists, uses internal gateway (https://<gateway-svc>/<namespace>/<model>/v1). Otherwise, uses direct workload service (https://<model>-kserve-workload-svc:8000). |
+
+### Parallelism Configuration
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| parallelism | object | `{} (single-replica, no parallelism)` | Multi-node distributed workload parallelism for generative models (LLMInferenceService only). Enables tensor parallelism (TP), data parallelism (DP), and expert parallelism (EP) across multiple GPUs/nodes. Leave empty {} for single-replica workloads. |
+
+### Container Configuration
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| mainContainer | object | `{...}` (see sub-keys) | Main container configuration for LLMInferenceService/InferenceService pods |
 | mainContainer.args | list | `[]` | Container args override |
 | mainContainer.command | list | `[]` | Container command override |
 | mainContainer.env | list | `[]` | Extra environment variables in standard Kubernetes env var format |
@@ -276,59 +396,20 @@ Deploys a TrustyAIService CR and required CA bundle ConfigMap. See `values-disti
 | mainContainer.image | string | `""` | Container image (leave empty to use OpenShift AI default vLLM or OpenVINO image) |
 | mainContainer.livenessProbe | object | `{}` | Liveness probe configuration |
 | mainContainer.readinessProbe | object | `{}` | Readiness probe configuration |
+| mainContainer.resources | object | `{} (set in model-specific values files)` | Container resource limits and requests. Override in values-<model>.yaml files per model requirements. |
 | mainContainer.startupProbe | object | `{}` | Startup probe configuration (useful for large models with slow load times >2min) |
-| model | object | `{"connection":{"oci":{"dockerconfigjson":""},"protocol":"auto","s3":{"accessKeyId":"","bucket":"","endpoint":"","objectBucketClaim":"","path":"","region":"","secretAccessKey":""}},"name":"","uri":""}` | Model source configuration (KServe/OpenShift AI storage URI). Supported schemes: hf://, s3://, pvc://, oci:// |
-| model.connection | object | `{"oci":{"dockerconfigjson":""},"protocol":"auto","s3":{"accessKeyId":"","bucket":"","endpoint":"","objectBucketClaim":"","path":"","region":"","secretAccessKey":""}}` | Dashboard connection Secret configuration |
-| model.connection.oci | object | `{"dockerconfigjson":""}` | OCI registry connection settings |
-| model.connection.oci.dockerconfigjson | string | `""` | Docker config JSON for private registries (base64 encoded). Leave empty for public registries. |
-| model.connection.protocol | string | `"auto"` | Connection protocol: "auto", "uri", "oci", or "s3". Auto detects from model.uri prefix. |
-| model.connection.s3 | object | `{"accessKeyId":"","bucket":"","endpoint":"","objectBucketClaim":"","path":"","region":"","secretAccessKey":""}` | S3-compatible storage configuration |
-| model.connection.s3.accessKeyId | string | `""` | S3 access key ID |
-| model.connection.s3.bucket | string | `""` | S3 bucket name |
-| model.connection.s3.endpoint | string | `""` | S3 endpoint URL (e.g., http://minio.minio.svc.cluster.local:9000) |
-| model.connection.s3.objectBucketClaim | string | `""` | OpenShift Data Foundation ObjectBucketClaim name. When set, credentials are read from ODF-generated Secret/ConfigMap instead of manual fields above. |
-| model.connection.s3.path | string | `""` | Object prefix/path inside the bucket (opendatahub.io/connection-path annotation) |
-| model.connection.s3.region | string | `""` | S3 region |
-| model.connection.s3.secretAccessKey | string | `""` | S3 secret access key |
-| model.name | string | `""` | Model name for serving requests |
-| model.uri | string | `""` | Model URI (e.g., hf://RedHatAI/Qwen3-8B-FP8-dynamic, oci://registry.redhat.io/rhelai1/modelcar-qwen3-8b-fp8-dynamic:1.5) |
-| name | string | `"model-server"` | Resource identity name for the model serving deployment |
-| namespace | object | `{"name":"models-as-a-service"}` | Target namespace for all chart resources (not created by the chart) |
-| parallelism | object | `{}` | Multi-node distributed workload parallelism for generative models (LLMInferenceService only). Enables tensor and data parallelism across multiple GPUs/nodes. Leave empty {} for single-replica workloads. |
-| namespace.name | string | `"models-as-a-service"` | Namespace name |
-| resources | object | {} (set in model-specific values files) | Container resource limits and requests. Override in values-<model>.yaml files per model requirements. |
-| serving.routerGatewayRefs | list | MaaS gateway (maas-default-gateway / openshift-ingress) | Gateway API refs for spec.router.gateway. Default: the MaaS gateway. Set `[]`/null to use the standard llm-d gateway (openshift-ai-inference). |
-| runtime | object | `{"displayName":"OpenVINO Model Server","image":"quay.io/opendatahub/openvino_model_server:stable","modelFormat":{"name":"openvino_ir","version":"opset13"},"version":"v2026.1.0"}` | Predictive runtime configuration (only used when serving.type is "predictive") |
+
+### Predictive Runtime Configuration
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| runtime | object | `{...}` (see sub-keys) | Predictive runtime configuration (only used when serving.type is "predictive") |
 | runtime.displayName | string | `"OpenVINO Model Server"` | ServingRuntime display name |
 | runtime.image | string | `"quay.io/opendatahub/openvino_model_server:stable"` | Runtime container image |
 | runtime.modelFormat | object | `{"name":"openvino_ir","version":"opset13"}` | Model format specification |
 | runtime.modelFormat.name | string | `"openvino_ir"` | Model format name |
 | runtime.modelFormat.version | string | `"opset13"` | Model format version |
 | runtime.version | string | `"v2026.1.0"` | Runtime version |
-| scaling | object | `{"hpa":{"maxReplicas":5,"minReplicas":1,"scaleMetric":"cpu","scaleTarget":80},"keda":{"maxReplicas":5,"minReplicas":1,"pollingInterval":5,"prometheus":{"authModes":"bearer","query":"","serverAddress":"https://thanos-querier.openshift-monitoring.svc.cluster.local:9092","threshold":2}},"mode":"fixed","replicas":1}` | Scaling configuration for model serving workloads |
-| scaling.hpa | object | `{"maxReplicas":5,"minReplicas":1,"scaleMetric":"cpu","scaleTarget":80}` | HPA autoscaling configuration (only used when mode is "hpa" for predictive models). Uses standard Kubernetes HPA with CPU/memory metrics. |
-| scaling.hpa.maxReplicas | int | `5` | Maximum number of replicas for autoscaling |
-| scaling.hpa.minReplicas | int | `1` | Minimum number of replicas for autoscaling |
-| scaling.hpa.scaleMetric | string | `"cpu"` | Scaling metric type (cpu or memory) |
-| scaling.hpa.scaleTarget | int | `80` | Target value for the metric (e.g., 80 for 80% CPU utilization) |
-| scaling.keda | object | `{"maxReplicas":5,"minReplicas":1,"pollingInterval":5,"prometheus":{"authModes":"bearer","query":"","serverAddress":"https://thanos-querier.openshift-monitoring.svc.cluster.local:9092","threshold":2}}` | KEDA autoscaling configuration (only used when mode is "keda" for predictive models). Requires KEDA operator installed. |
-| scaling.keda.maxReplicas | int | `5` | Maximum number of replicas for autoscaling |
-| scaling.keda.minReplicas | int | `1` | Minimum number of replicas for autoscaling |
-| scaling.keda.pollingInterval | int | `5` | Polling interval in seconds for checking metrics |
-| scaling.keda.prometheus | object | `{"authModes":"bearer","query":"","serverAddress":"https://thanos-querier.openshift-monitoring.svc.cluster.local:9092","threshold":2}` | Prometheus trigger configuration |
-| scaling.keda.prometheus.authModes | string | `"bearer"` | Authentication mode for Prometheus (bearer token from ServiceAccount) |
-| scaling.keda.prometheus.query | string | sum(ovms_current_requests{namespace="NAMESPACE", pod=~"NAME-predictor.*"}) | PromQL query for scaling metric. Default uses ovms_current_requests for OpenVINO models. |
-| scaling.keda.prometheus.serverAddress | string | https://thanos-querier.openshift-monitoring.svc.cluster.local:9092 | Prometheus server address (default: Thanos Querier in openshift-monitoring) |
-| scaling.keda.prometheus.threshold | int | `2` | Threshold value that triggers scaling (number of concurrent requests) |
-| scaling.mode | string | `"fixed"` | Scaling mode: "fixed" (static replicas), "hpa" (predictive models CPU/memory HPA), "keda" (predictive models custom metrics), "wva" (generative models - not yet available) |
-| scaling.replicas | int | `1` | Number of replicas when mode is "fixed" |
-| serving | object | `{"hardwareProfile":{"name":"gpu-profile","namespace":"redhat-ods-applications"},"type":"generative"}` | Model serving configuration. Determines whether to deploy generative (LLMInferenceService) or predictive (InferenceService) models. |
-| serving.hardwareProfile | object | `{"name":"gpu-profile","namespace":"redhat-ods-applications"}` | OpenShift AI HardwareProfile reference |
-| serving.hardwareProfile.name | string | `"gpu-profile"` | HardwareProfile name (cpu-profile for CPU-only, gpu-profile for GPU models) |
-| serving.hardwareProfile.namespace | string | redhat-ods-applications | HardwareProfile namespace |
-| serving.type | string | `"generative"` | Serving type: "generative" for vLLM-based LLMs, "predictive" for OpenVINO/ONNX runtimes |
-| trustyai | object | `{"enabled":false}` | TrustyAI monitoring for bias and data drift detection |
-| trustyai.enabled | bool | `false` | Enable TrustyAI service deployment |
 
 ## Examples
 
@@ -340,7 +421,7 @@ helm template qwen chart/ \
   -f chart/values-qwen3-8b-fp8-dynamic.yaml | oc apply -f -
 ```
 
-### Deploy BGE-M3 Embeddings (HuggingFace, GPU)
+### Deploy BGE-M3 Embeddings (ModelCar, GPU)
 
 ```bash
 helm template bge-m3 chart/ \
@@ -348,14 +429,17 @@ helm template bge-m3 chart/ \
   -f chart/values-bge-m3.yaml | oc apply -f -
 ```
 
-### Deploy LlamaGuard-7B (Gated HF Model)
+### Deploy Granite Guardian 4.1 (guardrails model)
 
 ```bash
-helm template llamaguard chart/ \
+helm template granite-guardian chart/ \
   -f chart/values.yaml \
-  -f chart/values-llamaguard-7b.yaml \
-  --set hfToken=$(cat .hf_token) | oc apply -f -
+  -f chart/values-granite-guardian-4.1-8b.yaml | oc apply -f -
 ```
+
+### Gated Hugging Face model
+
+Gated `hf://` models need a token: add `--set-file hfToken=.hf_token` to any command.
 
 ### Deploy Predictive Model (OpenVINO, CPU)
 

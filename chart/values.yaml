@@ -107,7 +107,7 @@ serving:
 
 # -- Scaling configuration for model serving workloads
 scaling:
-  # -- Scaling mode: "fixed" (static replicas), "hpa" (predictive models CPU/memory HPA), "keda" (predictive models custom metrics), "wva" (generative models - not yet available)
+  # -- Scaling mode: "fixed" (static replicas), "hpa" (predictive models CPU/memory HPA), "keda" (predictive models custom metrics)
   mode: fixed
   # -- Number of replicas when mode is "fixed"
   replicas: 1
