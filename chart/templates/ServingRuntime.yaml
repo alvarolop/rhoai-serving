@@ -6,7 +6,9 @@ metadata:
   name: {{ .Values.name }}
   namespace: {{ include "rhoai-serving.namespaceName" . }}
   annotations:
+    {{- if eq (include "rhoai-serving.hasConnectionSecret" . | trim) "true" }}
     opendatahub.io/connections: {{ .Values.name }}
+    {{- end }}
     opendatahub.io/apiProtocol: REST
     opendatahub.io/runtime-version: {{ .Values.runtime.version }}
     opendatahub.io/serving-runtime-scope: global
@@ -15,10 +17,6 @@ metadata:
     openshift.io/display-name: {{ .Values.runtime.displayName }}
   labels:
     opendatahub.io/dashboard: "true"
-    kueue.x-k8s.io/queue-name: {{ include "rhoai-serving.kueueLocalQueue" . | quote }}
-    {{- with include "rhoai-serving.kueuePriorityClass" . | trim }}
-    kueue.x-k8s.io/priority-class: {{ . | quote }}
-    {{- end }}
 spec:
   annotations:
     prometheus.io/port: "8888"

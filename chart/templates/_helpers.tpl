@@ -95,10 +95,31 @@ of the claim, Kueue counts 2 GPUs and the pod never schedules.
 {{/*
 Emit the opendatahub.io/hardware-profile-* annotations? Always without DRA. With DRA only when the effective profile
 is the DRA one (no GPU identifier): any other GPU profile would make the webhook inject nvidia.com/gpu next to the
-claim. Queue / priority labels derive from serving.hardwareProfile.name and do not depend on the annotation.
+claim. When the annotation is written, the admission adds the queue-name label from the profile.
 */}}
 {{- define "rhoai-serving.emitHardwareProfileAnnotation" -}}
 {{- if or (ne (include "rhoai-serving.useDra" . | trim) "true") (and .Values.serving.dra.hardwareProfile (eq (include "rhoai-serving.hardwareProfileName" . | trim) .Values.serving.dra.hardwareProfile)) -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
+{{/*
+True when the workload carries the hardware-profile annotation. The RHOAI admission then adds the Kueue queue-name
+label itself (verified on LLMInferenceService and InferenceService), so the chart only writes it when this is false.
+*/}}
+{{- define "rhoai-serving.hasHardwareProfile" -}}
+{{- if and (.Values.serving.hardwareProfile.name) (eq (include "rhoai-serving.emitHardwareProfileAnnotation" . | trim) "true") -}}true{{- else -}}false{{- end -}}
+{{- end -}}
+
+{{/*
+True when a connection Secret is created: S3 (unless an ObjectBucketClaim supplies the credentials) and OCI with a
+dockerconfigjson. uri:// and oci:// without credentials need none: spec.model.uri / storageUri already carries the URI.
+*/}}
+{{- define "rhoai-serving.hasConnectionSecret" -}}
+{{- $p := include "rhoai-serving.modelConnectionProtocol" . | trim -}}
+{{- $oci := .Values.model.oci | default dict -}}
+{{- $s3 := .Values.model.s3 | default dict -}}
+{{- if eq $p "s3" -}}{{- if not ($s3.objectBucketClaim | default "" | toString | trim) -}}true{{- else -}}false{{- end -}}
+{{- else if eq $p "oci" -}}{{- if ($oci.dockerconfigjson | default "" | toString | trim) -}}true{{- else -}}false{{- end -}}
+{{- else -}}false{{- end -}}
 {{- end -}}
 
 {{/*
@@ -141,17 +162,15 @@ schemes do not use this Secret even if hfToken is set by mistake.
 {{- end -}}
 
 {{/*
-Kueue LocalQueue the workload is submitted to. It must match the HardwareProfile's
-spec.scheduling.kueue.localQueueName, so it is derived from serving.hardwareProfile.name
-(rhoai-gitops reserved-spot queues) unless kueue.localQueue is set.
-  gpu-profile       -> serving-lq (ClusterQueue serving-cq)
-  gpu-batch-profile -> batch-lq   (ClusterQueue batch-cq)
-  cpu-profile/other -> default    (ClusterQueue cluster-queue)
+Kueue LocalQueue label, only used when the hardware-profile annotation is NOT written (otherwise the admission adds
+it from the profile). Derived from serving.hardwareProfile.name (rhoai-gitops reserved-spot queues):
+  gpu-profile / gpu-dra-profile -> serving-lq (ClusterQueue serving-cq)
+  gpu-batch-profile             -> batch-lq   (ClusterQueue batch-cq)
+  cpu-profile / other           -> default    (ClusterQueue cluster-queue)
 */}}
 {{- define "rhoai-serving.kueueLocalQueue" -}}
 {{- $hp := .Values.serving.hardwareProfile.name | default "" -}}
-{{- if .Values.kueue.localQueue -}}{{ .Values.kueue.localQueue }}
-{{- else if or (eq $hp "gpu-profile") (eq $hp "gpu-dra-profile") -}}serving-lq
+{{- if or (eq $hp "gpu-profile") (eq $hp "gpu-dra-profile") -}}serving-lq
 {{- else if eq $hp "gpu-batch-profile" -}}batch-lq
 {{- else -}}default
 {{- end -}}
@@ -159,15 +178,13 @@ spec.scheduling.kueue.localQueueName, so it is derived from serving.hardwareProf
 
 {{/*
 Kueue WorkloadPriorityClass label value. RHOAI 3.5 does not apply the HardwareProfile priorityClass to an
-LLMInferenceService, so it is set on the workload itself. Derived from serving.hardwareProfile.name unless
-kueue.priorityClass is set; empty means no label.
-  gpu-profile       -> model-critical
-  gpu-batch-profile -> batch-nightly
+LLMInferenceService (verified), so it is set on the workload itself, derived from serving.hardwareProfile.name.
+  gpu-profile / gpu-dra-profile -> model-critical
+  gpu-batch-profile             -> batch-nightly
 */}}
 {{- define "rhoai-serving.kueuePriorityClass" -}}
 {{- $hp := .Values.serving.hardwareProfile.name | default "" -}}
-{{- if .Values.kueue.priorityClass -}}{{ .Values.kueue.priorityClass }}
-{{- else if or (eq $hp "gpu-profile") (eq $hp "gpu-dra-profile") -}}model-critical
+{{- if or (eq $hp "gpu-profile") (eq $hp "gpu-dra-profile") -}}model-critical
 {{- else if eq $hp "gpu-batch-profile" -}}batch-nightly
 {{- end -}}
 {{- end -}}

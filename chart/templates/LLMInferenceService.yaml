@@ -9,21 +9,25 @@ metadata:
   namespace: {{ include "rhoai-serving.namespaceName" . }}
   annotations:
     openshift.io/display-name: {{ .Values.name }}
+    {{- if eq (include "rhoai-serving.hasConnectionSecret" . | trim) "true" }}
     opendatahub.io/connections: {{ .Values.name }}
+    {{- end }}
     {{- if and (eq $connProto "s3") $s3path }}
     opendatahub.io/connection-path: {{ $s3path | quote }}
     {{- end }}
     opendatahub.io/genai-use-case: {{ .Values.model.metadata.useCase | quote }}
     security.opendatahub.io/enable-auth: '{{ .Values.auth.enabled }}'
     opendatahub.io/model-type: {{ .Values.model.metadata.type | quote }}
-    {{- if and .Values.serving.hardwareProfile.name (eq (include "rhoai-serving.emitHardwareProfileAnnotation" . | trim) "true") }}
+    {{- if eq (include "rhoai-serving.hasHardwareProfile" . | trim) "true" }}
     opendatahub.io/hardware-profile-name: {{ include "rhoai-serving.hardwareProfileName" . | quote }}
     opendatahub.io/hardware-profile-namespace: {{ .Values.serving.hardwareProfile.namespace | quote }}
     {{- end }}
   labels:
     opendatahub.io/dashboard: "true"
     opendatahub.io/genai-asset: "true"
+    {{- if ne (include "rhoai-serving.hasHardwareProfile" . | trim) "true" }}
     kueue.x-k8s.io/queue-name: {{ include "rhoai-serving.kueueLocalQueue" . | quote }}
+    {{- end }}
     {{- with include "rhoai-serving.kueuePriorityClass" . | trim }}
     kueue.x-k8s.io/priority-class: {{ . | quote }}
     {{- end }}
