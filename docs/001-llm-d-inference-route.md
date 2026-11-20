@@ -2,7 +2,7 @@
 
 ## Context
 
-Generative models here are deployed as **`LLMInferenceService`** (KServe) with **`spec.router.gateway: {}`** for the default, non–Model-as-a-Service path (for example **`values-tinyllama-1b-cpu.yaml`**). Operators expect **llm-d** (distributed inference on the platform) to attach routing, TLS, and auth in front of the workload.
+Generative models here are deployed as **`LLMInferenceService`** (KServe) with **`spec.router.gateway: {}`** for the default, non–Model-as-a-Service path (for example **`values-tinyllama-1b.yaml`**). Operators expect **llm-d** (distributed inference on the platform) to attach routing, TLS, and auth in front of the workload.
 
 After reconciliation, users often see a URL similar to:
 
@@ -35,8 +35,8 @@ So the path segments reflect **where the CR lives** and **which CR** it is, whic
 
 ## Consequences
 
-- **Changing the public URL** (different host, path layout, or TLS) is a **platform / DSC / gateway** concern, not something you change inside **`values-tinyllama-1b-cpu.yaml`** beyond namespace and CR name (which influence the path indirectly via `status.url`).
-- **Models-as-a-Service** and explicit **`router.gateway.refs`** (see **`values-tinyllama-1b-maas.yaml`**) are a **separate** routing mode; compare with your **`DataScienceCluster`** `kserve.modelsAsService` setting and product docs.
+- **Changing the public URL** (different host, path layout, or TLS) is a **platform / DSC / gateway** concern, not something you change inside **`values-tinyllama-1b.yaml`** beyond namespace and CR name (which influence the path indirectly via `status.url`).
+- **Models-as-a-Service** is now the default here: `serving.routerGatewayRefs` in **`values.yaml`** points at `maas-default-gateway`. Set it to `[]` to use the standard `openshift-ai-inference` gateway described above; compare with your **`DataScienceCluster`** `kserve.modelsAsService` setting and product docs.
 - For authoritative URL and API path rules, use **Red Hat OpenShift AI** documentation for your installed version.
 
 ## Status
