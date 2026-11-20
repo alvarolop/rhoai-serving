@@ -29,7 +29,7 @@ So **26B-A4B** reads as: **~26B-scale MoE catalog**, with **~4B active** paramet
 
 ## 3. Relationship to filenames in this repo
 
-- **`values-gemma-4-26b-a4b-it-nvfp4.yaml`** is named for readability; the **Hugging Face id** uses Google’s casing: **`RedHatAI/gemma-4-26B-A4B-it-NVFP4`**.  
+- Values files are named for readability (for example **`values-gemma-4-26b-a4b-fp8.yaml`** in this repo); the **Hugging Face id** uses Google’s casing, for example **`RedHatAI/gemma-4-26B-A4B-it-NVFP4`**.  
 - The **`-NVFP4`** suffix is **artifact-specific** (quantization / packaging), not part of the core **A4B** MoE definition.
 
 ---

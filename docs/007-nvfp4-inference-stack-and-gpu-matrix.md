@@ -2,7 +2,7 @@
 
 This note explains **what NVFP4 means** for models such as **`RedHatAI/gemma-4-26B-A4B-it-NVFP4`**, which parts of the stack **this Helm chart does not pin**, and **what to verify on your cluster** before relying on NVFP4 in production.
 
-Related values overlay: **`chart/values-gemma-4-26b-a4b-it-nvfp4.yaml`**.  
+Related values: **`chart/values-gemma-4-26b-a4b-fp8.yaml`** is the FP8 model shipped in this repo; an NVFP4 overlay (`values-gemma-4-26b-a4b-it-nvfp4.yaml`) is not included and would follow the same layout.  
 MoE naming (**A4B**): **[008 — Gemma 4 “A4B” naming](008-gemma-4-a4b-moe-naming.md)**.
 
 ---
