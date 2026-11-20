@@ -26,21 +26,42 @@ Optional plugins in 3.5: `precise-prefix-cache-scorer` (token-level matching, ne
 
 ## Apply a configuration
 
-```bash
-# Uncomment one example in chart/values-scheduler-tuning-examples.yaml, then add it as a third overlay
-helm template model chart/ \
-  -f chart/values.yaml \
-  -f chart/values-<model>.yaml \
-  -f chart/values-scheduler-tuning-examples.yaml | oc apply -f -
+Add the config to the model's values file (the commented example under `serving.router.scheduler.endpointPickerConfig` in `chart/values.yaml` shows the shape) and apply as usual:
+
+```yaml
+serving:
+  router:
+    scheduler:
+      endpointPickerConfig:
+        apiVersion: llm-d.ai/v1alpha1
+        kind: EndpointPickerConfig
+        plugins:
+          - type: prefix-cache-scorer
+            parameters:
+              blockSizeTokens: 5
+              maxPrefixBlocksToMatch: 256
+          - type: queue-scorer
+          - type: kv-cache-utilization-scorer
+          - type: no-hit-lru-scorer
+          - type: max-score-picker
+        schedulingProfiles:
+          - name: default
+            plugins:
+              - pluginRef: prefix-cache-scorer
+                weight: 70
+              - pluginRef: queue-scorer
+                weight: 20
+              - pluginRef: kv-cache-utilization-scorer
+                weight: 10
+              - pluginRef: no-hit-lru-scorer
+                weight: 10
 ```
 
-The examples file is fully commented on purpose: as shipped it changes nothing. Restart the EPP pod after changing the ConfigMap.
-
-Inline (`router.scheduler.config.inline`) and ConfigMap (`config.ref`) are mutually exclusive in the CRD; the chart always uses the ConfigMap.
+Restart the EPP pod after changing the ConfigMap. Inline (`router.scheduler.config.inline`) and ConfigMap (`config.ref`) are mutually exclusive in the CRD; the chart always uses the ConfigMap.
 
 ## Strategies
 
-All use `apiVersion: llm-d.ai/v1alpha1`, `kind: EndpointPickerConfig`, with the four scorers and `max-score-picker` declared under `plugins` (see the examples file for the full YAML). Only the weights change:
+Same four scorers and `max-score-picker` as above; only the weights change:
 
 | Strategy | Use when | prefix | queue | kv-cache | no-hit-lru |
 |----------|----------|:------:|:-----:|:--------:|:----------:|
@@ -49,20 +70,6 @@ All use `apiVersion: llm-d.ai/v1alpha1`, `kind: EndpointPickerConfig`, with the 
 | Load-balanced | mixed request types and sizes, predictable latency | 33 | 33 | 34 | 10 |
 | Queue-first | high volume, throughput over latency | 25 | 60 | 15 | 10 |
 | Memory-aware | very long contexts, memory-constrained GPUs | 15 | 25 | 60 | 10 |
-
-```yaml
-schedulingProfiles:
-  - name: default
-    plugins:
-      - pluginRef: prefix-cache-scorer
-        weight: 70
-      - pluginRef: queue-scorer
-        weight: 20
-      - pluginRef: kv-cache-utilization-scorer
-        weight: 10
-      - pluginRef: no-hit-lru-scorer
-        weight: 10
-```
 
 Trade-off to expect: a heavy `prefix-cache-scorer` weight raises cache hits and lowers time to first token, but can concentrate load on a few replicas.
 
@@ -100,4 +107,3 @@ Change weights in steps of 10-20 points and re-measure. Saturation detection and
 - [Configure request routing for llm-d (RHOAI 3.5)](https://docs.redhat.com/en/documentation/red_hat_openshift_ai_self-managed/3.5/html/deploy_models_using_distributed_inference_with_llm-d/configuring-llm-scheduler)
 - [Monitor llm-d deployments (RHOAI 3.5)](https://docs.redhat.com/en/documentation/red_hat_openshift_ai_self-managed/3.5/html/deploy_models_using_distributed_inference_with_llm-d/monitoring-llmd-deployments)
 - [llm-d inference scheduler architecture](https://github.com/llm-d/llm-d-inference-scheduler/blob/main/docs/architecture.md)
-- Examples: `chart/values-scheduler-tuning-examples.yaml`

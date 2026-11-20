@@ -125,7 +125,6 @@ else
   echo ""
   echo "Intelligent routing is always enabled in RHOAI 3.4+."
   echo "To customize scheduler weights, see:"
-  echo "  chart/values-scheduler-tuning-examples.yaml"
   echo "  docs/scheduler-tuning-guide.md"
 fi
 echo ""

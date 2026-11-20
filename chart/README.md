@@ -75,7 +75,7 @@ The chart supports multiple methods for loading models:
 
 **Option 2: OpenShift Data Foundation ObjectBucketClaim** - Set `model.s3.objectBucketClaim` to auto-read ODF-generated credentials
 
-See `values-example-minio-s3-tinyllama.yaml` and `values-example-odf-obc-s3.yaml` for examples.
+See `values-example-minio-s3-tinyllama.yaml` for an example.
 
 ## Scaling
 

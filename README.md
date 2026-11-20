@@ -94,9 +94,6 @@ helm template granite-guardian-4-1-8b chart/ -f chart/values.yaml -f chart/value
 helm template bge-m3 chart/ -f chart/values.yaml -f chart/values-bge-m3.yaml | oc apply -f -
 helm template nomic-embed-text-v2-moe chart/ -f chart/values.yaml -f chart/values-nomic-embed-text-v2-moe-gpu.yaml | oc apply -f -
 
-# Scheduler (EPP) tuning: add it as a third overlay on top of any generative model
-helm template gpt-oss-20b chart/ -f chart/values.yaml -f chart/values-gpt-oss-20b.yaml -f chart/values-scheduler-tuning-examples.yaml | oc apply -f -
-
 # ===================== GPU: needs H100 / multi-GPU (production) =====================
 
 # Generative (vLLM, 1x H100)
@@ -119,9 +116,8 @@ helm template nomic-embed-text-v1-cpu chart/ -f chart/values.yaml -f chart/value
 # Predictive (OpenVINO + TrustyAI)
 helm template distilbert chart/ -f chart/values.yaml -f chart/values-distilbert.yaml | oc apply -f -
 
-# Model from S3 / MinIO / ODF (examples, CPU vLLM)
+# Model from S3 / MinIO (example, CPU vLLM)
 helm template tinyllama-s3-minio chart/ -f chart/values.yaml -f chart/values-example-minio-s3-tinyllama.yaml | oc apply -f -
-helm template example-obc-model chart/ -f chart/values.yaml -f chart/values-example-odf-obc-s3.yaml | oc apply -f -
 ```
 
 None of the models listed here is gated. Gated `hf://` models need `--set-file hfToken=.hf_token`, see [Hugging Face token](#hugging-face-token).

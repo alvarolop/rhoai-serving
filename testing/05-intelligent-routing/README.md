@@ -75,7 +75,7 @@ Request distribution: Random across pods
 - Intelligent routing (scheduler) enabled (default in RHOAI 3.4+)
 - Access to the OpenShift cluster with `oc` CLI
 
-> **Note**: Intelligent routing is always enabled in RHOAI 3.4+. To customize scheduler weights, see `chart/values-scheduler-tuning-examples.yaml` and `docs/scheduler-tuning-guide.md`.
+> **Note**: Intelligent routing is always enabled in RHOAI 3.4+. To customize scheduler weights, see `docs/scheduler-tuning-guide.md` and `docs/scheduler-tuning-guide.md`.
 
 ## Usage
 
@@ -231,11 +231,11 @@ oc exec -n model-gpt-oss ${POD} -c kserve-container -- curl http://localhost:800
 To test different scheduler configurations (e.g., cache-heavy vs queue-heavy routing), use the tuning examples:
 
 ```bash
-# Cache-optimized (higher cache affinity)
+# Cache-optimized (higher cache affinity): put the config from docs/scheduler-tuning-guide.md in a values file
 helm template model chart/ \
   -f chart/values.yaml \
   -f chart/values-<model>.yaml \
-  -f chart/values-scheduler-tuning-examples.yaml
+  -f <your-scheduler-overlay>.yaml
 
 # Then run test to compare TTFT improvements
 ```
