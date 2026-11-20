@@ -50,15 +50,13 @@ If your cluster **does not** taint GPU nodes, **CPU** pods could **in principle*
 
 ---
 
-## rhoai-serving change: GPU toleration must match `gpu-flavor` (`operator: Exists`)
+## GPU tolerations: the `ResourceFlavor` owns them, the chart does not emit any
 
-**Symptom:** **`Workload`** looks admitted or scheduler work runs, but the **decoder / main** pod stays **`Pending`** with **`SchedulingGated`** (`kueue.x-k8s.io/admission` + **`topology`**). **Kueue manager** logs show **`Unsuspending job`** failing with:
+**Symptom (historical):** **`Workload`** looks admitted but the **decoder / main** pod stays **`Pending`** with **`SchedulingGated`**, and the **Kueue manager** logs **`Unsuspending job`** failing with `Pod "…" is invalid: spec.tolerations: Forbidden: existing toleration can not be modified except its tolerationSeconds`.
 
-`Pod "…" is invalid: spec.tolerations: Forbidden: existing toleration can not be modified except its tolerationSeconds`
+**Cause:** **`gpu-flavor`** in gitops declares the NVIDIA taint toleration with **`operator: Exists`**. A toleration written by the chart with a different shape (implicit **`Equal`**) conflicts with the one Kueue merges on unsuspend.
 
-**Cause:** **`gpu-flavor`** in gitops declares the NVIDIA taint toleration with **`operator: Exists`**. If the **`LLMInferenceService`** pod template only had **`effect` + `key`** (implicit **`Equal`**), the live pod and Kueue’s merged toleration **differ**. On unsuspend, Kueue updates the **`Pod`**; the API server rejects that toleration change.
-
-**Fix (chart):** **`chart/templates/LLMInferenceService.yaml`** and **`chart/templates/InferenceService.yaml`** emit the GPU toleration with **`operator: Exists`**, matching **`resourceflavor-gpu-flavor.yaml`**. Details and rationale: **[004 — GPU tolerations vs Kueue `ResourceFlavor`](004-kueue-gpu-tolerations.md)** (updated for this interaction).
+**Current state:** the chart renders **no tolerations**. Kueue applies the **`ResourceFlavor`** tolerations and `nodeLabels` when it admits the workload, which is also how the RHOAI documentation describes it: hardware profiles used with Kueue cannot carry node selectors or tolerations; placement comes from the local queue → cluster queue → resource flavors. Changing taints or node labels is a change in rhoai-gitops, not here.
 
 **Why the llm-d router pod often looked “fine”:** The **EPP / router-scheduler** pod is **CPU-only** and usually has **no** `nvidia.com/gpu` toleration before admit. Kueue only **adds** tolerations there → no forbidden **modification**. The **main** vLLM pod carried the mismatched GPU toleration → failure.
 
@@ -104,16 +102,15 @@ oc get workload.kueue.x-k8s.io -n model-llamaguard -o jsonpath='{range .items[*]
 ## End-to-end checklist (gitops + chart)
 
 1. **Gitops (`rhoai-installation-chart`):** **`Topology` `rhoai-hostname`** + **`ResourceFlavor`** **`topologyName: rhoai-hostname`** + **`nodeLabels`** on **CPU** and **GPU** flavors (**[changes table](#changes-made-rhoai-gitops)** above).
-2. **Chart (`rhoai-serving`):** (a) GPU toleration **`operator: Exists`** when GPU is requested; (b) **`cpu-profile`** forces **`hasNvidiaGpu`** false so merged defaults do not emit GPU requests on CPU models (**CPU-only serving** subsection above).
+2. **Chart (`rhoai-serving`):** **`cpu-profile`** forces **`hasNvidiaGpu`** false so merged defaults do not emit GPU requests on CPU models (**CPU-only serving** subsection above).
 3. **Cluster:** **`oc get nodes --show-labels`** — GPU flavor **`nodeLabels`** must match your GPU Operator.
-4. **Queues:** Namespace **`kueue-managed`**, **`LocalQueue` `default`**, **`ClusterQueue`** naming matches **`values.yaml`** / **[004](004-kueue-gpu-tolerations.md)**.
+4. **Queues:** Namespace **`kueue-managed`**, **`LocalQueue` `default`**, **`ClusterQueue`** naming matches **`values.yaml`**.
 5. **Debug:** **`openshift-kueue-operator`** (or install namespace) **`kueue-controller-manager`** pod with **`replica-role=leader`** logs for **`Unsuspending job`** / **`tas-topology-ungater`**; **`Workload.status.conditions`** for topology / quota messages.
 
 ## References
 
 - Kueue: [Topology Aware Scheduling](https://kueue.sigs.k8s.io/docs/concepts/topology_aware_scheduling/)
 - This repository: [README — Kueue scheduling gates](../README.md) (troubleshooting snippet)
-- Related: [004 — GPU tolerations vs Kueue `ResourceFlavor`](004-kueue-gpu-tolerations.md)
 
 ## Status
 
