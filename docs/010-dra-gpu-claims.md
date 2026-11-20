@@ -47,12 +47,12 @@ Each size is a `firstAvailable` list: the same name lands on different hardware 
 | Template | For | Alternatives, in order |
 |----------|-----|------------------------|
 | `gpu-s-x1` | small models (embeddings) | MIG `1g.12gb`, MIG `2g.24gb`, any GPU >= 16Gi |
-| `gpu-m-x1` | 8-24B LLMs on the L4 | `NVIDIA L4`, MIG `2g.24gb`, any GPU >= 22Gi |
+| `gpu-m-x1` | 8-12B LLMs on the L4 | `NVIDIA L4`, MIG `2g.24gb`, any GPU >= 22Gi |
 | `gpu-l-x1` | 1x H100 | any GPU >= 80Gi, MIG `7g.94gb` |
 | `gpu-xl-x1` | 1 GPU with 140 Gi or more (B200, H200) | any GPU >= 140Gi, MIG `7g.180gb`, MIG `7g.141gb` |
 | `gpu-xl-x2` | 2 GPUs of 78 Gi or more, tensor parallelism (needs `parallelism.tensor: 2`) | 2 whole GPUs, no MIG: MIG slices cannot be combined with tensor parallelism |
 
-Models pick one in their values file (first lines of `serving:`): `gpu-s-x1` for bge-m3 and nomic, `gpu-m-x1` for the L4 LLMs, `gpu-l-x1` for Qwen3.8 and Gemma 26B, `gpu-xl-x2` for Llama 70B (2 GPUs, `parallelism.tensor: 2`: the parallelism showcase). `gpu-xl-x1` (one B200/H200) is not used by any model yet. `gpu-s-x1` is not used for LLMs: on a MIG cluster its first option is a 12 GB slice, too small for weights plus KV cache.
+Models pick one in their values file (first lines of `serving:`): `gpu-s-x1` for bge-m3 and nomic, `gpu-m-x1` for the L4 LLMs, `gpu-l-x1` for Qwen3.8, Gemma 26B and Devstral, `gpu-xl-x2` for Llama 70B (2 GPUs, `parallelism.tensor: 2`: the parallelism showcase). `gpu-xl-x1` (one B200/H200) is not used by any model yet. `gpu-s-x1` is not used for LLMs: on a MIG cluster its first option is a 12 GB slice, too small for weights plus KV cache.
 
 ## Hardware profile
 
