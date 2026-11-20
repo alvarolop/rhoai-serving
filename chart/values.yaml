@@ -63,46 +63,14 @@ serving:
     # -- HardwareProfile namespace
     # @default -- redhat-ods-applications
     namespace: redhat-ods-applications
-  # -- GPU through Dynamic Resource Allocation instead of the NVIDIA device plugin. With DRA the pod does not request `nvidia.com/gpu`; it references a ResourceClaimTemplate (created by this chart in the model namespace) through `spec.resourceClaims` and `resources.claims`. The number of GPUs is derived from `mainContainer.resources.limits["nvidia.com/gpu"]`, so the same `values-<model>.yaml` works with DRA on or off. CPU models (cpu-profile / no GPU in resources) never get a claim. Only generative models (LLMInferenceService) and predictive models that request a GPU (InferenceService supports `predictor.resourceClaims`) are affected. Needs the NVIDIA DRA driver (it publishes the DeviceClasses) and, for Kueue accounting, `deviceClassMappings` for `gpu.nvidia.com` (rhoai-gitops).
+  # -- GPU through Dynamic Resource Allocation (DRA) instead of the NVIDIA device plugin. With DRA the pod does not request `nvidia.com/gpu`: it references a ResourceClaimTemplate through `spec.resourceClaims` and `resources.claims`. The templates are NOT created by this chart: the platform team defines them (rhoai-gitops `06-dra`) as shared GPU sizes. CPU models never get a claim. Needs the NVIDIA DRA driver and, for Kueue accounting, the `gpu.nvidia.com` DeviceClass mapped to `nvidia.com/gpu` (rhoai-gitops).
   dra:
     # -- Request the GPU with a ResourceClaim (true) or with `nvidia.com/gpu` limits (false, device plugin). Set false on clusters without the NVIDIA DRA driver.
     enabled: true
-    # -- DeviceClass published by the NVIDIA DRA driver for full GPUs (use mig.nvidia.com only through `mig.enabled`)
-    deviceClassName: gpu.nvidia.com
-    # -- Name of the pod-level claim (`spec.resourceClaims[].name`) and of the container reference (`resources.claims[].name`)
-    claimName: gpu
-    # -- Only GPUs with this `productName` attribute (e.g. "NVIDIA L4", "NVIDIA H100 80GB HBM3"). Empty = any GPU of the DeviceClass (portable).
-    productName: ""
-    # -- Minimum GPU memory, CEL `quantity()` syntax (e.g. "40Gi"). Empty = no filter.
-    minMemory: ""
-    # -- Extra CEL expressions (all must match), e.g. `device.attributes["gpu.nvidia.com"].architecture == "Hopper"`
-    selectors: []
-    # -- HardwareProfile used on DRA models whose `serving.hardwareProfile.name` is `gpu-profile` (model files are not edited). It must NOT have an `nvidia.com/gpu` identifier: verified on RHOAI 3.5.3, with `gpu-profile` the webhook adds `nvidia.com/gpu` on top of the claim, Kueue counts 2 GPUs and the pod never schedules. `gpu-dra-profile` (rhoai-gitops) has the same queue (serving-lq) and priority. Empty = no swap (the annotation is then skipped on DRA models).
+    # -- Name of the platform-defined ResourceClaimTemplate in the model namespace (required for GPU models when DRA is enabled). Sizes in rhoai-gitops `06-dra`: `gpu-s-x1` (small, embeddings), `gpu-m-x1` (L4-class 24 GB), `gpu-l-x1` (1x H100), `gpu-xl-x4` (4 GPUs). The GPU count comes from the template.
+    claimTemplate: ""
+    # -- HardwareProfile written in the annotation of DRA models whose `serving.hardwareProfile.name` is `gpu-profile`. It must NOT have an `nvidia.com/gpu` identifier (the RHOAI webhook would add it on top of the claim and Kueue would count 2 GPUs). `gpu-dra-profile` (rhoai-gitops) has the same queue and priority. Any other GPU profile gets no hardware-profile annotation on DRA models.
     hardwareProfile: gpu-dra-profile
-    # -- Force the `opendatahub.io/hardware-profile-*` annotations on DRA models even when the profile is not the DRA one. Leave false: any profile with an `nvidia.com/gpu` identifier breaks the pod.
-    hardwareProfileAnnotation: false
-    # -- ResourceClaimTemplate settings
-    claimTemplate:
-      # -- Name of an existing ResourceClaimTemplate in the model namespace. Preferred: the shared sizes defined by the platform (rhoai-gitops `06-dra`): `gpu-s-x1` (small, embeddings), `gpu-m-x1` (L4-class 24 GB), `gpu-l-x1` (1x H100, >= 80Gi). The GPU count then comes from the template, not from the resources. Empty = the chart creates `<name>-gpu` (needed for multi-GPU, e.g. 4 GPUs, until the platform defines `gpu-xl-x4`).
-      existing: ""
-    # -- MIG partitions with `firstAvailable` (preferred profile first, fallback second). Replaces the full-GPU request. WARNING: a vLLM process only sees the FIRST MIG partition of its list, so `parallelism.tensor > 1` cannot be spread across MIG slices (the chart fails the render); use N full GPUs for tensor parallelism. The `profile` attribute comes from the NVIDIA DRA driver documentation (not verified on a MIG cluster).
-    mig:
-      # -- Request MIG slices instead of full GPUs
-      enabled: false
-      # -- DeviceClass for MIG devices
-      deviceClassName: mig.nvidia.com
-      # -- Preferred MIG profile
-      preferred:
-        # -- Profile attribute value (e.g. "3g.40gb")
-        profile: ""
-        # -- Number of slices of that profile
-        count: 1
-      # -- Fallback MIG profile, used when the preferred one is not available. Empty profile = no fallback.
-      fallback:
-        # -- Profile attribute value (e.g. "2g.20gb")
-        profile: ""
-        # -- Number of slices of that profile
-        count: 1
   # -- Gateway API refs for spec.router.gateway. Default: the MaaS gateway (maas-default-gateway in openshift-ingress), so models are published through Models-as-a-Service. The model namespace must be allowed by the gateway. To use the standard llm-d gateway (openshift-ai-inference) instead, set `[]`.
   # @default -- MaaS gateway (maas-default-gateway / openshift-ingress)
   routerGatewayRefs:

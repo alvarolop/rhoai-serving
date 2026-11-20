@@ -13,6 +13,8 @@ model:
     useCase: chat
     type: generative
 serving:
+  dra:
+    claimTemplate: gpu-xl-x4  # platform GPU size (rhoai-gitops 06-dra); 4 GPUs, the platform must define it (a commented reference exists)
   hardwareProfile:
     name: gpu-profile
     namespace: redhat-ods-applications

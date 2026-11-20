@@ -31,8 +31,7 @@ model:
     type: generative
 serving:
   dra:
-    claimTemplate:
-      existing: gpu-s-x1  # shared platform GPU size (rhoai-gitops 06-dra): gpu-s-x1 embeddings, gpu-m-x1 L4, gpu-l-x1 H100
+    claimTemplate: gpu-s-x1  # platform GPU size (rhoai-gitops 06-dra): gpu-s-x1 embeddings, gpu-m-x1 L4, gpu-l-x1 H100, gpu-xl-x4 4 GPUs
   hardwareProfile:
     name: gpu-profile
     namespace: redhat-ods-applications

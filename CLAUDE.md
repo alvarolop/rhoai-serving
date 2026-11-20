@@ -93,7 +93,7 @@ Supports PVC or DATABASE storage backends.
 
 ### GPUs: Dynamic Resource Allocation (DRA)
 
-`serving.dra.enabled` (default `true`) renders GPU models with a `ResourceClaimTemplate` (`templates/ResourceClaimTemplate.yaml`) plus `spec.resourceClaims` / `resources.claims` instead of `nvidia.com/gpu` limits. The GPU count is derived from `mainContainer.resources.limits["nvidia.com/gpu"]`, so model files do not change; `--set serving.dra.enabled=false` renders the device-plugin form exactly as before. CPU models never get a claim. See `docs/010-dra-gpu-claims.md`.
+`serving.dra.enabled` (default `true`) renders GPU models with `spec.resourceClaims` / `resources.claims` instead of `nvidia.com/gpu` limits. The chart does **not** create the `ResourceClaimTemplate`: each model names a platform-defined one (`gpu-s-x1`, `gpu-m-x1`, `gpu-l-x1`, `gpu-xl-x4`, rhoai-gitops `06-dra`) in `serving.dra.claimTemplate`. `--set serving.dra.enabled=false` renders the device-plugin form. CPU models never get a claim. See `docs/010-dra-gpu-claims.md`.
 
 ### HuggingFace Token Authentication
 
@@ -138,7 +138,6 @@ chart/
     TrustyAIService.yaml               # Optional: TrustyAI monitoring
     cm-kserve-logger-ca-bundle.yaml    # Optional: TrustyAI logger CA bundle
     Secret-hf-token.yaml               # Optional: HuggingFace token secret
-    ResourceClaimTemplate.yaml         # GPU claim when serving.dra.enabled (DRA)
     Namespace.yaml                     # Namespace (namespace.create)
     rbac.yaml
     Secret-connection.yaml             # Model connection Secret (uri / oci / s3)
