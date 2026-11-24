@@ -3,7 +3,7 @@ apiVersion: maas.opendatahub.io/v1alpha1
 kind: MaaSModelRef
 metadata:
   name: {{ .Values.name }}
-  namespace: {{ .Values.namespace.name }}
+  namespace: {{ include "rhoai-serving.namespaceName" . }}
   annotations:
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
     {{- if .Values.model.displayName }}

@@ -45,10 +45,11 @@ spec:
     name: {{ .Values.model.name | required "model.name is required" | quote }}
 
   router:
-    {{- if .Values.serving.routerGatewayRefs }}
+    {{- $gatewayRefs := include "rhoai-serving.routerGatewayRefs" . | fromJsonArray }}
+    {{- if $gatewayRefs }}
     gateway:
       refs:
-        {{- toYaml .Values.serving.routerGatewayRefs | nindent 8 }}
+        {{- toYaml $gatewayRefs | nindent 8 }}
     {{- else }}
     gateway: {}
     {{- end }}

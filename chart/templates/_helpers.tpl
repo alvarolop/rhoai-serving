@@ -1,8 +1,14 @@
 {{/*
-Namespace name used by all namespaced resources.
+Namespace name used by all namespaced resources. A model of a MaaS tenant (serving.maas.tenant) runs in the namespace of the
+tenant, ai-tenant-<tenant>, the one the MaaS controller names for an AITenant (generative models only: predictive
+models cannot join MaaS); otherwise namespace.name.
 */}}
 {{- define "rhoai-serving.namespaceName" -}}
+{{- if and .Values.serving.maas.tenant (eq .Values.serving.type "generative") -}}
+ai-tenant-{{ .Values.serving.maas.tenant }}
+{{- else -}}
 {{- .Values.namespace.name -}}
+{{- end -}}
 {{- end }}
 
 {{/*
@@ -190,13 +196,26 @@ LLMInferenceService (verified), so it is set on the workload itself, derived fro
 {{- end -}}
 
 {{/*
-True when the model is exposed through the MaaS gateway: a generative model with a routerGatewayRefs entry named
-maas-default-gateway. Predictive models do not use routerGatewayRefs.
+Gateway refs of the model (JSON list). With serving.maas.tenant it is the gateway of that tenant (named after the tenant, in
+serving.maas.gatewayNamespace); otherwise serving.routerGatewayRefs.
+*/}}
+{{- define "rhoai-serving.routerGatewayRefs" -}}
+{{- if .Values.serving.maas.tenant -}}
+{{- list (dict "name" .Values.serving.maas.tenant "namespace" .Values.serving.maas.gatewayNamespace) | toJson -}}
+{{- else -}}
+{{- (.Values.serving.routerGatewayRefs | default list) | toJson -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+True when the model is exposed through a MaaS gateway: a generative model of a MaaS tenant (serving.maas.tenant) or with a gateway
+ref named maas-default-gateway. Predictive models do not use gateway refs.
 */}}
 {{- define "rhoai-serving.exposedThroughMaas" -}}
 {{- $maas := false -}}
 {{- if eq .Values.serving.type "generative" -}}
-{{- range (.Values.serving.routerGatewayRefs | default list) -}}
+{{- if .Values.serving.maas.tenant -}}{{- $maas = true -}}{{- end -}}
+{{- range (include "rhoai-serving.routerGatewayRefs" . | fromJsonArray) -}}
 {{- if eq (.name | default "") "maas-default-gateway" -}}{{- $maas = true -}}{{- end -}}
 {{- end -}}
 {{- end -}}

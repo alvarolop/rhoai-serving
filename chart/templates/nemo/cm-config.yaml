@@ -1,4 +1,7 @@
 {{- if and (eq .Values.serving.type "generative") .Values.guardrails.enabled }}
+{{- if .Values.serving.maas.tenant }}
+{{- fail "guardrails are not supported with serving.maas.tenant yet: the NeMo URLs assume the default MaaS gateway" }}
+{{- end }}
 {{- /* Auto-generate main model URL if not provided */ -}}
 {{- $modelUrl := .Values.guardrails.modelUrl | default "" | toString | trim -}}
 {{- if not $modelUrl }}

@@ -91,6 +91,10 @@ serving:
   maas:
     # -- Enable MaaSModelRef creation for MaaS catalog (generative models only: MaaS supports LLMInferenceService, not InferenceService)
     enabled: true
+    # -- MaaS tenant the model joins (generative models only). Empty = the default tenant (models-as-a-service, gateway from `routerGatewayRefs`). With a tenant, for example `maas-keycloak` (the AITenant of rhoai-gitops `maas-keycloak-chart`, users sign in with Keycloak), the model runs in the namespace `ai-tenant-<tenant>` and uses the gateway named after the tenant: no other flag is needed (`namespace.name` and `routerGatewayRefs` are ignored). The tenant needs a MaaSSubscription for the model, created in rhoai-gitops. Guardrails are not supported with a tenant yet.
+    tenant: ""
+    # -- Namespace of the tenant gateways
+    gatewayNamespace: openshift-ingress
 
 # @section -- Scaling Configuration
 

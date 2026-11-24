@@ -190,6 +190,23 @@ maas-default-gateway   (MaaS, the default)   API key             ─▶ MaaSSubs
 - NeMo Guardrails always gets the ServiceAccount token (it uses it to call the model).
 - `auth.enabled: false` renders neither.
 
+### MaaS tenant with Keycloak (`serving.maas.tenant`)
+
+**TL;DR:** to publish any generative model in the second MaaS tenant (users sign in with Keycloak), add **one flag** to its normal command: `--set serving.maas.tenant=maas-keycloak`.
+
+```bash
+helm template qwen3-8b chart/ -f chart/values.yaml -f chart/values-qwen3-8b-fp8-dynamic.yaml \
+  --set serving.maas.tenant=maas-keycloak | oc apply -f -
+```
+
+With the flag the chart puts the model in the namespace `ai-tenant-maas-keycloak` and points it at the gateway `maas-keycloak`; `namespace.name` and `routerGatewayRefs` of the values file are ignored, and no ServiceAccount token is rendered (MaaS uses API keys). The tenant itself (AITenant, gateway, namespace with its Kueue queues and GPU claim templates) is `maas-keycloak-chart` and the Keycloak realm in rhoai-gitops. It applies to every generative model of `chart/`; predictive models cannot join MaaS and ignore the flag, and guardrails are not supported with it yet.
+
+The model shows up for a user only when a `MaaSSubscription` and a `MaaSAuthPolicy` of the tenant list it. They are created in rhoai-gitops (`configs` of `application-maas-keycloak.yaml`, group names exactly as in the Keycloak token) and refer to the name of the model: the `name:` of its values file (for example `qwen3-8b`, `gemma-4-12b-it-fp8-dynamic`).
+
+```
+Keycloak token ──▶ POST /maas-api/v1/api-keys ──▶ sk-oai-… ──▶ POST /v1/chat/completions   (model id as listed by GET /v1/models)
+```
+
 ### Hugging Face token
 
 Gated or private **`hf://`** checkpoints need a token. Put it in **`.hf_token`** (git-ignored; see **`.hf_token.example`**) or export **`HF_TOKEN`**. The chart creates **`hf-secret`** and mounts **`HF_TOKEN`** only when **`model.uri`** starts with **`hf://`** and **`hfToken`** is non-empty at render time ([KServe / Hugging Face storage](https://kserve.github.io/website/docs/model-serving/storage/providers/hf)). Public **`hf://`** models in this repo (for example Nomic) can deploy without a token.
