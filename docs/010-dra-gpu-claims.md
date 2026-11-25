@@ -13,10 +13,10 @@
 GPU hardware
    │  NVIDIA DRA driver
    ▼
-ResourceSlice          what each node offers (model, memory, MIG profile)
+ResourceSlice          what each node offers (model, memory)
    │
    ▼
-DeviceClass            gpu.nvidia.com / mig.nvidia.com           created by NVIDIA
+DeviceClass            gpu.nvidia.com (and mig.nvidia.com)       created by NVIDIA
    │
    ▼
 ResourceClaimTemplate  gpu-s-x1 / m-x1 / l-x1 / xl-x1 / xl-x2   created by the platform team (rhoai-gitops)
@@ -42,17 +42,31 @@ Kueue counts the claim against the same quota as before, because rhoai-gitops ma
 
 ## Sizes (platform-defined)
 
-Each size is a `firstAvailable` list: the same name lands on different hardware in different clusters.
+Each size is **one `exactly` request with a CEL selector on the memory** of a full GPU, so the same name fits different clusters by memory, not by device type.
 
-| Template | For | Alternatives, in order |
-|----------|-----|------------------------|
-| `gpu-s-x1` | small models (embeddings) | MIG `1g.12gb`, MIG `2g.24gb`, any GPU >= 16Gi |
-| `gpu-m-x1` | 8-12B LLMs on the L4 | `NVIDIA L4`, MIG `2g.24gb`, any GPU >= 22Gi |
-| `gpu-l-x1` | 1x H100 | any GPU >= 80Gi, MIG `7g.94gb` |
-| `gpu-xl-x1` | 1 GPU with 140 Gi or more (B200, H200) | any GPU >= 140Gi, MIG `7g.180gb`, MIG `7g.141gb` |
-| `gpu-xl-x2` | 2 GPUs of 78 Gi or more, tensor parallelism (needs `parallelism.tensor: 2`) | 2 whole GPUs, no MIG: MIG slices cannot be combined with tensor parallelism |
+| Template | For | Request |
+|----------|-----|---------|
+| `gpu-s-x1` | small models (embeddings) | 1 GPU with 16 Gi or more |
+| `gpu-m-x1` | 8-12B LLMs on the L4 | 1 GPU with 22 Gi or more (the L4 reports 23034 Mi) |
+| `gpu-l-x1` | 1x H100 | 1 GPU with 78 Gi or more (H100 80GB reports 79.6 Gi) |
+| `gpu-xl-x1` | 1 GPU with 140 Gi or more (B200, H200) | 1 GPU with 140 Gi or more |
+| `gpu-xl-x2` | 2 GPUs, tensor parallelism (needs `parallelism.tensor: 2`) | 2 GPUs with 78 Gi or more each |
 
-Models pick one in their values file (first lines of `serving:`): `gpu-s-x1` for bge-m3 and nomic, `gpu-m-x1` for the L4 LLMs, `gpu-l-x1` for Qwen3.8, Gemma 26B and Devstral, `gpu-xl-x2` for Llama 70B (2 GPUs, `parallelism.tensor: 2`: the parallelism showcase). `gpu-xl-x1` (one B200/H200) is not used by any model yet. `gpu-s-x1` is not used for LLMs: on a MIG cluster its first option is a 12 GB slice, too small for weights plus KV cache.
+Where each size lands:
+
+| Cluster | `gpu-s-x1` | `gpu-m-x1` | `gpu-l-x1` | `gpu-xl-x1` | `gpu-xl-x2` |
+|---|---|---|---|---|---|
+| L4 only | the L4 | the L4 | does not schedule | does not schedule | does not schedule |
+| H100 | whole H100 | whole H100 | whole H100 | does not schedule | 2 whole H100 (needs 2 on the node) |
+| B200 / H200 | whole GPU | whole GPU | whole GPU | whole GPU | 2 whole GPUs |
+
+A small model on a big card takes the whole card.
+
+### Why not `firstAvailable` (MIG first, then a full GPU)
+
+DRA lets a claim list alternatives (`firstAvailable`), for example a MIG slice first and a full GPU by memory second. **Kueue does not admit such a workload**: the pod stays `SchedulingGated` and the Workload `Inadmissible` with `FirstAvailable device selection is not supported`. It is behind an alpha gate (`KueueDRAIntegrationPrioritizedList`, off by default, not for production). The support is expected with Kueue 1.6, which is not available yet, so the sizes stay as single exact requests. The `firstAvailable` version with the MIG alternatives (`1g.12gb`, `2g.24gb`, `7g.94gb`, ...) is kept commented at the end of each `x1` template in rhoai-gitops `06-dra`, for when Kueue supports it. Those alternatives also need MIG devices (the `DynamicMIG` gate in the `GPUCluster`, alpha, or partitions already created) and are untested.
+
+Models pick one in their values file (first lines of `serving:`): `gpu-s-x1` for bge-m3 and nomic, `gpu-m-x1` for the L4 LLMs, `gpu-l-x1` for Qwen3.8, Gemma 26B, Devstral and Nemotron Lightning 30B, `gpu-xl-x2` for Llama 70B (2 GPUs, `parallelism.tensor: 2`: the parallelism showcase). `gpu-xl-x1` (one B200/H200) is not used by any model yet. `gpu-s-x1` is not used for LLMs: a 16 Gi minimum is too small for the weights plus the KV cache of an 8B model.
 
 ## Hardware profile
 
