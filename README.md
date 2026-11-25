@@ -100,6 +100,8 @@ helm template nomic-embed-text-v2-moe chart/ -f chart/values.yaml -f chart/value
 helm template gemma-4-26b-a4b-fp8 chart/ -f chart/values.yaml -f chart/values-gemma-4-26b-a4b-fp8.yaml | oc apply -f -
 helm template qwen38-27b-fp8 chart/ -f chart/values.yaml -f chart/values-qwen3.8-27b-fp8.yaml | oc apply -f -
 helm template devstral-small-2-24b-instruct chart/ -f chart/values.yaml -f chart/values-devstral-small-2-24b-instruct.yaml | oc apply -f -
+# NVFP4 hybrid Mamba-2 + MoE (30B, 3B active, ~18 GB): needs a vLLM build with the nemotron_v3 reasoning parser, see the header of the values file
+helm template nemotron-lightning chart/ -f chart/values.yaml -f chart/values-nemotron-3.5-lightning-30b-nvfp4.yaml | oc apply -f -
 
 # Generative (vLLM, 2 GPUs with tensor parallelism)
 helm template llama-3-3-70b chart/ -f chart/values.yaml -f chart/values-llama-3.3-70b.yaml | oc apply -f -
