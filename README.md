@@ -203,7 +203,7 @@ helm template qwen3-8b chart/ -f chart/values.yaml -f chart/values-qwen3-8b-fp8-
 
 With the flag the chart puts the model in the namespace `ai-tenant-maas-keycloak` and points it at the gateway `maas-keycloak`; `namespace.name` and `routerGatewayRefs` of the values file are ignored, and no ServiceAccount token is rendered (MaaS uses API keys). The tenant itself (AITenant, gateway, namespace with its Kueue queues and GPU claim templates) is `maas-keycloak-chart` and the Keycloak realm in rhoai-gitops. It applies to every generative model of `chart/`; predictive models cannot join MaaS and ignore the flag, and guardrails are not supported with it yet.
 
-The model shows up for a user only when a `MaaSSubscription` and a `MaaSAuthPolicy` of the tenant list it. They are created in rhoai-gitops (`configs` of `application-maas-keycloak.yaml`, group names exactly as in the Keycloak token) and refer to the name of the model: the `name:` of its values file (for example `qwen3-8b`, `gemma-4-12b-it-fp8-dynamic`).
+The model shows up for a user only when a `MaaSSubscription` and a `MaaSAuthPolicy` of the tenant list it. Generate them with `maas/maas-subscriptions.sh` (one subscription per tenant namespace covering all its models, rerun it after each new model, group names exactly as in the Keycloak token, see [docs/011-maas-subscriptions.md](docs/011-maas-subscriptions.md)); they refer to the name of the model: the `name:` of its values file (for example `qwen3-8b`, `gemma-4-12b-it-fp8-dynamic`).
 
 ```
 Keycloak token ──▶ POST /maas-api/v1/api-keys ──▶ sk-oai-… ──▶ POST /v1/chat/completions   (model id as listed by GET /v1/models)
