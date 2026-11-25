@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This repository provides **production-ready Helm charts** and **GitOps ArgoCD Applications** for deploying Predictive and Generative AI models on OpenShift using Red Hat OpenShift AI (RHOAI). The goal is to create clear, concise, and maintainable Helm charts that simplify the deployment and ongoing maintenance of model serving workloads.
 
-The Helm charts use KServe in **Raw deployment** mode for maximum flexibility and will be continuously updated as new KServe features become available (e.g., llm-d integration, new router features, vLLM omni mode).
+The Helm charts use KServe in **Standard** deployment mode (formerly RawDeployment) for maximum flexibility and will be continuously updated as new KServe features become available (e.g., llm-d integration, new router features, vLLM omni mode).
 
 ArgoCD Applications are provided for each serving scenario, integrating the base Helm charts to enable **one-click model deployment** via GitOps workflows.
 
@@ -31,7 +31,7 @@ The Helm charts cover five distinct model serving scenarios:
 
 - **OpenShift Container Platform 4.20+** - Base platform
 - **OpenShift AI (RHOAI)** - AI/ML platform layer
-- **KServe** - Model serving orchestration (Raw deployment mode)
+- **KServe** - Model serving orchestration (Standard deployment mode, formerly RawDeployment)
 - **OpenVINO** - Intel's inference runtime for predictive models and embeddings
 - **vLLM** - High-throughput LLM serving runtime
 - **llm-d** - Inference acceleration framework

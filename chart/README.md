@@ -2,13 +2,13 @@
 
 ![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.0](https://img.shields.io/badge/AppVersion-1.0-informational?style=flat-square)
 
-Production-ready Helm chart for deploying Predictive and Generative AI models on Red Hat OpenShift AI using KServe Raw deployment mode
+Production-ready Helm chart for deploying Predictive and Generative AI models on Red Hat OpenShift AI using KServe Standard deployment mode (formerly RawDeployment)
 
 **Homepage:** <https://github.com/alvarolop/rhoai-serving>
 
 ## Overview
 
-This Helm chart provides production-ready deployments for **Predictive** and **Generative AI** models on OpenShift using Red Hat OpenShift AI (RHOAI). The chart uses KServe in **Raw deployment mode** for maximum flexibility.
+This Helm chart provides production-ready deployments for **Predictive** and **Generative AI** models on OpenShift using Red Hat OpenShift AI (RHOAI). The chart uses KServe in **Standard deployment mode** (formerly RawDeployment) for maximum flexibility.
 
 ### Supported Scenarios
 

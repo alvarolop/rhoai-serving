@@ -17,7 +17,7 @@ metadata:
     opendatahub.io/model-type: predictive
     openshift.io/display-name: {{ .Values.name }}
     security.opendatahub.io/enable-auth: '{{ .Values.auth.enabled }}'
-    serving.kserve.io/deploymentMode: RawDeployment
+    serving.kserve.io/deploymentMode: Standard
     {{- if eq .Values.scaling.mode "keda" }}
     serving.kserve.io/autoscalerClass: external
     prometheus.io/scrape: "true"

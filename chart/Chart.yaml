@@ -1,6 +1,6 @@
 apiVersion: v2
 name: rhoai-serving
-description: Production-ready Helm chart for deploying Predictive and Generative AI models on Red Hat OpenShift AI using KServe Raw deployment mode
+description: Production-ready Helm chart for deploying Predictive and Generative AI models on Red Hat OpenShift AI using KServe Standard deployment mode (formerly RawDeployment)
 type: application
 version: 0.1.0
 appVersion: "1.0"

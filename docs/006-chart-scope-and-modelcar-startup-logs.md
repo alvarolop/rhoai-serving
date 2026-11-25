@@ -12,7 +12,7 @@ Rendered resources can include:
 - **Connection Secret** (`metadata.name` == **`.Values.name`**), only for **s3** and for **oci** with credentials (see **`chart/templates/Secret-connection.yaml`** and **`_helpers.tpl`** **`hasConnectionSecret`**). The protocol is detected from the **`model.uri`** prefix; `hf://` and public `oci://` models get no Secret.
 - **`hf-secret`** and **`HF_TOKEN`** on the generative worker only when **`model.uri`** starts with **`hf://`** and **`hfToken`** is non-empty.
 - **Generative** (**`serving.type: generative`**): **`LLMInferenceService`** — worker **`main`**, replicas, resources, **`VLLM_ADDITIONAL_ARGS`** from **`extraArgs`**, **`extraEnv`**, optional **`mainContainer`** image/command/args, dashboard / Kueue / hardware-profile / auth annotations, optional GPU tolerations.
-- **Predictive** (**`serving.type: predictive`**): **`ServingRuntime`** (OVMS-oriented container template) + **`InferenceService`** (**`RawDeployment`**).
+- **Predictive** (**`serving.type: predictive`**): **`ServingRuntime`** (OVMS-oriented container template) + **`InferenceService`** (**`Standard`** deployment mode, formerly `RawDeployment`).
 - **`auth.enabled`**: ServiceAccount, token Secret, Role (get on that name’s **`llminferenceservices`** / **`inferenceservices`**), RoleBinding.
 - **`trustyai.enabled`**: **`TrustyAIService`** + CA **`ConfigMap`** (fixed small spec).
 

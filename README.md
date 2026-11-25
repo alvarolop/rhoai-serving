@@ -30,7 +30,7 @@ In this repository, we will showcase all the features of RHOAI Serving. Since Op
 9. Serving **Guardrails** models for TrustyAI.
 
 > [!NOTE]
-> Independently of the purpose of the model, we will use the `kserve` operator to serve the model using the **Raw deployment** mode since it is the most flexible and powerful mode.
+> Independently of the purpose of the model, we will use the `kserve` operator to serve the model using the **Standard** deployment mode (formerly called RawDeployment) since it is the most flexible and powerful mode.
 
 ## Testing
 
@@ -50,7 +50,7 @@ The integrated KServe + llm-d + OpenVINO system comprises layered responsibiliti
 
 | Component | Role |
 |-----------|------|
-| **KServe** | Model serving orchestration (Raw deployment mode) |
+| **KServe** | Model serving orchestration (Standard deployment mode, formerly RawDeployment) |
 | **LLMInferenceService** | CRD for serving generative models |
 | **llm-d** | Distributed inference: inference gateway plus the EPP scheduler that routes each request to a replica |
 | **MaaS gateway** | Default gateway for generative models: API keys, subscriptions and token limits |
