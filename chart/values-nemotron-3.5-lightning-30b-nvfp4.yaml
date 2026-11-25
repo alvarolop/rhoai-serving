@@ -1,0 +1,55 @@
+# NVIDIA Nemotron 3.5 Lightning 30B-A3B NVFP4 - hybrid Mamba-2 + MoE, 30B total / 3B active, 4-bit weights (~18 GB).
+# Size: gpu-l-x1 (H100-class, 78 Gi+). NVIDIA only validates Hopper (W4A16 kernels), Ampere and Blackwell for this checkpoint:
+# an L4 (Ada, 23 Gi) is not listed and would leave almost no room for KV cache and Mamba state.
+# Model card: https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4
+# Usage: helm template nemotron-lightning chart/ -f chart/values.yaml -f chart/values-nemotron-3.5-lightning-30b-nvfp4.yaml
+#
+# Needs a vLLM build with the nemotron_v3 reasoning parser (model card tested vllm/vllm-openai:v0.27.1).
+# If the RHOAI default vLLM image is older, set mainContainer.image.
+
+name: nemotron-3-5-lightning-30b
+namespace:
+  name: models-as-a-service
+
+model:
+  uri: hf://nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4
+  name: nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4
+  metadata:
+    useCase: chat
+    type: generative
+serving:
+  dra:
+    claimTemplate: gpu-l-x1  # platform GPU size (rhoai-gitops 06-dra): gpu-s-x1 embeddings, gpu-m-x1 L4, gpu-l-x1 H100, gpu-xl-x1 1 GPU 140 Gi+, gpu-xl-x2 2 GPUs
+  hardwareProfile:
+    name: gpu-profile
+    namespace: redhat-ods-applications
+
+mainContainer:
+  extraArgs:
+    - "--moe-backend"
+    - "marlin"            # W4A16 path for Hopper (no FP4 tensor cores)
+    - "--kv-cache-dtype"
+    - "fp8"
+    - "--enable-prefix-caching"
+    - "--gpu-memory-utilization"
+    - "0.85"
+    - "--max-model-len"
+    - "65536"             # the model supports 1M; keep it small, raise it if the KV cache allows
+    - "--mamba-backend"
+    - "flashinfer"
+    - "--mamba-cache-mode"
+    - "align"
+    - "--reasoning-parser"
+    - "nemotron_v3"
+    - "--tool-call-parser"
+    - "qwen3_coder"
+    - "--enable-auto-tool-choice"
+  resources:
+    limits:
+      cpu: "8"
+      memory: "48Gi"
+      nvidia.com/gpu: "1"
+    requests:
+      cpu: "4"
+      memory: "24Gi"
+      nvidia.com/gpu: "1"
