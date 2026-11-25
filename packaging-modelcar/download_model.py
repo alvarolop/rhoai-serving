@@ -11,10 +11,11 @@ def main() -> int:
     dest = os.environ.get("MODEL_DEST", "/models").strip()
 
     # Download only essential files for vLLM
+    # *.jinja: recent HF repos ship the chat template as chat_template.jinja, not inside tokenizer_config.json
     # vLLM uses standard HuggingFace format (model-*.safetensors), NOT consolidated-*.safetensors
     raw_patterns = os.environ.get(
         "HF_ALLOW_PATTERNS",
-        "*.safetensors,*.json,*.txt,*.model,tokenizer.json,tokenizer_config.json,merges.txt,vocab.json,special_tokens_map.json",
+        "*.safetensors,*.json,*.txt,*.model,*.jinja,tokenizer.json,tokenizer_config.json,merges.txt,vocab.json,special_tokens_map.json",
     )
     allow_patterns = [p.strip() for p in raw_patterns.split(",") if p.strip()]
 

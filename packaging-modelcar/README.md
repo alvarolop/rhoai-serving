@@ -65,6 +65,8 @@ podman build --platform linux/amd64 \
 podman push quay.io/alopezme/modelcar-bge-m3:latest
 ```
 
+`*.jinja` is included by default: recent models (Gemma 4, Devstral, Qwen3.8, Granite 4.1, Nemotron) keep their chat template in `chat_template.jinja`, and without it vLLM fails with `default chat template is no longer allowed`.
+
 What to download can be changed with `--build-arg HF_ALLOW_PATTERNS=...` and `--build-arg HF_IGNORE_PATTERNS=...`.
 
 **Gemma 4 31B FP8-Dynamic (recommended for H100):**
