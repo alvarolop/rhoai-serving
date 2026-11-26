@@ -126,9 +126,9 @@ None of the models listed here is gated. Gated `hf://` models need `--set-file h
 
 ### GPUs: DRA or device plugin
 
-**TL;DR:** GPU models request their GPU through a shared `ResourceClaimTemplate` (DRA), named in `serving.dra.claimTemplate` (`gpu-s-x1` embeddings, `gpu-m-x1` L4 demo, `gpu-l-x1` 1x H100, `gpu-xl-x1` 1 GPU 140 Gi+, `gpu-xl-x2` 2 GPUs). The platform team defines the templates in rhoai-gitops (`06-dra`); this chart creates none. CPU models are unaffected.
+**TL;DR:** GPU models request their GPU with `nvidia.com/gpu` (device plugin, default). With `serving.dra.enabled=true` they use a shared `ResourceClaimTemplate` (DRA) instead, named in `serving.dra.claimTemplate` (`gpu-s-x1` embeddings, `gpu-m-x1` L4 demo, `gpu-l-x1` 1x H100, `gpu-xl-x1` 1 GPU 140 Gi+, `gpu-xl-x2` 2 GPUs). The platform team defines the templates in rhoai-gitops (`06-dra`); this chart creates none. CPU models are unaffected.
 
-On a cluster **without** the NVIDIA DRA driver (device plugin) add `--set serving.dra.enabled=false` to any command above. Details and diagrams: [docs/010-dra-gpu-claims.md](docs/010-dra-gpu-claims.md).
+DRA is off by default because it does not cover everything needed with Kueue. On a cluster with the NVIDIA DRA driver (and `dra.enabled: true` in rhoai-gitops) add `--set serving.dra.enabled=true` to any command above. Details and diagrams: [docs/010-dra-gpu-claims.md](docs/010-dra-gpu-claims.md).
 
 ### Test a model
 

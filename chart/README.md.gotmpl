@@ -167,14 +167,14 @@ See `values-distilbert.yaml` for all configuration examples (HPA and KEDA blocks
 
 ## GPUs with Dynamic Resource Allocation (DRA)
 
-**TL;DR:** `serving.dra.enabled` (default `true`) requests the GPU through a platform-defined `ResourceClaimTemplate` named in `serving.dra.claimTemplate` (`gpu-s-x1`, `gpu-m-x1`, `gpu-l-x1`, `gpu-xl-x1`, `gpu-xl-x2`). The chart creates no templates. CPU models never get a claim.
+**TL;DR:** `serving.dra.enabled` (default `false`: the GPU is requested with `nvidia.com/gpu`). With `true` the GPU is requested through a platform-defined `ResourceClaimTemplate` named in `serving.dra.claimTemplate` (`gpu-s-x1`, `gpu-m-x1`, `gpu-l-x1`, `gpu-xl-x1`, `gpu-xl-x2`); the chart creates no templates. CPU models never get a claim.
 
 ```bash
-# DRA (default)
+# Device plugin (default)
 helm template <release> chart/ -f chart/values.yaml -f chart/values-<model>.yaml | oc apply -f -
 
-# Device plugin (clusters without the NVIDIA DRA driver)
-helm template <release> chart/ -f chart/values.yaml -f chart/values-<model>.yaml --set serving.dra.enabled=false | oc apply -f -
+# DRA (clusters with the NVIDIA DRA driver)
+helm template <release> chart/ -f chart/values.yaml -f chart/values-<model>.yaml --set serving.dra.enabled=true | oc apply -f -
 ```
 
 Details and diagrams in [docs/010-dra-gpu-claims.md](../docs/010-dra-gpu-claims.md).

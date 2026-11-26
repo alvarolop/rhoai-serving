@@ -2,10 +2,10 @@
 
 **TL;DR**
 
-- GPU models request their GPU with a **`ResourceClaimTemplate`** (DRA) instead of `nvidia.com/gpu` limits. On by default: `serving.dra.enabled: true`.
+- GPU models request their GPU with a **`ResourceClaimTemplate`** (DRA) instead of `nvidia.com/gpu` limits. Off by default (DRA does not cover everything needed with Kueue): `serving.dra.enabled: false`; set `true` to use it.
 - **This chart creates no claim templates.** Each model names a platform-defined size in `serving.dra.claimTemplate`: `gpu-s-x1`, `gpu-m-x1`, `gpu-l-x1`, `gpu-xl-x1`, `gpu-xl-x2` (rhoai-gitops, `06-dra`).
 - On DRA models the hardware profile becomes **`gpu-dra-profile`** (no `nvidia.com/gpu` identifier). With `gpu-profile` the pod never schedules.
-- CPU models are untouched. Cluster without the NVIDIA DRA driver: `--set serving.dra.enabled=false`.
+- CPU models are untouched. Needs the NVIDIA DRA driver and `dra.enabled: true` in rhoai-gitops.
 
 ## How it fits together
 
@@ -29,7 +29,7 @@ Kueue counts the claim against the same quota as before, because rhoai-gitops ma
 
 ## What the chart does
 
-| | `serving.dra.enabled: true` (default) | `false` (device plugin) |
+| | `serving.dra.enabled: true` | `false` (default, device plugin) |
 |---|---|---|
 | Container resources | `claims: [{name: gpu}]`, no `nvidia.com/gpu` | `nvidia.com/gpu` in limits/requests |
 | Pod | `resourceClaims: [{name: gpu, resourceClaimTemplateName: <size>}]` | nothing |

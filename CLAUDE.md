@@ -93,7 +93,7 @@ Supports PVC or DATABASE storage backends.
 
 ### GPUs: Dynamic Resource Allocation (DRA)
 
-**TL;DR:** `serving.dra.enabled` (default `true`) renders GPU models with `resourceClaims` / `resources.claims` instead of `nvidia.com/gpu`. The chart creates **no** `ResourceClaimTemplate`: each model names a platform-defined size in `serving.dra.claimTemplate` (`gpu-s-x1`, `gpu-m-x1`, `gpu-l-x1`, `gpu-xl-x1`, rhoai-gitops `06-dra`). DRA models use the `gpu-dra-profile` hardware profile. `--set serving.dra.enabled=false` renders the device-plugin form. CPU models never get a claim. See `docs/010-dra-gpu-claims.md`.
+**TL;DR:** `serving.dra.enabled` (default `false`) renders GPU models with `resourceClaims` / `resources.claims` instead of `nvidia.com/gpu`. The chart creates **no** `ResourceClaimTemplate`: each model names a platform-defined size in `serving.dra.claimTemplate` (`gpu-s-x1`, `gpu-m-x1`, `gpu-l-x1`, `gpu-xl-x1`, rhoai-gitops `06-dra`). DRA models use the `gpu-dra-profile` hardware profile. The default renders the device-plugin form (`nvidia.com/gpu`). CPU models never get a claim. See `docs/010-dra-gpu-claims.md`.
 
 ### HuggingFace Token Authentication
 

@@ -193,14 +193,14 @@ Only applies to generative models (`LLMInferenceService`). Predictive models use
 
 ## GPUs with Dynamic Resource Allocation (DRA)
 
-**TL;DR:** `serving.dra.enabled` (default `true`) requests the GPU through a platform-defined `ResourceClaimTemplate` named in `serving.dra.claimTemplate` (`gpu-s-x1`, `gpu-m-x1`, `gpu-l-x1`, `gpu-xl-x1`, `gpu-xl-x2`). The chart creates no templates. CPU models never get a claim.
+**TL;DR:** `serving.dra.enabled` (default `false`: the GPU is requested with `nvidia.com/gpu`). With `true` the GPU is requested through a platform-defined `ResourceClaimTemplate` named in `serving.dra.claimTemplate` (`gpu-s-x1`, `gpu-m-x1`, `gpu-l-x1`, `gpu-xl-x1`, `gpu-xl-x2`); the chart creates no templates. CPU models never get a claim.
 
 ```bash
-# DRA (default)
+# Device plugin (default)
 helm template <release> chart/ -f chart/values.yaml -f chart/values-<model>.yaml | oc apply -f -
 
-# Device plugin (clusters without the NVIDIA DRA driver)
-helm template <release> chart/ -f chart/values.yaml -f chart/values-<model>.yaml --set serving.dra.enabled=false | oc apply -f -
+# DRA (clusters with the NVIDIA DRA driver)
+helm template <release> chart/ -f chart/values.yaml -f chart/values-<model>.yaml --set serving.dra.enabled=true | oc apply -f -
 ```
 
 Details and diagrams in [docs/010-dra-gpu-claims.md](../docs/010-dra-gpu-claims.md).
@@ -268,9 +268,9 @@ Deploys a TrustyAIService CR and required CA bundle ConfigMap. See `values-disti
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | serving | object | `{...}` (see sub-keys) | Model serving configuration. Determines whether to deploy generative (LLMInferenceService) or predictive (InferenceService) models. |
-| serving.dra | object | `{"enabled":true,"claimTemplate":"","hardwareProfile":"gpu-dra-profile"}` | GPU through Dynamic Resource Allocation (DRA) instead of the NVIDIA device plugin: the pod references a ResourceClaimTemplate (`resourceClaims` + `resources.claims`) instead of `nvidia.com/gpu`. The templates are defined by the platform team (rhoai-gitops `06-dra`), not by this chart. CPU models never get a claim. See docs/010-dra-gpu-claims.md. |
+| serving.dra | object | `{"enabled":false,"claimTemplate":"","hardwareProfile":"gpu-dra-profile"}` | GPU through Dynamic Resource Allocation (DRA) instead of the NVIDIA device plugin: the pod references a ResourceClaimTemplate (`resourceClaims` + `resources.claims`) instead of `nvidia.com/gpu`. The templates are defined by the platform team (rhoai-gitops `06-dra`), not by this chart. CPU models never get a claim. See docs/010-dra-gpu-claims.md. |
 | serving.dra.claimTemplate | string | `""` | Platform-defined ResourceClaimTemplate in the model namespace; required for GPU models when DRA is on. Sizes: `gpu-s-x1` (small, embeddings), `gpu-m-x1` (L4-class), `gpu-l-x1` (1x H100), `gpu-xl-x1` (1 GPU with 140 Gi or more), `gpu-xl-x2` (2 GPUs, needs `parallelism.tensor: 2`). The GPU count comes from the template. |
-| serving.dra.enabled | bool | `true` | Use a ResourceClaim (true) or `nvidia.com/gpu` limits (false). Set false on clusters without the NVIDIA DRA driver. |
+| serving.dra.enabled | bool | `false` | Use a ResourceClaim (true) or `nvidia.com/gpu` limits (false, default: DRA does not cover everything needed with Kueue). Set true only on clusters with the NVIDIA DRA driver and `dra.enabled` in rhoai-gitops. |
 | serving.dra.hardwareProfile | string | `"gpu-dra-profile"` | HardwareProfile written in the annotation of DRA models whose profile is `gpu-profile`. It must not carry an `nvidia.com/gpu` identifier (the webhook would add it on top of the claim and Kueue would count 2 GPUs). |
 | serving.hardwareProfile | object | `{"name":"gpu-profile","namespace":"redhat-ods-applications"}` | OpenShift AI HardwareProfile reference |
 | serving.hardwareProfile.name | string | `"gpu-profile"` | HardwareProfile name (cpu-profile for CPU-only, gpu-profile for GPU models) |
